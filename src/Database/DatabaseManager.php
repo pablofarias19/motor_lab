@@ -259,6 +259,8 @@ class DatabaseManager {
     private function bindDynamicParams(mysqli_stmt $stmt, string $types, array $values): void
     {
         $params = [$types];
+        // mysqli_stmt::bind_param requiere referencias; por eso se enlazan
+        // directamente los indices del array ya normalizado.
         foreach (array_keys($values) as $index) {
             $params[] = &$values[$index];
         }
