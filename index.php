@@ -1856,6 +1856,11 @@ $provincias = [
                 const esEmpleador = perfil === 'empleador';
                 const esPrevencion = ['responsabilidad_solidaria', 'auditoria_preventiva', 'riesgo_inspeccion'].includes(conflicto);
                 const esAccidente = conflicto === 'accidente_laboral';
+                const descripcionPaso2Empresa = esAccidente
+                    ? 'Cargá los datos base del trabajador y del siniestro para estimar cobertura ART, riesgo civil y exposición directa de la empresa.'
+                    : esPrevencion
+                        ? 'Tomamos referencias generales de la empresa o del sector involucrado para estimar exposición, cumplimiento y urgencia de acción sin pedir datos irrelevantes.'
+                        : 'Tomamos los datos del trabajador o del caso involucrado para medir la exposición de la empresa y organizar la respuesta estratégica.';
 
                 if (!esEmpleador) {
                     [
@@ -1893,12 +1898,7 @@ $provincias = [
                     esPrevencion ? '<i class="bi bi-briefcase"></i> Datos base de la empresa' : '<i class="bi bi-briefcase"></i> Datos base del caso'
                 );
                 actualizarTextoElemento('#paso-2 .paso-info-card-content h4', '¿Qué necesitamos para orientar a la empresa?');
-                actualizarTextoElemento(
-                    '#paso-2 .paso-info-card-content p',
-                    esPrevencion
-                        ? 'Tomamos referencias generales de la empresa o del sector involucrado para estimar exposición, cumplimiento y urgencia de acción sin pedir datos irrelevantes.'
-                        : 'Tomamos los datos del trabajador o del caso involucrado para medir la exposición de la empresa y organizar la respuesta estratégica.'
-                );
+                actualizarTextoElemento('#paso-2 .paso-info-card-content p', descripcionPaso2Empresa);
 
                 actualizarTextoElemento(
                     'label[for="salario"] .form-label-main',
@@ -1946,13 +1946,6 @@ $provincias = [
                 actualizarLabelGrupo('#grupo-tiene_testigos', '¿Hay referentes, mandos o testigos que puedan respaldar los hechos?');
                 actualizarLabelGrupo('#grupo-hay_intercambio', '¿Ya hubo intercambio formal, intimación o requerimiento? <span class="req">*</span>');
                 actualizarLabelGrupo('#grupo-ya_despedido-opts', '¿Ya hubo despido o desvinculación formal del trabajador involucrado? <span class="req">*</span>');
-
-                if (esAccidente) {
-                    actualizarTextoElemento(
-                        '#paso-2 .paso-info-card-content p',
-                        'Cargá los datos base del trabajador y del siniestro para estimar cobertura ART, riesgo civil y exposición directa de la empresa.'
-                    );
-                }
             }
 
             actualizarAyudaConflictos('');

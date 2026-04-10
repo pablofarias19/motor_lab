@@ -87,7 +87,7 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                     'salario' => '900000',
                     'antiguedad_meses' => '12',
                     'provincia' => 'Buenos Aires',
-                    'edad' => '0',
+                    'edad' => 0,
                 ],
                 'situacion' => [
                     'fecha_siniestro' => '2026-02-10',
