@@ -260,7 +260,7 @@ class DatabaseManager {
     {
         $params = [$types];
         // mysqli_stmt::bind_param requiere referencias; por eso se enlazan
-        // directamente los indices del array ya normalizado.
+        // directamente los índices del array ya normalizado.
         foreach (array_keys($values) as $index) {
             $params[] = &$values[$index];
         }
