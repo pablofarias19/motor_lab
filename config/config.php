@@ -134,7 +134,7 @@ define('ML_DB_PORT', intval(ml_env('ML_DB_PORT', 3306)));
 // ─── Email (mismo servidor que el resto del proyecto) ────────────────────────
 define('ML_SMTP_FROM', ml_env('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar'));
 define('ML_SMTP_FROM_NAME', ml_env('ML_SMTP_FROM_NAME', 'Estudio Farias Ortiz'));
-define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', ''));
+define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', ML_SMTP_FROM));
 
 // ─── Aplicación ──────────────────────────────────────────────────────────────
 define('ML_VERSION', '1.0.0');
@@ -154,6 +154,7 @@ define('ML_FPDF_PATH', dirname(ML_ROOT) . '/document/fpdf.php');
 // Token de acceso al panel admin — cambiar antes de producción
 define('ML_ADMIN_TOKEN', ml_env('ML_ADMIN_TOKEN', ''));
 define('ML_ADMIN_USER', ml_env('ML_ADMIN_USER', 'Admin Motor Laboral'));
+define('ML_ADMIN_LOGIN_ENABLED', ML_ADMIN_TOKEN !== '');
 
 // ─── Cabeceras de seguridad ───────────────────────────────────────────────────
 // Solo se aplican en respuestas no-PDF
