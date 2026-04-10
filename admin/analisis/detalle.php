@@ -102,7 +102,7 @@ $labelConflicto = fn(string $t): string => ml_conflicto_label($t);
 <!-- ─────────────────────────────────────────────────────────────────────────
      CABECERA
 ────────────────────────────────────────────────────────────────────────── -->
-<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+<div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2 admin-page-hero">
     <div>
         <h4 class="mb-0 fw-bold" style="color: var(--primary);">
             <i class="bi bi-file-earmark-text me-2"></i>Análisis #<?php echo intval($a['id']); ?>

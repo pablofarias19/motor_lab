@@ -86,7 +86,7 @@ function urlPagina(int $p): string {
 <!-- ─────────────────────────────────────────────────────────────────────────
      CABECERA
 ────────────────────────────────────────────────────────────────────────── -->
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-4 admin-page-hero flex-wrap gap-3">
     <div>
         <h4 class="mb-0 fw-bold" style="color: var(--primary);">
             <i class="bi bi-list-ul me-2"></i>Análisis Laborales

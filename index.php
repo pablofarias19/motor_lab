@@ -60,12 +60,13 @@ $provincias = [
     <!-- CSS del módulo -->
     <link rel="stylesheet" href="assets/css/motor.css">
     <link rel="stylesheet" href="assets/css/motor-ui-mejorado.css">
+    <link rel="stylesheet" href="assets/css/motor-unified.css">
 
     <!-- Bootstrap Icons (mismo CDN que el resto del proyecto) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
 </head>
 
-<body class="motor-wrapper">
+<body class="motor-wrapper motor-shell">
 
     <!-- ═══════════════════════════════════════════════════════════
      ENCABEZADO
@@ -92,10 +93,10 @@ $provincias = [
         <div class="motor-container">
 
             <!-- Intro -->
-            <div class="motor-intro">
-                <h1 class="motor-titulo">
-                    <i class="bi bi-graph-up-arrow"></i>
-                    Análisis Estratégico de Riesgo Laboral
+             <div class="motor-intro">
+                 <h1 class="motor-titulo">
+                     <i class="bi bi-graph-up-arrow"></i>
+                     Análisis Estratégico de Riesgo Laboral
                 </h1>
                 <p class="motor-subtitulo">
                     Evaluá la estructura de tu conflicto laboral. Calculamos tu exposición económica,
@@ -103,12 +104,26 @@ $provincias = [
                     <strong>No estimamos probabilidades. Organizamos decisiones.</strong>
                 </p>
                 <!-- Aviso legal visible desde el inicio -->
-                <div class="motor-aviso-legal">
-                    <i class="bi bi-info-circle"></i>
-                    <span>Este análisis es <strong>estructural y preventivo:</strong> no constituye asesoramiento legal
-                        definitivo. Se recomienda siempre consulta profesional.</span>
-                </div>
-            </div>
+                 <div class="motor-aviso-legal">
+                     <i class="bi bi-info-circle"></i>
+                     <span>Este análisis es <strong>estructural y preventivo:</strong> no constituye asesoramiento legal
+                         definitivo. Se recomienda siempre consulta profesional.</span>
+                 </div>
+                 <div class="motor-trust-grid" aria-label="Beneficios del sistema">
+                     <div class="motor-trust-item">
+                         <strong>Proceso guiado</strong>
+                         <span>5 pasos claros para ordenar el caso sin fricción.</span>
+                     </div>
+                     <div class="motor-trust-item">
+                         <strong>Lectura ejecutiva</strong>
+                         <span>IRIL, exposición y escenarios en una sola vista.</span>
+                     </div>
+                     <div class="motor-trust-item">
+                         <strong>Uso profesional</strong>
+                         <span>Sirve tanto para trabajador como para empresa.</span>
+                     </div>
+                 </div>
+             </div>
 
             <!-- ─────────────────────────────────────────────────
              WIZARD PRINCIPAL
@@ -138,6 +153,19 @@ $provincias = [
                         <span class="paso-label">Contacto</span>
                     </div>
                     <div class="progreso-linea" id="progreso-linea"></div>
+                </div>
+                <div class="wizard-context-bar">
+                    <div>
+                        <span class="wizard-step-badge">
+                            <i class="bi bi-compass"></i> Recorrido guiado
+                        </span>
+                        <p id="paso-progreso-texto">Paso 1 de 5: Perfil</p>
+                    </div>
+                    <div class="wizard-trust-strip">
+                        <span class="wizard-trust-chip"><i class="bi bi-shield-check"></i> Datos mínimos</span>
+                        <span class="wizard-trust-chip"><i class="bi bi-lightning-charge"></i> Resultado inmediato</span>
+                        <span class="wizard-trust-chip"><i class="bi bi-journal-text"></i> Lectura estratégica</span>
+                    </div>
                 </div>
 
                 <!-- ══════════════════════════════════════════
