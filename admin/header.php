@@ -249,7 +249,7 @@ function mlAdminMenuActivo(string $segmento, string $uri): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo htmlspecialchars($page_title ?? 'Panel'); ?> — Motor Laboral Admin</title>
+        <title><?php echo htmlspecialchars($page_title ?? 'Panel'); ?> — Motor Laboral Admin</title>
 
     <!-- Bootstrap 5.3 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -259,18 +259,19 @@ function mlAdminMenuActivo(string $segmento, string $uri): string {
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <!-- CSS del admin del motor laboral -->
     <link rel="stylesheet" href="<?php echo ML_BASE_URL; ?>/admin/assets/css/admin.css">
+    <link rel="stylesheet" href="<?php echo ML_BASE_URL; ?>/assets/css/motor-unified.css">
 
     <script>
         // Constante global para fetch calls
         const ML_BASE_URL = '<?php echo ML_BASE_URL; ?>';
     </script>
 </head>
-<body>
+<body class="admin-shell">
 
 <!-- ─────────────────────────────────────────────────────────────────────────
      NAVBAR SUPERIOR
 ────────────────────────────────────────────────────────────────────────── -->
-<nav class="navbar navbar-dark bg-primary sticky-top shadow-sm">
+<nav class="navbar navbar-dark bg-primary sticky-top shadow-sm admin-topbar-premium">
     <div class="container-fluid">
         <a class="navbar-brand d-flex align-items-center gap-2" href="<?php echo ML_BASE_URL; ?>/admin/index.php">
             <i class="bi bi-briefcase-fill"></i>
@@ -302,7 +303,7 @@ function mlAdminMenuActivo(string $segmento, string $uri): string {
     <div class="row">
 
         <!-- ── SIDEBAR ──────────────────────────────────────────────────── -->
-        <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar pt-3 pb-4">
+        <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar pt-3 pb-4 admin-sidebar-premium">
 
             <div class="px-3 mb-3">
                 <small class="text-uppercase text-muted fw-semibold" style="font-size:10px; letter-spacing:1px;">
@@ -348,4 +349,4 @@ function mlAdminMenuActivo(string $segmento, string $uri): string {
         </nav>
 
         <!-- ── CONTENIDO PRINCIPAL ──────────────────────────────────────── -->
-        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+        <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4 admin-main">

@@ -153,6 +153,7 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
     <link rel="stylesheet" href="assets/css/motor.css">
     <!-- Nuevo Diseño Premium -->
     <link rel="stylesheet" href="assets/css/premium_dashboard.css">
+    <link rel="stylesheet" href="assets/css/motor-unified.css">
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -161,7 +162,7 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body class="pagina-resultado">
+<body class="pagina-resultado motor-shell">
 
     <!-- ═══════════════════════════════════════════════════════════
      ENCABEZADO
@@ -224,6 +225,29 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                                 echo $i <= $stars ? '●' : '○';
                             ?> (<?= number_format($irilScore, 1) ?>/5)</strong>
                     </div>
+                </div>
+            </div>
+
+            <div class="premium-kpi-strip">
+                <div class="premium-kpi-card">
+                    <div class="premium-kpi-label"><i class="bi bi-speedometer2"></i> IRIL actual</div>
+                    <div class="premium-kpi-value"><?= number_format($irilScore, 1) ?>/5</div>
+                    <div class="premium-kpi-helper"><?= htmlspecialchars($nivelIril['etiqueta'] ?? 'Nivel calculado') ?></div>
+                </div>
+                <div class="premium-kpi-card">
+                    <div class="premium-kpi-label"><i class="bi bi-cash-stack"></i> Exposición estimada</div>
+                    <div class="premium-kpi-value"><?= ml_formato_moneda($exposicion['total_con_multas'] ?? ($exposicion['total_base'] ?? 0)) ?></div>
+                    <div class="premium-kpi-helper">Incluye el mejor total disponible del análisis</div>
+                </div>
+                <div class="premium-kpi-card">
+                    <div class="premium-kpi-label"><i class="bi bi-diagram-3"></i> Escenario sugerido</div>
+                    <div class="premium-kpi-value">Escenario <?= htmlspecialchars($escRecomendado) ?></div>
+                    <div class="premium-kpi-helper">Ruta recomendada para priorizar lectura rápida</div>
+                </div>
+                <div class="premium-kpi-card">
+                    <div class="premium-kpi-label"><i class="bi bi-shield-check"></i> Intervención</div>
+                    <div class="premium-kpi-value"><?= htmlspecialchars($nivelInterv) ?></div>
+                    <div class="premium-kpi-helper"><?= htmlspecialchars($badgeTexto) ?></div>
                 </div>
             </div>
 

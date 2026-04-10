@@ -57,6 +57,7 @@ if ($stmt) {
     <title>Jurisprudencia Laboral — Estudio Farias Ortiz</title>
     <link rel="stylesheet" href="assets/css/motor.css">
     <link rel="stylesheet" href="assets/css/motor-ui-mejorado.css">
+    <link rel="stylesheet" href="assets/css/motor-unified.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         .page-header { margin-bottom: 2rem; }
@@ -75,7 +76,7 @@ if ($stmt) {
         .btn-secondary { background: #e2e8f0; color: var(--text-secondary); }
     </style>
 </head>
-<body class="motor-wrapper">
+<body class="motor-wrapper motor-shell knowledge-shell">
     <header class="motor-header">
         <div class="motor-header-inner">
             <div class="motor-logo">
@@ -85,7 +86,7 @@ if ($stmt) {
                     <span class="motor-logo-modulo">Base de Conocimiento</span>
                 </a>
             </div>
-            <div class="motor-header-badge" style="display:flex; gap:1rem;">
+            <div class="motor-header-badge motor-nav-pills">
                 <a href="index.php" style="color:white; text-decoration:none;"><i class="bi bi-house"></i> Inicio</a>
                 <a href="cct.php" style="color:white; text-decoration:none;"><i class="bi bi-list-columns-reverse"></i> CCTs</a>
                 <a href="normativa.php" style="color:white; text-decoration:none;"><i class="bi bi-journal-check"></i> Normativa</a>
@@ -96,12 +97,31 @@ if ($stmt) {
 
     <main class="motor-main">
         <div class="motor-container" style="max-width: 1000px;">
+            <section class="motor-hero motor-hero--compact">
+                <div class="motor-hero-grid">
+                    <div>
+                        <span class="motor-hero-eyebrow"><i class="bi bi-bank"></i> Jurisprudencia</span>
+                        <h1 class="motor-hero-title">Fallos relevantes con lectura más ejecutiva</h1>
+                        <p class="motor-hero-subtitle">Consultá leading cases y precedentes laborales con una interfaz consistente y pensada para escanear rápido temas, tribunal y resumen.</p>
+                    </div>
+                    <div class="motor-stat-grid">
+                        <div class="motor-stat-chip">
+                            <strong><?= count($fallos) ?></strong>
+                            <span>fallos listados</span>
+                        </div>
+                        <div class="motor-stat-chip">
+                            <strong>CSJN</strong>
+                            <span>casos destacados primero</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
             <div class="page-header">
                 <h1 class="page-title">🏛️ Jurisprudencia Destacada</h1>
                 <p class="page-subtitle">Leading cases CSJN y fallos relevantes para la práctica laboral</p>
             </div>
 
-            <div class="card" style="margin-bottom:24px;">
+            <div class="card knowledge-toolbar" style="margin-bottom:24px;">
                 <form method="GET" action="jurisprudencia.php" style="display:flex; gap:12px; align-items:end; flex-wrap:wrap;">
                     <div class="form-group" style="flex:1; margin-bottom:0; min-width:200px;">
                         <label for="q">Buscar jurisprudencia</label>

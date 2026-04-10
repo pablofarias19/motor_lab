@@ -69,6 +69,7 @@ if ($cct_seleccionado) {
     <title>Explorador de CCTs — Estudio Farias Ortiz</title>
     <link rel="stylesheet" href="assets/css/motor.css">
     <link rel="stylesheet" href="assets/css/motor-ui-mejorado.css">
+    <link rel="stylesheet" href="assets/css/motor-unified.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         .page-header { margin-bottom: 2rem; }
@@ -97,7 +98,7 @@ if ($cct_seleccionado) {
         .char-note { border-left: 4px solid var(--accent-primary); }
     </style>
 </head>
-<body class="motor-wrapper">
+<body class="motor-wrapper motor-shell knowledge-shell">
     <header class="motor-header">
         <div class="motor-header-inner">
             <div class="motor-logo">
@@ -107,7 +108,7 @@ if ($cct_seleccionado) {
                     <span class="motor-logo-modulo">Base de Conocimiento</span>
                 </a>
             </div>
-            <div class="motor-header-badge" style="display:flex; gap:1rem;">
+            <div class="motor-header-badge motor-nav-pills">
                 <a href="index.php" style="color:white; text-decoration:none;"><i class="bi bi-house"></i> Inicio</a>
                 <a href="cct.php" style="color:white; text-decoration:none;"><i class="bi bi-list-columns-reverse"></i> CCTs</a>
                 <a href="normativa.php" style="color:white; text-decoration:none;"><i class="bi bi-journal-check"></i> Normativa</a>
@@ -118,6 +119,25 @@ if ($cct_seleccionado) {
 
     <main class="motor-main">
         <div class="motor-container" style="max-width: 1000px;">
+            <section class="motor-hero motor-hero--compact">
+                <div class="motor-hero-grid">
+                    <div>
+                        <span class="motor-hero-eyebrow"><i class="bi bi-list-columns-reverse"></i> Convenios</span>
+                        <h1 class="motor-hero-title">Explorador de CCTs con navegación más clara</h1>
+                        <p class="motor-hero-subtitle">Recorré convenios, características especiales y escalas salariales dentro del mismo lenguaje visual del wizard y del dashboard.</p>
+                    </div>
+                    <div class="motor-stat-grid">
+                        <div class="motor-stat-chip">
+                            <strong><?= count($ccts) ?></strong>
+                            <span>convenios disponibles</span>
+                        </div>
+                        <div class="motor-stat-chip">
+                            <strong><?= $cct_seleccionado ? htmlspecialchars($cct_seleccionado) : '—' ?></strong>
+                            <span>convenio activo</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
             <div class="page-header">
                 <h1 class="page-title"><i class="bi bi-list-columns-reverse"></i> Explorador de CCTs</h1>
                 <p class="page-subtitle">Convenios Colectivos de Trabajo — Características y Escalas Salariales</p>
