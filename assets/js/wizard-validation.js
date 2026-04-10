@@ -1,5 +1,6 @@
 'use strict';
 
+// Rango operativo usado por el backend para contingencias ART/LRT.
 const MIN_ACCIDENT_AGE = 16;
 const MAX_ACCIDENT_AGE = 90;
 
