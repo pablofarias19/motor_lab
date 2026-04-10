@@ -180,7 +180,7 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                 <div class="premium-tagline">Evaluador Estratégico Jurídico</div>
             </div>
             <div class="premium-user">
-                <div aria-hidden="true" style="width:36px;height:36px;border-radius:999px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">U</div>
+                <div role="img" aria-label="Usuario" style="width:36px;height:36px;border-radius:999px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">U</div>
                 <span>Usuario</span>
                 <i class="bi bi-chevron-down"></i>
             </div>

@@ -18,6 +18,7 @@ final class AnalysisPayloadNormalizerTest extends TestCase
             ],
             'situacion' => [
                 'salarios_historicos' => ['100000', 'abc', 200000],
+                // Compatibilidad con payloads legacy que traían el typo histórico.
                 'principal_verifica_aaportes' => 'si',
                 'valida_cuil' => 'si',
                 'estado_art' => 'inexistente',

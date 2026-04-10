@@ -259,10 +259,12 @@ class DatabaseManager {
     private function bindDynamicParams(mysqli_stmt $stmt, string $types, array $values): void
     {
         $params = [$types];
-        foreach ($values as $index => $value) {
+        foreach (array_keys($values) as $index) {
             $params[] = &$values[$index];
         }
 
-        call_user_func_array([$stmt, 'bind_param'], $params);
+        if (!call_user_func_array([$stmt, 'bind_param'], $params)) {
+            throw new Exception('Error vinculando parámetros dinámicos: ' . $stmt->error);
+        }
     }
 }
