@@ -162,6 +162,17 @@ class WizardMotorLaboral {
         // Adjuntar listeners a las tarjetas de opción Si/No (radio buttons estilizados)
         this._inicializarOpcionCards();
 
+        this.formulario.addEventListener('input', () => {
+            if (this.pasoActual === this.totalPasos) {
+                this._actualizarResumenPrevio();
+            }
+        });
+        this.formulario.addEventListener('change', () => {
+            if (this.pasoActual === this.totalPasos) {
+                this._actualizarResumenPrevio();
+            }
+        });
+
         // Mostrar el primer paso
         this.mostrarPaso(1);
 
@@ -229,6 +240,10 @@ class WizardMotorLaboral {
 
         // ── Guardar estado ───────────────────────────────────────────────────
         this.pasoActual = n;
+
+        if (n === this.totalPasos) {
+            this._actualizarResumenPrevio();
+        }
     }
 
     /**
@@ -368,9 +383,9 @@ class WizardMotorLaboral {
         // Evitar doble submit
         if (this.enviando) return;
 
-        // Validar el paso 5 antes de enviar
-        this._limpiarErrores(5);
-        if (!this.validarPaso(5)) return;
+        if (!this._validarEnvioCompleto()) {
+            return;
+        }
 
         // Bloquear envío y mostrar spinner
         this.enviando = true;
@@ -388,13 +403,21 @@ class WizardMotorLaboral {
                 body: JSON.stringify(datos),
             });
 
-            // Verificar que la respuesta HTTP sea exitosa
+            const resultado = await respuesta.json().catch(() => null);
+
             if (!respuesta.ok) {
-                throw new Error(`Error HTTP ${respuesta.status}: ${respuesta.statusText}`);
+                if (resultado && resultado.errors) {
+                    this._aplicarErroresServidor(resultado.errors);
+                }
+                throw new Error(
+                    (resultado && resultado.message)
+                    || `Error HTTP ${respuesta.status}: ${respuesta.statusText}`
+                );
             }
 
-            // Parsear la respuesta JSON
-            const resultado = await respuesta.json();
+            if (!resultado) {
+                throw new Error('El servidor devolvió una respuesta inválida.');
+            }
 
             if (resultado.success && resultado.data && resultado.data.uuid) {
                 // Éxito: redirigir a la página de resultados
@@ -402,6 +425,9 @@ class WizardMotorLaboral {
                 window.location.href = `resultado.php?uuid=${resultado.data.uuid}`;
             } else {
                 // El servidor respondió con success: false
+                if (resultado.errors) {
+                    this._aplicarErroresServidor(resultado.errors);
+                }
                 const mensaje = resultado.message || 'Error desconocido al procesar el análisis.';
                 throw new Error(mensaje);
             }
@@ -654,6 +680,76 @@ class WizardMotorLaboral {
         contenedorError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
+    _validarEnvioCompleto() {
+        const pasosAValidar = [1, 2, 4, 5];
+        let primerPasoInvalido = null;
+
+        pasosAValidar.forEach((paso) => this._limpiarErrores(paso));
+
+        pasosAValidar.forEach((paso) => {
+            const esValido = this.validarPaso(paso);
+            if (!esValido && primerPasoInvalido === null) {
+                primerPasoInvalido = paso;
+            }
+        });
+
+        if (primerPasoInvalido !== null) {
+            this.mostrarPaso(primerPasoInvalido);
+            const primerError = this.formulario.querySelector(
+                `#paso-${primerPasoInvalido} .form-group.tiene-error`
+            );
+            if (primerError) {
+                primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return false;
+        }
+
+        return true;
+    }
+
+    _aplicarErroresServidor(errors) {
+        if (!errors || typeof errors !== 'object') return;
+
+        const pasosPorCampo = {
+            tipo_usuario: 1,
+            tipo_conflicto: 1,
+            salario: 2,
+            antiguedad_meses: 2,
+            provincia: 2,
+            cantidad_empleados: 2,
+            edad: 2,
+            email: 5,
+            urgencia: 4,
+            fecha_despido: 4,
+            fecha_ultimo_telegrama: 4,
+            fecha_siniestro: 4,
+            porcentaje_incapacidad: 4,
+            preexistencia_porcentaje: 4,
+            probabilidad_condena: 4,
+            meses_litigio: 4,
+            jurisdiccion: 4,
+        };
+
+        let primerPaso = null;
+
+        Object.entries(errors).forEach(([clave, mensaje]) => {
+            const id = clave.split('.').pop();
+            const campo = this.formulario.querySelector(`#${id}`);
+            if (!campo) return;
+
+            this._mostrarError(campo, String(mensaje));
+
+            const paso = pasosPorCampo[id];
+            if (primerPaso === null && paso) {
+                primerPaso = paso;
+            }
+        });
+
+        if (primerPaso !== null) {
+            this.mostrarPaso(primerPaso);
+        }
+    }
+
     // =========================================================================
     // SPINNER DE CARGA
     // =========================================================================
@@ -679,7 +775,8 @@ class WizardMotorLaboral {
             const btnEnviar = document.getElementById('btn-enviar');
             if (btnEnviar) {
                 btnEnviar.disabled = true;
-                btnEnviar.innerHTML = '<span class="spinner-inline"></span> Analizando...';
+                btnEnviar.setAttribute('aria-busy', 'true');
+                btnEnviar.innerHTML = '<span class="spinner-inline"></span> Analizando y validando...';
             }
         } else {
             this.loadingOverlay.classList.remove('activo');
@@ -689,6 +786,7 @@ class WizardMotorLaboral {
             const btnEnviar = document.getElementById('btn-enviar');
             if (btnEnviar) {
                 btnEnviar.disabled = false;
+                btnEnviar.removeAttribute('aria-busy');
                 btnEnviar.innerHTML = 'Generar Análisis';
             }
         }
@@ -875,6 +973,85 @@ class WizardMotorLaboral {
             this.formulario.appendChild(campo);
         }
         campo.value = valor;
+    }
+
+    _actualizarResumenPrevio() {
+        const contenedor = document.getElementById('resumen-contenido');
+        if (!contenedor) return;
+
+        const payload = this._construirPayload();
+        const perfilLabel = {
+            empleado: 'Empleado / Trabajador',
+            empleador: 'Empleador / Empresa',
+        };
+        const conflictoLabel = {
+            despido_sin_causa: 'Despido sin causa',
+            despido_con_causa: 'Despido con causa',
+            trabajo_no_registrado: 'Trabajo en negro',
+            diferencias_salariales: 'Diferencias / Deudas',
+            accidente_laboral: 'Accidente / Enfermedad',
+            responsabilidad_solidaria: 'Responsabilidad solidaria',
+            auditoria_preventiva: 'Auditoría preventiva',
+            riesgo_inspeccion: 'Inspección ARCA/Ministerio',
+        };
+        const urgenciaLabel = {
+            alta: 'Alta',
+            media: 'Media',
+            baja: 'Baja',
+        };
+        const docs = [];
+        const faltantes = [];
+
+        if (payload.documentacion.tiene_recibos === 'si') docs.push('Recibos');
+        if (payload.documentacion.tiene_contrato === 'si') docs.push('Contrato');
+        if (payload.documentacion.registrado_afip === 'si') docs.push('Registro ARCA');
+        if (payload.documentacion.tiene_testigos === 'si') docs.push('Testigos');
+        if (payload.documentacion.auditoria_previa === 'si') docs.push('Auditoría previa');
+
+        if (!payload.datos_laborales.salario) faltantes.push('Salario');
+        if (!payload.datos_laborales.antiguedad_meses && payload.datos_laborales.antiguedad_meses !== 0) faltantes.push('Antigüedad');
+        if (!payload.datos_laborales.provincia) faltantes.push('Provincia');
+        if (!payload.situacion.urgencia) faltantes.push('Urgencia');
+
+        const items = [
+            ['Perfil', perfilLabel[payload.tipo_usuario] || 'Sin definir'],
+            ['Conflicto', conflictoLabel[payload.tipo_conflicto] || 'Sin definir'],
+            ['Salario base', payload.datos_laborales.salario > 0 ? this._formatearMoneda(payload.datos_laborales.salario) : 'Sin informar'],
+            ['Antigüedad', `${payload.datos_laborales.antiguedad_meses || 0} meses`],
+            ['Provincia', payload.datos_laborales.provincia || 'Sin informar'],
+            ['Urgencia', urgenciaLabel[payload.situacion.urgencia] || 'Sin definir'],
+            ['Documentación útil', docs.length ? docs.join(', ') : 'Sin respaldo declarado'],
+            ['Email', payload.contacto.email || 'No informado'],
+        ];
+
+        contenedor.innerHTML = `
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:0.75rem;">
+                ${items.map(([label, value]) => `
+                    <div style="padding:0.85rem;border:1px solid #e5e7eb;border-radius:10px;background:#fff;">
+                        <div style="font-size:0.78rem;color:#6b7280;text-transform:uppercase;letter-spacing:0.04em;">${this._escaparHTML(label)}</div>
+                        <div style="font-weight:600;color:#111827;margin-top:0.2rem;">${this._escaparHTML(String(value))}</div>
+                    </div>
+                `).join('')}
+            </div>
+            <div style="margin-top:0.85rem;padding:0.85rem;border-radius:10px;background:#f8fafc;border:1px solid #e2e8f0;">
+                <strong>Chequeo previo:</strong>
+                ${faltantes.length
+                    ? `Todavía conviene revisar: ${this._escaparHTML(faltantes.join(', '))}.`
+                    : 'Los datos mínimos del flujo quedaron completos para generar el análisis.'}
+            </div>
+        `;
+    }
+
+    _formatearMoneda(valor) {
+        try {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS',
+                maximumFractionDigits: 0,
+            }).format(valor);
+        } catch (_) {
+            return `$${valor}`;
+        }
     }
 
     /**

@@ -3,6 +3,7 @@ require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/TestCase.php';
 
 use App\Support\AnalysisPayloadNormalizer;
+use App\Support\InvalidPayloadException;
 
 final class AnalysisPayloadNormalizerTest extends TestCase
 {
@@ -39,5 +40,50 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame('no', $payload['situacion']['tiene_art']);
         $this->assertSame(31, $payload['situacion']['dia_despido']);
         $this->assertSame('estudio@example.com', $payload['contacto']['email']);
+
+        $payloadConFechas = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'diferencias_salariales',
+            'datos_laborales' => [
+                'salario' => '800000',
+                'antiguedad_meses' => '12',
+                'provincia' => 'CABA',
+            ],
+            'situacion' => [
+                'urgencia' => 'alta',
+                'fecha_despido' => '2026-03-01',
+                'fecha_ultimo_telegrama' => '2026-03-15',
+                'probabilidad_condena' => '0.7',
+            ],
+        ]);
+
+        $this->assertSame('2026-03-01', $payloadConFechas['situacion']['fecha_despido']);
+        $this->assertEquals(0.7, $payloadConFechas['situacion']['probabilidad_condena']);
+
+        try {
+            AnalysisPayloadNormalizer::normalize([
+                'tipo_usuario' => 'otro',
+                'tipo_conflicto' => 'desconocido',
+                'datos_laborales' => [
+                    'salario' => '0',
+                    'antiguedad_meses' => '-1',
+                    'provincia' => '',
+                ],
+                'situacion' => [
+                    'urgencia' => 'critica',
+                    'fecha_despido' => '2026-99-99',
+                    'probabilidad_condena' => '2',
+                ],
+            ]);
+
+            throw new \RuntimeException('Expected InvalidPayloadException');
+        } catch (InvalidPayloadException $e) {
+            $errors = $e->getErrors();
+            $this->assertSame('Seleccioná un perfil válido.', $errors['tipo_usuario']);
+            $this->assertSame('Seleccioná un tipo de conflicto válido.', $errors['tipo_conflicto']);
+            $this->assertSame('El salario debe ser mayor a cero.', $errors['datos_laborales.salario']);
+            $this->assertSame('La fecha de despido debe tener formato YYYY-MM-DD.', $errors['situacion.fecha_despido']);
+            $this->assertSame('La probabilidad de condena debe estar entre 0 y 1.', $errors['situacion.probabilidad_condena']);
+        }
     }
 }

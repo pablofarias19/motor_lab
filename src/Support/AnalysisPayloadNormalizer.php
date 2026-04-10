@@ -1,21 +1,35 @@
 <?php
 namespace App\Support;
 
-use Exception;
-
 final class AnalysisPayloadNormalizer
 {
+    private const TIPOS_USUARIO = ['empleado', 'empleador'];
+    private const TIPOS_CONFLICTO = [
+        'despido_sin_causa',
+        'despido_con_causa',
+        'trabajo_no_registrado',
+        'diferencias_salariales',
+        'accidente_laboral',
+        'responsabilidad_solidaria',
+        'auditoria_preventiva',
+        'riesgo_inspeccion',
+    ];
+    private const URGENCIAS = ['alta', 'media', 'baja'];
+    private const JURISDICCIONES = ['CABA', 'PBA', 'CORDOBA', 'SANTA_FE', 'default'];
+
     public static function normalize(array $input): array
     {
         $tipoUsuario = self::string($input['tipo_usuario'] ?? '');
+        $tipoConflicto = self::string($input['tipo_conflicto'] ?? '');
         $datosInput = is_array($input['datos_laborales'] ?? null) ? $input['datos_laborales'] : [];
         $documentacionInput = is_array($input['documentacion'] ?? null) ? $input['documentacion'] : [];
         $situacionInput = is_array($input['situacion'] ?? null) ? $input['situacion'] : [];
         $contactoInput = is_array($input['contacto'] ?? null) ? $input['contacto'] : [];
+        $errors = [];
 
         $email = self::string($contactoInput['email'] ?? ($input['email'] ?? ''));
         if ($email !== '' && !ml_validar_email($email)) {
-            throw new Exception('El email informado no es válido.');
+            $errors['contacto.email'] = 'El email informado no es válido.';
         }
 
         $datosLaborales = array_merge($datosInput, [
@@ -132,6 +146,74 @@ final class AnalysisPayloadNormalizer
             'meses_litigio' => self::int($situacionInput['meses_litigio'] ?? 36, 36),
         ]);
 
+        if (!in_array($tipoUsuario, self::TIPOS_USUARIO, true)) {
+            $errors['tipo_usuario'] = 'Seleccioná un perfil válido.';
+        }
+
+        if (!in_array($tipoConflicto, self::TIPOS_CONFLICTO, true)) {
+            $errors['tipo_conflicto'] = 'Seleccioná un tipo de conflicto válido.';
+        }
+
+        if ($datosLaborales['salario'] <= 0) {
+            $errors['datos_laborales.salario'] = 'El salario debe ser mayor a cero.';
+        }
+
+        if ($datosLaborales['antiguedad_meses'] < 0 || $datosLaborales['antiguedad_meses'] > 600) {
+            $errors['datos_laborales.antiguedad_meses'] = 'La antigüedad debe estar entre 0 y 600 meses.';
+        }
+
+        if ($datosLaborales['provincia'] === '') {
+            $errors['datos_laborales.provincia'] = 'Seleccioná la provincia.';
+        }
+
+        if ($datosLaborales['cantidad_empleados'] < 1) {
+            $errors['datos_laborales.cantidad_empleados'] = 'La cantidad de empleados debe ser al menos 1.';
+        }
+
+        if (!in_array($situacion['urgencia'], self::URGENCIAS, true)) {
+            $errors['situacion.urgencia'] = 'Seleccioná un nivel de urgencia válido.';
+        }
+
+        if (!in_array($situacion['jurisdiccion'], self::JURISDICCIONES, true)) {
+            $errors['situacion.jurisdiccion'] = 'La jurisdicción informada no es válida.';
+        }
+
+        if (!self::isValidDateOrEmpty($situacion['fecha_despido'])) {
+            $errors['situacion.fecha_despido'] = 'La fecha de despido debe tener formato YYYY-MM-DD.';
+        }
+
+        if (!self::isValidDateOrEmpty($situacion['fecha_ultimo_telegrama'])) {
+            $errors['situacion.fecha_ultimo_telegrama'] = 'La fecha del último telegrama debe tener formato YYYY-MM-DD.';
+        }
+
+        if (!self::isValidDateOrEmpty($situacion['fecha_siniestro'])) {
+            $errors['situacion.fecha_siniestro'] = 'La fecha del siniestro debe tener formato YYYY-MM-DD.';
+        }
+
+        if ($situacion['porcentaje_incapacidad'] < 0 || $situacion['porcentaje_incapacidad'] > 100) {
+            $errors['situacion.porcentaje_incapacidad'] = 'El porcentaje de incapacidad debe estar entre 0 y 100.';
+        }
+
+        if ($situacion['preexistencia_porcentaje'] < 0 || $situacion['preexistencia_porcentaje'] > 100) {
+            $errors['situacion.preexistencia_porcentaje'] = 'La preexistencia debe estar entre 0 y 100.';
+        }
+
+        if ($situacion['probabilidad_condena'] < 0 || $situacion['probabilidad_condena'] > 1) {
+            $errors['situacion.probabilidad_condena'] = 'La probabilidad de condena debe estar entre 0 y 1.';
+        }
+
+        if ($situacion['meses_litigio'] < 1 || $situacion['meses_litigio'] > 240) {
+            $errors['situacion.meses_litigio'] = 'La duración estimada del litigio debe estar entre 1 y 240 meses.';
+        }
+
+        if ($tipoConflicto === 'accidente_laboral' && ($datosLaborales['edad'] < 16 || $datosLaborales['edad'] > 90)) {
+            $errors['datos_laborales.edad'] = 'Para accidentes, la edad debe estar entre 16 y 90 años.';
+        }
+
+        if (!empty($errors)) {
+            throw new InvalidPayloadException('Hay datos del formulario incompletos o inconsistentes.', $errors);
+        }
+
         $situacion['principal_valida_cuil'] = $situacion['valida_cuil'];
         $situacion['principal_verifica_aportes'] = $situacion['valida_aportes'];
         $situacion['principal_verifica_aaportes'] = $situacion['valida_aportes'];
@@ -146,7 +228,7 @@ final class AnalysisPayloadNormalizer
 
         return [
             'tipo_usuario' => $tipoUsuario,
-            'tipo_conflicto' => self::string($input['tipo_conflicto'] ?? ''),
+            'tipo_conflicto' => $tipoConflicto,
             'datos_laborales' => $datosLaborales,
             'documentacion' => $documentacion,
             'situacion' => $situacion,
@@ -179,5 +261,15 @@ final class AnalysisPayloadNormalizer
     {
         $normalized = strtolower(self::string($value, $default));
         return in_array($normalized, ['si', 'no'], true) ? $normalized : $default;
+    }
+
+    private static function isValidDateOrEmpty(string $value): bool
+    {
+        if ($value === '') {
+            return true;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        return $date !== false && $date->format('Y-m-d') === $value;
     }
 }

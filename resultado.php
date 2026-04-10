@@ -139,6 +139,47 @@ $iconConflictoHtml = $iconosConflicto[$analisis['tipo_conflicto']] ?? '<i class=
 // Antigüedad formateada
 $antiguedadMeses = intval($datosLaborales['antiguedad_meses'] ?? 0);
 $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses % 12 > 0 ? '(' . ($antiguedadMeses % 12) . ' meses)' : '');
+$datosUsados = [];
+$datosFaltantes = [];
+
+$registrarDato = static function (string $label, $value, string $fallback = 'Sin informar') use (&$datosUsados, &$datosFaltantes): void {
+    $normalizado = is_string($value) ? trim($value) : $value;
+    $estaVacio = $normalizado === '' || $normalizado === null || $normalizado === [];
+
+    if ($estaVacio) {
+        $datosFaltantes[] = $label;
+        return;
+    }
+
+    $datosUsados[] = [$label, $normalizado ?: $fallback];
+};
+
+$registrarDato('Salario', !empty($datosLaborales['salario']) ? ml_formato_moneda(floatval($datosLaborales['salario'])) : '');
+$registrarDato('Antigüedad', array_key_exists('antiguedad_meses', $datosLaborales) ? trim($antiguedadTexto) : '');
+$registrarDato('Provincia', $datosLaborales['provincia'] ?? '');
+$registrarDato('Urgencia', $situacion['urgencia'] ?? '');
+$registrarDato('Telegramas', ($documentacion['tiene_telegramas'] ?? 'no') === 'si' ? 'Sí' : '');
+$registrarDato('Recibos', ($documentacion['tiene_recibos'] ?? 'no') === 'si' ? 'Sí' : '');
+$registrarDato('Contrato', ($documentacion['tiene_contrato'] ?? 'no') === 'si' ? 'Sí' : '');
+$registrarDato('Testigos', ($documentacion['tiene_testigos'] ?? 'no') === 'si' ? 'Sí' : '');
+
+$factoresIril = [];
+foreach ($irilDetalle as $clave => $detalleDimension) {
+    if (!is_array($detalleDimension)) {
+        continue;
+    }
+
+    $factoresIril[] = [
+        'clave' => $clave,
+        'valor' => floatval($detalleDimension['valor'] ?? 0),
+        'peso' => $detalleDimension['peso'] ?? '',
+        'descripcion' => $detalleDimension['descripcion'] ?? $clave,
+    ];
+}
+
+usort($factoresIril, static fn(array $a, array $b): int => $b['valor'] <=> $a['valor']);
+$factoresIrilAltos = array_slice($factoresIril, 0, 2);
+$factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -285,6 +326,53 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                             <div class="resumen-content">
                                 <span class="resumen-label">Intervención Profesional:</span>
                                 <span class="resumen-value"><?= $nivelInterv ?></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="premium-card">
+                <div class="premium-card-header">
+                    <h3>Base del análisis</h3>
+                </div>
+                <div class="premium-card-body">
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;">
+                        <div style="padding:1rem;border:1px solid #e5e7eb;border-radius:12px;background:#fff;">
+                            <h4 style="margin:0 0 0.75rem;font-size:0.95rem;">Datos usados</h4>
+                            <ul style="margin:0;padding-left:1rem;color:#374151;">
+                                <?php foreach ($datosUsados as [$label, $value]): ?>
+                                    <li><strong><?= htmlspecialchars($label) ?>:</strong> <?= htmlspecialchars((string) $value) ?></li>
+                                <?php endforeach; ?>
+                            </ul>
+                        </div>
+                        <div style="padding:1rem;border:1px solid #e5e7eb;border-radius:12px;background:#fff;">
+                            <h4 style="margin:0 0 0.75rem;font-size:0.95rem;">Datos faltantes o débiles</h4>
+                            <?php if (!empty($datosFaltantes)): ?>
+                                <ul style="margin:0;padding-left:1rem;color:#374151;">
+                                    <?php foreach ($datosFaltantes as $faltante): ?>
+                                        <li><?= htmlspecialchars($faltante) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            <?php else: ?>
+                                <p style="margin:0;color:#374151;">No faltan datos básicos dentro del caso registrado.</p>
+                            <?php endif; ?>
+                        </div>
+                        <div style="padding:1rem;border:1px solid #e5e7eb;border-radius:12px;background:#fff;">
+                            <h4 style="margin:0 0 0.75rem;font-size:0.95rem;">Qué empujó el IRIL</h4>
+                            <div style="display:grid;gap:0.6rem;">
+                                <?php foreach ($factoresIrilAltos as $factor): ?>
+                                    <div style="padding:0.75rem;border-radius:10px;background:#fff7ed;border:1px solid #fdba74;">
+                                        <strong><?= htmlspecialchars($factor['descripcion']) ?></strong><br>
+                                        <span style="font-size:0.9rem;color:#7c2d12;">Valor <?= number_format($factor['valor'], 1) ?>/5 · Peso <?= htmlspecialchars((string) $factor['peso']) ?></span>
+                                    </div>
+                                <?php endforeach; ?>
+                                <?php foreach ($factoresIrilBajos as $factor): ?>
+                                    <div style="padding:0.75rem;border-radius:10px;background:#f0fdf4;border:1px solid #86efac;">
+                                        <strong>Factor más contenido:</strong> <?= htmlspecialchars($factor['descripcion']) ?><br>
+                                        <span style="font-size:0.9rem;color:#166534;">Valor <?= number_format($factor['valor'], 1) ?>/5 · Peso <?= htmlspecialchars((string) $factor['peso']) ?></span>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
                         </div>
                     </div>
