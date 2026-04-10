@@ -5,19 +5,11 @@ window.WizardValidation = class WizardValidation {
         let valido = true;
         const {
             tipoConflicto = '',
+            esVisible = () => false,
             mostrarError,
             limpiarErrorCampo,
             actualizarCampoOculto,
         } = callbacks;
-        const esVisible = (campo) => {
-            if (!campo) return false;
-            const estilos = window.getComputedStyle(campo);
-            if (estilos.display === 'none' || estilos.visibility === 'hidden') {
-                return false;
-            }
-
-            return campo.offsetParent !== null || estilos.position === 'fixed';
-        };
 
         const campoSalario = formulario.querySelector('#salario');
         if (campoSalario && esVisible(campoSalario)) {

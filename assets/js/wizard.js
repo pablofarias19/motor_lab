@@ -359,6 +359,7 @@ class WizardMotorLaboral {
         return window.WizardValidation.validateStepLaborales(this.formulario, {
             tipoUsuario: this.formulario.querySelector('#tipo_usuario')?.value || '',
             tipoConflicto: this.formulario.querySelector('#tipo_conflicto')?.value || '',
+            esVisible: (campo) => this._campoEsVisible(campo),
             mostrarError: (campo, mensaje) => this._mostrarError(campo, mensaje),
             limpiarErrorCampo: (campo) => this._limpiarErrorCampo(campo),
             actualizarCampoOculto: (nombre, valor) => this._actualizarCampoOculto(nombre, valor),
