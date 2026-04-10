@@ -327,50 +327,11 @@ class WizardMotorLaboral {
      * @returns {boolean}
      */
     _validarPasoLaborales() {
-        let valido = true;
-
-        // Salario: debe ser mayor a 0
-        const campoSalario = this.formulario.querySelector('#salario');
-        if (campoSalario) {
-            // El valor puede venir formateado con puntos como separadores de miles
-            const valorRaw = campoSalario.value.replace(/\./g, '').replace(',', '.');
-            const salario = parseFloat(valorRaw);
-
-            if (isNaN(salario) || salario <= 0) {
-                this._mostrarError(campoSalario, 'El salario debe ser un número mayor a cero.');
-                valido = false;
-            } else {
-                // Guardar el valor numérico limpio en un campo oculto para el submit
-                this._actualizarCampoOculto('salario_raw', salario.toString());
-                this._limpiarErrorCampo(campoSalario);
-            }
-        }
-
-        // Antigüedad: no puede ser negativa
-        const campoAntiguedad = this.formulario.querySelector('#antiguedad_meses');
-        if (campoAntiguedad) {
-            const antiguedad = parseInt(campoAntiguedad.value, 10);
-            if (isNaN(antiguedad) || antiguedad < 0) {
-                this._mostrarError(campoAntiguedad, 'La antigüedad no puede ser negativa (0 o más meses).');
-                valido = false;
-            } else {
-                this._limpiarErrorCampo(campoAntiguedad);
-            }
-        }
-
-        // Cantidad de empleados: debe ser al menos 1
-        const campoCantidad = this.formulario.querySelector('#cantidad_empleados');
-        if (campoCantidad) {
-            const cantidad = parseInt(campoCantidad.value, 10);
-            if (isNaN(cantidad) || cantidad < 1) {
-                this._mostrarError(campoCantidad, 'La cantidad de empleados debe ser al menos 1.');
-                valido = false;
-            } else {
-                this._limpiarErrorCampo(campoCantidad);
-            }
-        }
-
-        return valido;
+        return window.WizardValidation.validateStepLaborales(this.formulario, {
+            mostrarError: (campo, mensaje) => this._mostrarError(campo, mensaje),
+            limpiarErrorCampo: (campo) => this._limpiarErrorCampo(campo),
+            actualizarCampoOculto: (nombre, valor) => this._actualizarCampoOculto(nombre, valor),
+        });
     }
 
     /**
@@ -382,26 +343,10 @@ class WizardMotorLaboral {
      * @returns {boolean}
      */
     _validarEmail() {
-        const campoEmail = this.formulario.querySelector('#email');
-        if (!campoEmail) return true;
-
-        const valor = campoEmail.value.trim();
-
-        // Si está vacío, es válido (campo opcional)
-        if (!valor) {
-            this._limpiarErrorCampo(campoEmail);
-            return true;
-        }
-
-        // Regex de validación básica de email
-        const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-        if (!regexEmail.test(valor)) {
-            this._mostrarError(campoEmail, 'El email no tiene un formato válido (ej: nombre@dominio.com).');
-            return false;
-        }
-
-        this._limpiarErrorCampo(campoEmail);
-        return true;
+        return window.WizardValidation.validateEmail(this.formulario, {
+            mostrarError: (campo, mensaje) => this._mostrarError(campo, mensaje),
+            limpiarErrorCampo: (campo) => this._limpiarErrorCampo(campo),
+        });
     }
 
     // =========================================================================
@@ -488,181 +433,7 @@ class WizardMotorLaboral {
      * @returns {Object} Payload listo para JSON.stringify
      */
     _construirPayload() {
-        const f = this.formulario;
-
-        // Función auxiliar para leer un campo de texto
-        const leer = (selector) => {
-            const el = f.querySelector(selector);
-            return el ? el.value.trim() : '';
-        };
-
-        // Función auxiliar para leer un radio button marcado
-        const leerRadio = (name) => {
-            const marcado = f.querySelector(`input[name="${name}"]:checked`);
-            return marcado ? marcado.value : 'no';
-        };
-
-        // Función auxiliar sin valor por defecto 'no' (retorna null si no está marcado)
-        const leerRadioRaw = (name) => {
-            const marcado = f.querySelector(`input[name="${name}"]:checked`);
-            return marcado ? marcado.value : null;
-        };
-
-        // ── Paso 1: Perfil ───────────────────────────────────────────────────
-        const tipoUsuario = leer('#tipo_usuario');
-        const tipoConflicto = leer('#tipo_conflicto');
-
-        // ── Paso 2: Datos laborales ──────────────────────────────────────────
-        // El salario puede estar formateado con puntos de miles — lo limpiamos
-        const salarioTexto = leer('#salario').replace(/\./g, '').replace(',', '.');
-        const salario = parseFloat(salarioTexto) || 0;
-
-        const datosLaborales = {
-            salario: salario,
-            antiguedad_meses: parseInt(leer('#antiguedad_meses'), 10) || 0,
-            provincia: leer('#provincia'),
-            categoria: leer('#categoria'),
-            cct: leer('#cct'),
-            cantidad_empleados: parseInt(leer('#cantidad_empleados'), 10) || 1,
-            edad: parseInt(leer('#edad'), 10) || 0,
-            tipo_registro: leer('#tipo_registro') || 'registrado',
-            salario_recibo: parseFloat(leer('#salario_recibo')) || 0,
-            antiguedad_recibo: parseInt(leer('#antiguedad_recibo'), 10) || 0,
-        };
-
-        // ── Paso 3: Documentación (todos Si/No) ──────────────────────────────
-        const documentacion = {
-            tiene_recibos: leerRadio('tiene_recibos'),
-            tiene_contrato: leerRadio('tiene_contrato'),
-            registrado_afip: leerRadio('registrado_afip'),
-            tiene_testigos: leerRadio('tiene_testigos'),
-            auditoria_previa: leerRadio('auditoria_previa'),
-        };
-
-        // ── Paso 4: Situación actual ─────────────────────────────────────────
-        const situacion = {
-            hay_intercambio: leerRadio('hay_intercambio'),
-            fue_intimado: leerRadio('fue_intimado'),
-            ya_despedido: leerRadio('ya_despedido'),
-            urgencia: leer('#urgencia') || 'media',
-            cantidad_empleados: parseInt(leer('#cantidad_empleados_sit'), 10) || 1,
-            fecha_despido: leer('#fecha_despido'),
-            fecha_ultimo_telegrama: leer('#fecha_ultimo_telegrama'),
-            motivo_diferencia: leer('#motivo_diferencia') || 'mala_categorizacion',
-            meses_adeudados: parseInt(leer('#meses_adeudados'), 10) || 0,
-            
-            // NEW v2.1: RIPTE campos dinámicos
-            dia_despido: parseInt(leer('#dia_despido'), 10) || 15,
-            check_inconstitucionalidad: leerRadio('check_inconstitucionalidad'),
-            jurisdiccion: leer('#jurisdiccion') || 'CABA',
-            // Procesar salarios_historicos: frombreak/comma-separated string a array of numbers
-            salarios_historicos: (() => {
-                const txtAreas = leer('#salarios_historicos').trim();
-                if (!txtAreas) return [];
-                // Split por salto de línea o coma
-                const arr = txtAreas
-                    .split(/[\n,]+/)
-                    .map(s => parseFloat(s.trim()))
-                    .filter(n => !isNaN(n));
-                return arr;
-            })(),
-            
-            // NEW v2.1+: LEY 27.802 — Art. 23 (Presunción Laboral)
-            tiene_facturacion: leerRadio('tiene_facturacion'),
-            tiene_pago_bancario: leerRadio('tiene_pago_bancario'),
-            tiene_contrato_escrito: leerRadio('tiene_contrato_escrito'),
-            
-            // NEW v2.1+: LEY 27.802 — Art. 30 (Responsabilidad Solidaria)
-            cantidad_subcontratistas: parseInt(leer('#cantidad_subcontratistas'), 10) || 1,
-            principal_valida_cuil: leerRadio('valida_cuil'),
-            principal_verifica_aportes: leerRadio('valida_aportes'),
-            principal_paga_directo: leerRadio('valida_pago_directo'),
-            principal_valida_cbu_trabajador: leerRadio('valida_cbu'),
-            principal_cubre_art: leerRadio('valida_art'),
-            actividad_esencial: leerRadio('actividad_esencial'),
-            control_documental: leerRadio('control_documental'),
-            control_operativo: leerRadio('control_operativo'),
-            integracion_estructura: leerRadio('integracion_estructura'),
-            contrato_formal: leerRadio('contrato_formal'),
-            falta_f931_art: leerRadio('falta_f931_art'),
-            
-            // NEW v2.2+: Nivel de cumplimiento Auditoría MTEySS/SRT
-            nivel_cumplimiento: (() => {
-                const chks = ['chk_alta_sipa', 'chk_libro_art52', 'chk_recibos_cct', 'chk_art_vigente', 'chk_examenes', 'chk_epp_rgrl'];
-                let noCount = 0;
-                let answered = 0;
-                chks.forEach(chk => {
-                    const val = leerRadioRaw(chk);
-                    if (val === 'no') noCount++;
-                    if (val === 'si' || val === 'no') answered++;
-                });
-                if (answered === 0) return 'desconocido';
-                if (noCount >= 3) return 'critico'; // 3 o más incumplimientos = Riesgo Crítico MTEySS/SRT
-                return 'estable'; // Menos de 3 incumplimientos = Riesgo Estable
-            })(),
-            meses_no_registrados: parseInt(leer('#meses_no_registrados'), 10) || 0,
-            meses_en_mora: parseInt(leer('#meses_en_mora'), 10) || 0,
-            aplica_blanco_laboral: leerRadio('aplica_blanco_laboral'),
-            probabilidad_condena: parseFloat(leer('#probabilidad_condena')) || 0.5,
-            inspeccion_previa: leerRadio('inspeccion_previa'),
-            chk_alta_sipa: leerRadio('chk_alta_sipa'),
-            chk_libro_art52: leerRadio('chk_libro_art52'),
-            chk_recibos_cct: leerRadio('chk_recibos_cct'),
-            chk_art_vigente: leerRadio('chk_art_vigente'),
-            chk_examenes: leerRadio('chk_examenes'),
-            chk_epp_rgrl: leerRadio('chk_epp_rgrl'),
-
-            // Accidentes / ART
-            tipo_contingencia: leer('#tipo_contingencia') || 'accidente_tipico',
-            fecha_siniestro: leer('#fecha_siniestro'),
-            porcentaje_incapacidad: parseFloat(leer('#porcentaje_incapacidad')) || 0,
-            incapacidad_tipo: leer('#incapacidad_tipo') || 'permanente_definitiva',
-            tiene_art: (() => {
-                const tieneArtRadio = leerRadioRaw('tiene_art');
-                if (tieneArtRadio) return tieneArtRadio;
-                const estadoArtEmpresa = leer('#estado_art_empresa') || 'activa_valida';
-                return estadoArtEmpresa === 'inexistente' ? 'no' : 'si';
-            })(),
-            estado_art: leer('#estado_art_empresa') || 'activa_valida',
-            culpa_grave: leerRadio('culpa_grave'),
-            via_civil: leerRadio('via_civil'),
-            denuncia_art: leerRadio('denuncia_art'),
-            rechazo_art: leerRadio('rechazo_art'),
-            comision_medica: leer('#comision_medica') || 'no_iniciada',
-            dictamen_porcentaje: parseFloat(leer('#dictamen_porcentaje')) || 0,
-            via_administrativa_agotada: leerRadio('via_administrativa_agotada'),
-            tiene_preexistencia: leerRadio('tiene_preexistencia'),
-            preexistencia_porcentaje: parseFloat(leer('#preexistencia_porcentaje')) || 0,
-            licencia_activa: leerRadio('licencia_activa'),
-            
-            // NEW v2.1+: LEY 27.802 — Fraude Laboral (5 indicadores)
-            fraude_facturacion_desproporcionada: leerRadio('fraude_facturacion_desproporcionada'),
-            fraude_intermitencia_sospechosa: leerRadio('fraude_intermitencia_sospechosa'),
-            fraude_evasion_sistematica: leerRadio('fraude_evasion_sistematica'),
-            fraude_sobre_facturacion: leerRadio('fraude_sobre_facturacion'),
-            fraude_estructura_opaca: leerRadio('fraude_estructura_opaca'),
-            
-            // NEW v2.1+: LEY 27.802 — Daño Complementario
-            tipo_extincion: leer('#tipo_extincion') || 'despido',
-            fue_violenta: leerRadio('fue_violenta'),
-            meses_litigio: parseInt(leer('#meses_litigio'), 10) || 36,
-        };
-
-        // ── Paso 5: Contacto ─────────────────────────────────────────────────
-        const email = leer('#email');
-
-        // ── Armar payload completo ───────────────────────────────────────────
-        return {
-            tipo_usuario: tipoUsuario,
-            tipo_conflicto: tipoConflicto,
-            datos_laborales: datosLaborales,
-            documentacion: documentacion,
-            situacion: situacion,
-            contacto: {
-                email: email,
-            },
-            schema_version: '2026-04',
-        };
+        return window.WizardPayloadBuilder.build(this.formulario);
     }
 
     // =========================================================================

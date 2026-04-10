@@ -102,7 +102,7 @@ if ($cct_seleccionado) {
         <div class="motor-header-inner">
             <div class="motor-logo">
                 <a href="index.php" class="logo-link">
-                    <img src="../document/image/logo1.png" alt="Estudio Farias Ortiz" class="logo-img">
+                    <img src="<?= htmlspecialchars(ml_logo_src()) ?>" alt="Estudio Farias Ortiz" class="logo-img">
                     <div class="logo-divider"></div>
                     <span class="motor-logo-modulo">Base de Conocimiento</span>
                 </a>

@@ -16,13 +16,23 @@
 
 // ─── Buffer de salida — DEBE ir antes de cualquier output ────────────────────
 ob_start();
+$requestStart = microtime(true);
 
 // ─── Dependencias del módulo ──────────────────────────────────────────────────
 require_once dirname(__DIR__) . '/config/config.php';
 require_once dirname(__DIR__) . '/config/DatabaseManager.php';
 
+$logPdfRequest = static function (string $estado, int $httpCode, array $contexto = []) use ($requestStart): void {
+    ml_log_metric('api.generar_informe', [
+        'estado' => $estado,
+        'http_code' => $httpCode,
+        'duracion_ms' => round((microtime(true) - $requestStart) * 1000, 2),
+    ] + $contexto);
+};
+
 // ─── Verificar que FPDF existe (reutilizamos la del sistema /document) ────────
 if (!file_exists(ML_FPDF_PATH)) {
+    $logPdfRequest('fpdf_missing', 500, ['path' => ML_FPDF_PATH]);
     ob_end_clean();
     http_response_code(500);
     die('Error: librería FPDF no encontrada en ' . ML_FPDF_PATH);
@@ -88,6 +98,7 @@ function pdf_latin1(string $str): string {
 $uuid = trim($_GET['uuid'] ?? $_POST['uuid'] ?? '');
 
 if (empty($uuid) || !preg_match('/^[a-f0-9\-]{36}$/', $uuid)) {
+    $logPdfRequest('uuid_invalido', 400);
     ob_end_clean();
     http_response_code(400);
     die('UUID inválido o no proporcionado.');
@@ -99,12 +110,14 @@ try {
     $analisis = $db->obtenerAnalisisPorUUID($uuid);
 
     if (!$analisis) {
+        $logPdfRequest('no_encontrado', 404, ['uuid' => $uuid]);
         ob_end_clean();
         http_response_code(404);
         die('Análisis no encontrado.');
     }
 
 } catch (Exception $e) {
+    $logPdfRequest('bd_error', 500, ['uuid' => $uuid, 'error' => $e->getMessage()]);
     ob_end_clean();
     http_response_code(500);
     die('Error al recuperar los datos del análisis.');
@@ -556,10 +569,12 @@ try {
     header('Cache-Control: private, max-age=0, must-revalidate');
     header('Pragma: public');
 
+    $logPdfRequest('ok', 200, ['uuid' => $uuid]);
     $pdf->Output('I', $nombreArchivo);
     exit();
 
 } catch (Exception $e) {
+    $logPdfRequest('render_error', 500, ['uuid' => $uuid, 'error' => $e->getMessage()]);
     while (ob_get_level() > 0) ob_end_clean();
     ml_logear('Error generando PDF: ' . $e->getMessage(), 'error', 'error.log');
     http_response_code(500);

@@ -74,7 +74,7 @@ $provincias = [
         <div class="motor-header-inner">
             <div class="motor-logo">
                 <a href="https://fariasortiz.com.ar" target="_blank" class="logo-link">
-                    <img src="../document/image/logo1.png" alt="Estudio Farias Ortiz" class="logo-img">
+                    <img src="<?= htmlspecialchars(ml_logo_src()) ?>" alt="Estudio Farias Ortiz" class="logo-img">
                     <div class="logo-divider"></div>
                     <span class="motor-logo-modulo">Motor de Riesgo Laboral</span>
                 </a>
@@ -1681,6 +1681,8 @@ $provincias = [
     </footer>
 
     <!-- Script del wizard -->
+    <script src="assets/js/wizard-validation.js"></script>
+    <script src="assets/js/wizard-payload.js"></script>
     <script src="assets/js/wizard.js"></script>
     <script>
         // NOTA: wizard.js ya inicializa el wizard automáticamente (window.wizardMotor).

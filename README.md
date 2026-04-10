@@ -23,6 +23,24 @@ Motor Laboral es un **motor de cálculo profesional** para determinar indemnizac
 
 ---
 
+## ✅ Verificación rápida
+
+```bash
+cd /home/runner/work/motor_lab/motor_lab
+
+# Regresión liviana del backend
+php tests/run.php
+
+# Sintaxis PHP del módulo
+find . -name '*.php' -print0 | xargs -0 -n1 php -l
+```
+
+Notas:
+- Los tests nuevos cubren normalización de payloads y persistencia del análisis legal complementario.
+- El flujo de resultados reutiliza el análisis complementario guardado en `exposicion_json` para evitar recálculos divergentes.
+
+---
+
 ## 📋 Cambios Principales v2.1
 
 ### 1. **Ley Bases (Nº 27.742)** — Multas Condicionadas

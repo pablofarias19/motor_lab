@@ -7,6 +7,7 @@ use App\Engines\ArtEmpresaEngine;
 use App\Engines\AuditoriaEngine;
 use App\Engines\SolidaridadEngine;
 use App\Support\AnalysisPayloadNormalizer;
+use App\Support\ComplementaryLegalAnalysisBuilder;
 use App\Support\LegacyEngineFactory;
 use Exception;
 
@@ -56,6 +57,11 @@ class AnalysisService
             $payload['tipo_usuario']
         );
         $exposicion = $this->enriquecerAnalisisEmpresa($payload, $exposicion);
+        $exposicion['analisis_complementario'] = ComplementaryLegalAnalysisBuilder::build(
+            $payload['datos_laborales'],
+            $payload['situacion'],
+            $exposicion
+        );
 
         $irilResult = $this->irilEngine->calcularIRIL(
             $payload['datos_laborales'],

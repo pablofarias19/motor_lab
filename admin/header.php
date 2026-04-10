@@ -21,11 +21,68 @@ require_once __DIR__ . '/../../config/config.php';
 // ─────────────────────────────────────────────────────────────────────────────
 
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.use_strict_mode', '1');
+    session_name('ml_admin_session');
+    session_set_cookie_params([
+        'httponly' => true,
+        'samesite' => 'Lax',
+        'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+    ]);
     session_start();
 }
 
+if (!function_exists('ml_admin_csrf_token')) {
+    function ml_admin_csrf_token(): string {
+        if (empty($_SESSION['ml_admin_csrf'])) {
+            $_SESSION['ml_admin_csrf'] = bin2hex(random_bytes(32));
+        }
+
+        return $_SESSION['ml_admin_csrf'];
+    }
+}
+
+if (!function_exists('ml_admin_csrf_is_valid')) {
+    function ml_admin_csrf_is_valid(?string $token): bool {
+        $sessionToken = $_SESSION['ml_admin_csrf'] ?? '';
+        return is_string($token) && $sessionToken !== '' && hash_equals($sessionToken, $token);
+    }
+}
+
+if (!function_exists('ml_admin_login_limited')) {
+    function ml_admin_login_limited(): bool {
+        $state = $_SESSION['ml_admin_login_rate_limit'] ?? ['attempts' => 0, 'locked_until' => 0];
+        return intval($state['locked_until'] ?? 0) > time();
+    }
+}
+
+if (!function_exists('ml_admin_register_failed_login')) {
+    function ml_admin_register_failed_login(): void {
+        $state = $_SESSION['ml_admin_login_rate_limit'] ?? ['attempts' => 0, 'locked_until' => 0];
+        $state['attempts'] = intval($state['attempts'] ?? 0) + 1;
+
+        if ($state['attempts'] >= 5) {
+            $state['locked_until'] = time() + (15 * 60);
+            $state['attempts'] = 0;
+        }
+
+        $_SESSION['ml_admin_login_rate_limit'] = $state;
+    }
+}
+
+if (!function_exists('ml_admin_reset_failed_logins')) {
+    function ml_admin_reset_failed_logins(): void {
+        $_SESSION['ml_admin_login_rate_limit'] = ['attempts' => 0, 'locked_until' => 0];
+    }
+}
+
 // Processar logout
-if (isset($_GET['logout'])) {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['logout'])) {
+    if (!ml_admin_csrf_is_valid($_POST['csrf_token'] ?? null)) {
+        http_response_code(403);
+        exit('Token CSRF inválido.');
+    }
+
+    $_SESSION = [];
     session_destroy();
     header('Location: ' . ML_BASE_URL . '/admin/index.php');
     exit;
@@ -41,12 +98,20 @@ if (!$adminLogueado) {
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ml_token'])) {
         if (ML_ADMIN_TOKEN === '') {
             $errorLogin = 'Configure ML_ADMIN_TOKEN en el entorno para habilitar el acceso admin.';
-        } elseif ($_POST['ml_token'] === ML_ADMIN_TOKEN) {
+        } elseif (!ml_admin_csrf_is_valid($_POST['csrf_token'] ?? null)) {
+            $errorLogin = 'La sesión expiró. Recargá la página e intentá nuevamente.';
+        } elseif (ml_admin_login_limited()) {
+            $errorLogin = 'Demasiados intentos fallidos. Esperá 15 minutos antes de volver a intentar.';
+        } elseif (hash_equals(ML_ADMIN_TOKEN, (string) $_POST['ml_token'])) {
+            session_regenerate_id(true);
             $_SESSION['ml_admin_logged'] = true;
             $_SESSION['ml_admin_user']   = ML_ADMIN_USER;
+            $_SESSION['ml_admin_last_auth'] = time();
+            ml_admin_reset_failed_logins();
             header('Location: ' . $_SERVER['REQUEST_URI']);
             exit;
         } else {
+            ml_admin_register_failed_login();
             $errorLogin = 'Contraseña incorrecta. Intentá nuevamente.';
         }
     }
@@ -135,6 +200,7 @@ if (!$adminLogueado) {
             <?php endif; ?>
 
             <form method="POST" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(ml_admin_csrf_token()); ?>">
                 <div class="mb-3">
                     <label class="form-label fw-semibold" style="font-size:14px;">
                         <i class="bi bi-lock"></i> Contraseña de acceso
@@ -216,9 +282,12 @@ function mlAdminMenuActivo(string $segmento, string $uri): string {
             <span class="text-white-50" style="font-size:12px;">
                 <i class="bi bi-clock me-1"></i><?php echo date('H:i'); ?>
             </span>
-            <a href="?logout=1" class="btn btn-sm btn-outline-light">
-                <i class="bi bi-box-arrow-right"></i> Salir
-            </a>
+            <form method="POST" class="m-0">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(ml_admin_csrf_token()); ?>">
+                <button type="submit" name="logout" value="1" class="btn btn-sm btn-outline-light">
+                    <i class="bi bi-box-arrow-right"></i> Salir
+                </button>
+            </form>
         </div>
     </div>
 </nav>
