@@ -71,7 +71,6 @@ class AnalysisService
 
         $this->db->actualizarResultados(
             $id,
-            $irilResult['score'],
             $irilResult,
             $exposicion,
             $escenariosResult,

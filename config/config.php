@@ -88,6 +88,12 @@ if (!function_exists('ml_env_bool')) {
 }
 
 if (!function_exists('ml_boolish')) {
+    /**
+     * Normaliza flags booleanos usados por el motor.
+     *
+     * Acepta booleanos nativos, enteros 1/0 y strings comunes en español/inglés
+     * como "si", "sí", "true", "yes" y "on".
+     */
     function ml_boolish($value): bool
     {
         if (is_bool($value)) {
@@ -105,8 +111,8 @@ if (!function_exists('ml_boolish')) {
 }
 
 // ─── Entorno ─────────────────────────────────────────────────────────────────
-// Cambiar a false en producción para ocultar errores al público
-define('ML_DEBUG', ml_env_bool('ML_DEBUG', true));
+// Cambiar a true solo para depuración local controlada
+define('ML_DEBUG', ml_env_bool('ML_DEBUG', false));
 
 if (ML_DEBUG) {
     error_reporting(E_ALL);
@@ -128,7 +134,7 @@ define('ML_DB_PORT', intval(ml_env('ML_DB_PORT', 3306)));
 // ─── Email (mismo servidor que el resto del proyecto) ────────────────────────
 define('ML_SMTP_FROM', ml_env('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar'));
 define('ML_SMTP_FROM_NAME', ml_env('ML_SMTP_FROM_NAME', 'Estudio Farias Ortiz'));
-define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', 'admin@example.com'));
+define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', ''));
 
 // ─── Aplicación ──────────────────────────────────────────────────────────────
 define('ML_VERSION', '1.0.0');
@@ -146,7 +152,7 @@ define('ML_FPDF_PATH', dirname(ML_ROOT) . '/document/fpdf.php');
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 // Token de acceso al panel admin — cambiar antes de producción
-define('ML_ADMIN_TOKEN', ml_env('ML_ADMIN_TOKEN', 'change-me'));
+define('ML_ADMIN_TOKEN', ml_env('ML_ADMIN_TOKEN', ''));
 define('ML_ADMIN_USER', ml_env('ML_ADMIN_USER', 'Admin Motor Laboral'));
 
 // ─── Cabeceras de seguridad ───────────────────────────────────────────────────
