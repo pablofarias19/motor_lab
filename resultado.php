@@ -177,7 +177,11 @@ foreach ($irilDetalle as $clave => $detalleDimension) {
     ];
 }
 
-usort($factoresIril, static fn(array $a, array $b): int => $b['valor'] <=> $a['valor']);
+usort($factoresIril, static function (array $a, array $b): int {
+    $valorA = isset($a['valor']) && is_numeric($a['valor']) ? floatval($a['valor']) : 0.0;
+    $valorB = isset($b['valor']) && is_numeric($b['valor']) ? floatval($b['valor']) : 0.0;
+    return $valorB <=> $valorA;
+});
 $factoresIrilAltos = array_slice($factoresIril, 0, 2);
 $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
 ?>

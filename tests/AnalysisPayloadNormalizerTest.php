@@ -71,7 +71,7 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 ],
                 'situacion' => [
                     'urgencia' => 'critica',
-                    'fecha_despido' => '2026-99-99',
+                    'fecha_despido' => '2026-02-30',
                     'probabilidad_condena' => '2',
                 ],
             ]);

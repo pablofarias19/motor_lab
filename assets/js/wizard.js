@@ -125,6 +125,16 @@ class WizardMotorLaboral {
 
         // Buscar el overlay de carga
         this.loadingOverlay = document.getElementById('motor-loading-overlay');
+        this.liveRegion = document.getElementById('wizard-live-region');
+
+        if (!this.liveRegion) {
+            this.liveRegion = document.createElement('div');
+            this.liveRegion.id = 'wizard-live-region';
+            this.liveRegion.setAttribute('aria-live', 'polite');
+            this.liveRegion.setAttribute('aria-atomic', 'true');
+            this.liveRegion.style.cssText = 'position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden;';
+            document.body.appendChild(this.liveRegion);
+        }
 
         // Adjuntar listener al botón "Siguiente"
         const btnSiguiente = document.getElementById('btn-siguiente');
@@ -778,6 +788,7 @@ class WizardMotorLaboral {
                 btnEnviar.setAttribute('aria-busy', 'true');
                 btnEnviar.innerHTML = '<span class="spinner-inline"></span> Analizando y validando...';
             }
+            this._anunciarEstado('Procesando el análisis. Validando datos y calculando resultados.');
         } else {
             this.loadingOverlay.classList.remove('activo');
             document.body.style.overflow = '';
@@ -789,6 +800,7 @@ class WizardMotorLaboral {
                 btnEnviar.removeAttribute('aria-busy');
                 btnEnviar.innerHTML = 'Generar Análisis';
             }
+            this._anunciarEstado('');
         }
     }
 
@@ -1051,6 +1063,12 @@ class WizardMotorLaboral {
             }).format(valor);
         } catch (_) {
             return `$${valor}`;
+        }
+    }
+
+    _anunciarEstado(mensaje) {
+        if (this.liveRegion) {
+            this.liveRegion.textContent = mensaje;
         }
     }
 
