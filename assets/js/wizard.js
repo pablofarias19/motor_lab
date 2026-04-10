@@ -481,7 +481,8 @@ class WizardMotorLaboral {
      *   datos_laborales: { salario, antiguedad_meses, provincia, categoria, cct, cantidad_empleados },
      *   documentacion:   { tiene_recibos, tiene_contrato, registrado_afip, tiene_testigos, auditoria_previa },
      *   situacion:       { hay_intercambio, fue_intimado, ya_despedido, urgencia, cantidad_empleados, fecha_despido, fecha_ultimo_telegrama },
-     *   email
+     *   contacto:        { email },
+     *   schema_version
      * }
      *
      * @returns {Object} Payload listo para JSON.stringify
@@ -611,7 +612,10 @@ class WizardMotorLaboral {
             datos_laborales: datosLaborales,
             documentacion: documentacion,
             situacion: situacion,
-            email: email,
+            contacto: {
+                email: email,
+            },
+            schema_version: '2026-04',
         };
     }
 

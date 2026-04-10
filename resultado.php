@@ -49,34 +49,23 @@ try {
 $datosLaborales = json_decode($analisis['datos_laborales'], true) ?? [];
 $documentacion = json_decode($analisis['documentacion_json'], true) ?? [];
 $situacion = json_decode($analisis['situacion_json'], true) ?? [];
-$irilDetalle = json_decode($analisis['iril_detalle'], true) ?? [];
+$irilPayload = ml_parse_iril_payload(json_decode($analisis['iril_detalle'], true) ?? []);
 $exposicion = json_decode($analisis['exposicion_json'], true) ?? [];
-$escenarios = json_decode($analisis['escenarios_json'], true) ?? [];
+$escenariosPayload = ml_parse_escenarios_payload(
+    json_decode($analisis['escenarios_json'], true) ?? [],
+    $analisis['escenario_recomendado'] ?? 'C'
+);
 
-$irilScore = floatval($analisis['iril_score']);
-$nivelIril = ml_nivel_iril($irilScore);
-$escRecomendado = $analisis['escenario_recomendado'] ?? 'C';
+$irilDetalle = $irilPayload['detalle'];
+$alertas = $irilPayload['alertas'];
+$irilScore = $irilPayload['score'] > 0 ? $irilPayload['score'] : floatval($analisis['iril_score']);
+$nivelIril = is_array($irilPayload['nivel']) ? $irilPayload['nivel'] : ml_nivel_iril($irilScore);
+$escenarios = $escenariosPayload['escenarios'];
+$escRecomendado = $escenariosPayload['recomendado'];
+$tablaComparativa = $escenariosPayload['tabla_comparativa'];
+$alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 
-// Etiquetas legibles de tipos de conflicto
-$etiquetasConflicto = [
-    'despido_sin_causa' => 'Despido sin causa',
-    'despido_con_causa' => 'Despido con causa',
-    'diferencias_salariales' => 'Diferencias salariales',
-    'trabajo_no_registrado' => 'Trabajo no registrado',
-    'accidente_laboral' => 'Accidente laboral',
-    'reclamo_indemnizatorio' => 'Reclamo indemnizatorio',
-    'multas_legales' => 'Multas legales',
-    'responsabilidad_solidaria' => 'Responsabilidad solidaria',
-    'riesgo_inspeccion' => 'Riesgo de inspección',
-    'auditoria_preventiva' => 'Auditoría preventiva',
-];
-
-$tipoConflictoLabel = $etiquetasConflicto[$analisis['tipo_conflicto']] ?? $analisis['tipo_conflicto'];
-
-// ─── Alertas laborales ────────────────────────────────────────────────────────
-$alertas = $irilDetalle ? ($irilDetalle['alertas'] ?? []) : [];
-// Las alertas también están en el resultado del motor — las buscamos donde corresponde
-// Si no hay alertas en detalle, las calculamos desde la exposición (ya incluidas por el motor)
+$tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
 
 // ─── Registrar que el usuario vio el informe ──────────────────────────────────
 try {
@@ -132,24 +121,6 @@ try {
 } catch (Exception $e) {
     ml_logear("[resultado.php] Error recalculando Ley 27.802: " . $e->getMessage(), 'warning', 'analisis.log');
 }
-$tablaComparativa = [];
-foreach (['A', 'B', 'C', 'D'] as $letra) {
-    if (!isset($escenarios[$letra]))
-        continue;
-    $esc = $escenarios[$letra];
-    $tablaComparativa[] = [
-        'codigo' => $letra,
-        'nombre' => $esc['nombre'] ?? '',
-        'costo' => ml_formato_moneda($esc['costo_estimado'] ?? 0),
-        'beneficio' => ml_formato_moneda($esc['beneficio_estimado'] ?? 0),
-        'vbp' => ml_formato_moneda($esc['vbp'] ?? 0),
-        'duracion' => ($esc['duracion_min_meses'] ?? '?') . '–' . ($esc['duracion_max_meses'] ?? '?') . ' meses',
-        'riesgo' => ($esc['riesgo_institucional'] ?? 0) . '/5',
-        'intervencion' => ucfirst($esc['nivel_intervencion'] ?? ''),
-        'recomendado' => ($letra === $escRecomendado),
-    ];
-}
-
 // ─── Lógica adicional para el dashboard premium ──────────────────────────────
 
 // Resumen de documentación disponible
@@ -943,12 +914,13 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                 'score' => $irilScore,
                 'nivel' => $nivelIril,
                 'detalle' => $irilDetalle,
-                'alertas' => $irilDetalle['alertas'] ?? [],
+                'alertas' => $alertas,
             ],
             'exposicion' => $exposicion,
             'escenarios' => $escenarios,
             'recomendado' => $escRecomendado,
             'tabla_comparativa' => $tablaComparativa,
+            'alertas_marzo_2026' => $alertasMarzo2026,
             'tipo_conflicto' => $analisis['tipo_conflicto'],
             'tipo_usuario' => $analisis['tipo_usuario'],
         ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;

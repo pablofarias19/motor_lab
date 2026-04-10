@@ -660,6 +660,9 @@ function convertir_mes_a_ripte_key(DateTime $fecha) {
  * @return array ['presuncion_opera' => bool, 'controles_presentes' => int, 'análisis' => string, 'recomendación' => string]
  */
 function validar_presuncion_laboral($tiene_facturacion, $tiene_pago_bancario, $tiene_contrato_escrito, $nota_adicional = '') {
+    $tiene_facturacion = ml_boolish($tiene_facturacion);
+    $tiene_pago_bancario = ml_boolish($tiene_pago_bancario);
+    $tiene_contrato_escrito = ml_boolish($tiene_contrato_escrito);
     
     // Contar controles presentes
     $controles_presente = 0;
@@ -754,6 +757,11 @@ function validar_responsabilidad_solidaria(
     $valida_cbu = false,
     $valida_art = false
 ) {
+    $valida_cuil = ml_boolish($valida_cuil);
+    $valida_aportes = ml_boolish($valida_aportes);
+    $valida_pago_directo = ml_boolish($valida_pago_directo);
+    $valida_cbu = ml_boolish($valida_cbu);
+    $valida_art = ml_boolish($valida_art);
     
     // Contar controles validados
     $controles_count = 0;
@@ -876,6 +884,8 @@ function detectar_fraude_laboral($indicadores = []) {
         'estructura_opaca' => false
     ], $indicadores);
     
+    $indicadores = array_map('ml_boolish', $indicadores);
+
     // Contar indicadores presentes (cada uno vale 1 punto)
     $presentes = array_sum(array_map('intval', array_values($indicadores)));
     
@@ -959,6 +969,7 @@ function evaluar_dano_complementario(
     $indemnizacion_base = floatval($indemnizacion_base);
     $salario_promedio = floatval($salario_promedio);
     $meses_litigio = intval($meses_litigio);
+    $fue_violenta = ml_boolish($fue_violenta);
     
     // ─────────────────────────────────────────────────────────────────────────
     // 1. DAÑO MORAL (20-50% indemnización base)

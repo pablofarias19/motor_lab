@@ -17,19 +17,6 @@
 require_once __DIR__ . '/../../config/config.php';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONFIGURACIÓN DEL PANEL
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Token de acceso — cambiar en producción */
-define('ML_ADMIN_TOKEN', 'pablo123_motor');
-
-/** Nombre del usuario que aparece en la barra */
-define('ML_ADMIN_USER', 'Dr. Pablo Farias');
-
-/** URL base del módulo — ajustar según deploy */
-define('ML_BASE_URL', '/motor_laboral');
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GESTIÓN DE SESIÓN Y AUTENTICACIÓN
 // ─────────────────────────────────────────────────────────────────────────────
 

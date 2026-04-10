@@ -53,12 +53,17 @@ if (empty($a)) {
 $datosLab = json_decode($a['datos_laborales'] ?? '{}', true) ?: [];
 $docJson = json_decode($a['documentacion_json'] ?? '{}', true) ?: [];
 $situJson = json_decode($a['situacion_json'] ?? '{}', true) ?: [];
-$irilDet = json_decode($a['iril_detalle'] ?? '{}', true) ?: [];
+$irilPayload = ml_parse_iril_payload(json_decode($a['iril_detalle'] ?? '{}', true) ?: []);
 $exposJson = json_decode($a['exposicion_json'] ?? '{}', true) ?: [];
-$escenJson = json_decode($a['escenarios_json'] ?? '[]', true) ?: [];
+$escenariosPayload = ml_parse_escenarios_payload(
+    json_decode($a['escenarios_json'] ?? '[]', true) ?: [],
+    $a['escenario_recomendado'] ?? 'C'
+);
 
-$irilScore = floatval($a['iril_score'] ?? 0);
-$escRec = strtoupper($a['escenario_recomendado'] ?? '');
+$irilDet = $irilPayload['detalle'];
+$irilScore = $irilPayload['score'] > 0 ? $irilPayload['score'] : floatval($a['iril_score'] ?? 0);
+$escenJson = $escenariosPayload['escenarios'];
+$escRec = $escenariosPayload['recomendado'];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -91,21 +96,7 @@ function detEscNombre(string $letra): string
 }
 
 $nivel = detNivel($irilScore);
-$labelConflicto = function (string $t): string {
-    $m = [
-        'despido_injustificado' => 'Despido injustificado',
-        'despido_discriminatorio' => 'Despido discriminatorio',
-        'accidente_trabajo' => 'Accidente de trabajo',
-        'enfermedad_profesional' => 'Enfermedad profesional',
-        'diferencias_salariales' => 'Diferencias salariales',
-        'trabajo_no_registrado' => 'Trabajo no registrado',
-        'acoso_laboral' => 'Acoso laboral',
-        'maternidad_licencias' => 'Maternidad / Licencias',
-        'reduccion_categoria' => 'Reducción de categoría',
-        'impugnacion_contrato' => 'Impugnación de contrato',
-    ];
-    return $m[$t] ?? ucfirst(str_replace('_', ' ', $t));
-};
+$labelConflicto = fn(string $t): string => ml_conflicto_label($t);
 ?>
 
 <!-- ─────────────────────────────────────────────────────────────────────────
@@ -438,17 +429,12 @@ $labelConflicto = function (string $t): string {
                         Desglose por dimensión
                     </small>
                     <?php
-                    $dimLabels = [
-                        'saturacion' => 'Saturación tribunalicia',
-                        'probatoria' => 'Complejidad probatoria',
-                        'normativa' => 'Volatilidad normativa',
-                        'costas' => 'Riesgo de costas',
-                        'multiplicador' => 'Riesgo multiplicador',
-                    ];
-                    foreach ($dimLabels as $key => $label):
-                        $val = floatval($irilDet[$key] ?? 0);
-                        if ($val <= 0)
+                    foreach (ml_iril_dimension_labels() as $key => $label):
+                        $dim = $irilDet[$key] ?? null;
+                        $val = floatval($dim['valor'] ?? 0);
+                        if ($val <= 0) {
                             continue;
+                        }
                         $dimNivel = $val < 2 ? 'bajo' : ($val < 3 ? 'moderado' : ($val < 4 ? 'alto' : 'critico'));
                         ?>
                         <div class="mt-2">
@@ -470,7 +456,7 @@ $labelConflicto = function (string $t): string {
 
         <!-- ALERTAS -->
         <?php
-        $alertas = $irilDet['alertas'] ?? [];
+        $alertas = $irilPayload['alertas'] ?? [];
         if (!empty($alertas)):
             ?>
             <div class="detalle-section">

@@ -387,6 +387,7 @@ class ExposicionEngine
             'conceptos' => $conceptos,
             'total_base' => round($totalBase, 2),
             'total_con_multas' => round($totalConMultas, 2),
+            'total' => round($totalConMultas, 2),
             'salario_base' => $salario,
             'antiguedad_anos' => round($antiguedadA, 1),
             'nota_legal' => 'Estimación estructural bajo LCT. No garantiza resultado. Sujeto a variables procesales y negociación.'

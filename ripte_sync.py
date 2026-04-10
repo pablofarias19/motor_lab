@@ -17,6 +17,7 @@ Uso:
 import sys
 import json
 import datetime
+import os
 from typing import Dict, List, Optional, Tuple
 import mysql.connector
 from mysql.connector import Error
@@ -27,11 +28,11 @@ from mysql.connector import Error
 
 # Configuración de conexión MySQL
 DB_CONFIG = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': '',
-    'database': 'motor_laboral',
-    'charset': 'utf8mb4',
+    'host': os.getenv('ML_DB_HOST', 'localhost'),
+    'user': os.getenv('ML_DB_USER', 'root'),
+    'password': os.getenv('ML_DB_PASS', ''),
+    'database': os.getenv('ML_DB_NAME', 'motor_laboral'),
+    'charset': os.getenv('ML_DB_CHARSET', 'utf8mb4'),
     'use_unicode': True,
 }
 

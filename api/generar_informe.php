@@ -114,13 +114,18 @@ try {
 $datosLaborales = json_decode($analisis['datos_laborales'], true) ?? [];
 $documentacion  = json_decode($analisis['documentacion_json'], true) ?? [];
 $situacion      = json_decode($analisis['situacion_json'], true) ?? [];
-$irilDetalle    = json_decode($analisis['iril_detalle'], true) ?? [];
+$irilPayload    = ml_parse_iril_payload(json_decode($analisis['iril_detalle'], true) ?? []);
 $exposicion     = json_decode($analisis['exposicion_json'], true) ?? [];
-$escenarios     = json_decode($analisis['escenarios_json'], true) ?? [];
+$escenariosData = ml_parse_escenarios_payload(
+    json_decode($analisis['escenarios_json'], true) ?? [],
+    $analisis['escenario_recomendado'] ?? 'C'
+);
 
-$irilScore    = floatval($analisis['iril_score']);
-$nivelIril    = ml_nivel_iril($irilScore);
-$escRecomendado = $analisis['escenario_recomendado'] ?? 'C';
+$irilDetalle = $irilPayload['detalle'];
+$irilScore = $irilPayload['score'] > 0 ? $irilPayload['score'] : floatval($analisis['iril_score']);
+$nivelIril = is_array($irilPayload['nivel']) ? $irilPayload['nivel'] : ml_nivel_iril($irilScore);
+$escenarios = $escenariosData['escenarios'];
+$escRecomendado = $escenariosData['recomendado'];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CLASE PDF PERSONALIZADA — extiende FPDF con header y footer del estudio
@@ -218,21 +223,8 @@ try {
     // ── Perfil del usuario ────────────────────────────────────────────────────
     $pdf->seccion('1. Perfil del Análisis');
 
-    $conflictosLabels = [
-        'despido_sin_causa'      => 'Despido sin causa',
-        'despido_con_causa'      => 'Despido con causa',
-        'diferencias_salariales' => 'Diferencias salariales',
-        'trabajo_no_registrado'  => 'Trabajo no registrado',
-        'accidente_laboral'      => 'Accidente laboral',
-        'reclamo_indemnizatorio' => 'Reclamo indemnizatorio',
-        'multas_legales'         => 'Multas legales',
-        'responsabilidad_solidaria' => 'Responsabilidad solidaria',
-        'riesgo_inspeccion'      => 'Riesgo de inspección laboral',
-        'auditoria_preventiva'   => 'Auditoría preventiva',
-    ];
-
     $pdf->fila('Perfil del solicitante', ucfirst($analisis['tipo_usuario']));
-    $pdf->fila('Tipo de conflicto', $conflictosLabels[$analisis['tipo_conflicto']] ?? $analisis['tipo_conflicto']);
+    $pdf->fila('Tipo de conflicto', ml_conflicto_label($analisis['tipo_conflicto']));
     $pdf->fila('Provincia', $datosLaborales['provincia'] ?? 'No especificada');
     $pdf->fila('Antigüedad', round(($datosLaborales['antiguedad_meses'] ?? 0) / 12, 1) . ' años (' . ($datosLaborales['antiguedad_meses'] ?? 0) . ' meses)');
     $pdf->fila('Salario base mensual', ml_formato_moneda($datosLaborales['salario'] ?? 0));
