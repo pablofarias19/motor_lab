@@ -277,11 +277,11 @@ class ExposicionEngine
             
             // Conteo de controles presentes (cada uno reduce riesgo)
             $controlesPresentes = 0;
-            if (!empty($situacion['principal_valida_cuil'])) $controlesPresentes++;
-            if (!empty($situacion['principal_verifica_aaportes'])) $controlesPresentes++;
-            if (!empty($situacion['principal_paga_directo'])) $controlesPresentes++;
-            if (!empty($situacion['principal_valida_cbu_trabajador'])) $controlesPresentes++;
-            if (!empty($situacion['principal_cubre_art'])) $controlesPresentes++;
+            if (($situacion['principal_valida_cuil'] ?? 'no') === 'si') $controlesPresentes++;
+            if ((($situacion['principal_verifica_aportes'] ?? ($situacion['principal_verifica_aaportes'] ?? 'no'))) === 'si') $controlesPresentes++;
+            if (($situacion['principal_paga_directo'] ?? 'no') === 'si') $controlesPresentes++;
+            if (($situacion['principal_valida_cbu_trabajador'] ?? 'no') === 'si') $controlesPresentes++;
+            if (($situacion['principal_cubre_art'] ?? 'no') === 'si') $controlesPresentes++;
 
             // Factor de riesgo: Si cumple 5 controles, riesgo mínimo
             $factorExención = max(1, 6 - $controlesPresentes);  // De 6 (sin controles) a 1 (con todos)
@@ -387,6 +387,7 @@ class ExposicionEngine
             'conceptos' => $conceptos,
             'total_base' => round($totalBase, 2),
             'total_con_multas' => round($totalConMultas, 2),
+            'total' => round($totalConMultas, 2),
             'salario_base' => $salario,
             'antiguedad_anos' => round($antiguedadA, 1),
             'nota_legal' => 'Estimación estructural bajo LCT. No garantiza resultado. Sujeto a variables procesales y negociación.'

@@ -17,19 +17,6 @@
 require_once __DIR__ . '/../../config/config.php';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CONFIGURACIÓN DEL PANEL
-// ─────────────────────────────────────────────────────────────────────────────
-
-/** Token de acceso — cambiar en producción */
-define('ML_ADMIN_TOKEN', 'pablo123_motor');
-
-/** Nombre del usuario que aparece en la barra */
-define('ML_ADMIN_USER', 'Dr. Pablo Farias');
-
-/** URL base del módulo — ajustar según deploy */
-define('ML_BASE_URL', '/motor_laboral');
-
-// ─────────────────────────────────────────────────────────────────────────────
 // GESTIÓN DE SESIÓN Y AUTENTICACIÓN
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -50,9 +37,11 @@ $adminLogueado = isset($_SESSION['ml_admin_logged']) && $_SESSION['ml_admin_logg
 if (!$adminLogueado) {
 
     // Procesar intento de login
-    $errorLogin = '';
+    $errorLogin = ML_ADMIN_TOKEN === '' ? 'Configure ML_ADMIN_TOKEN en el entorno para habilitar el acceso admin.' : '';
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ml_token'])) {
-        if ($_POST['ml_token'] === ML_ADMIN_TOKEN) {
+        if (ML_ADMIN_TOKEN === '') {
+            $errorLogin = 'Configure ML_ADMIN_TOKEN en el entorno para habilitar el acceso admin.';
+        } elseif ($_POST['ml_token'] === ML_ADMIN_TOKEN) {
             $_SESSION['ml_admin_logged'] = true;
             $_SESSION['ml_admin_user']   = ML_ADMIN_USER;
             header('Location: ' . $_SERVER['REQUEST_URI']);

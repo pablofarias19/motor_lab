@@ -82,14 +82,14 @@ class DatabaseManager {
         }
     }
 
-    public function actualizarResultados(int $id, float $irilScore, array $irilDetalle, array $exposicion, array $escenarios, string $escenarioRecomendado): bool {
+    public function actualizarResultados(int $id, array $irilResultado, array $exposicion, array $escenarios, string $escenarioRecomendado = ''): bool {
         try {
             $id          = intval($id);
-            $irilScore   = floatval($irilScore);
-            $irilDetJson = $this->db->real_escape_string(json_encode($irilDetalle, JSON_UNESCAPED_UNICODE));
+            $irilScore   = floatval($irilResultado['score'] ?? 0);
+            $irilDetJson = $this->db->real_escape_string(json_encode($irilResultado, JSON_UNESCAPED_UNICODE));
             $exposJson   = $this->db->real_escape_string(json_encode($exposicion, JSON_UNESCAPED_UNICODE));
             $escenJson   = $this->db->real_escape_string(json_encode($escenarios, JSON_UNESCAPED_UNICODE));
-            $escRec      = $this->db->real_escape_string(strtoupper($escenarioRecomendado));
+            $escRec      = $this->db->real_escape_string(strtoupper($escenarioRecomendado ?: ($escenarios['recomendado'] ?? '')));
 
             $sql = "UPDATE analisis_laborales SET
                         iril_score            = {$irilScore},

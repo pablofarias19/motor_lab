@@ -64,19 +64,7 @@ try {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function listaLabelConflicto(string $tipo): string {
-    $mapa = [
-        'despido_injustificado'  => 'Despido injustificado',
-        'despido_discriminatorio'=> 'Despido discriminatorio',
-        'accidente_trabajo'      => 'Accidente de trabajo',
-        'enfermedad_profesional' => 'Enfermedad profesional',
-        'diferencias_salariales' => 'Diferencias salariales',
-        'trabajo_no_registrado'  => 'Trabajo no registrado',
-        'acoso_laboral'          => 'Acoso laboral',
-        'maternidad_licencias'   => 'Maternidad / Licencias',
-        'reduccion_categoria'    => 'Reducción de categoría',
-        'impugnacion_contrato'   => 'Impugnación de contrato',
-    ];
-    return $mapa[$tipo] ?? ucfirst(str_replace('_', ' ', $tipo));
+    return ml_conflicto_label($tipo);
 }
 
 function listaNivelIril(?float $score): string {
@@ -138,18 +126,7 @@ function urlPagina(int $p): string {
                 <select name="tipo_conflicto" class="form-select form-select-sm filtro-autosubmit">
                     <option value="">Todos</option>
                     <?php
-                    $conflictos = [
-                        'despido_injustificado'  => 'Despido injustificado',
-                        'despido_discriminatorio'=> 'Despido discriminatorio',
-                        'accidente_trabajo'      => 'Accidente de trabajo',
-                        'enfermedad_profesional' => 'Enfermedad profesional',
-                        'diferencias_salariales' => 'Diferencias salariales',
-                        'trabajo_no_registrado'  => 'Trabajo no registrado',
-                        'acoso_laboral'          => 'Acoso laboral',
-                        'maternidad_licencias'   => 'Maternidad / Licencias',
-                        'reduccion_categoria'    => 'Reducción de categoría',
-                        'impugnacion_contrato'   => 'Impugnación de contrato',
-                    ];
+                    $conflictos = ml_conflicto_labels();
                     foreach ($conflictos as $val => $lbl):
                         $sel = ($filtros['tipo_conflicto'] ?? '') === $val ? 'selected' : '';
                     ?>

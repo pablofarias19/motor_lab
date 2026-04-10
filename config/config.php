@@ -67,9 +67,52 @@
 // ─── Zona horaria ────────────────────────────────────────────────────────────
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
+// ─── Helpers de entorno ──────────────────────────────────────────────────────
+if (!function_exists('ml_env')) {
+    function ml_env(string $key, $default = null)
+    {
+        $value = $_ENV[$key] ?? $_SERVER[$key] ?? getenv($key);
+        return ($value === false || $value === null || $value === '') ? $default : $value;
+    }
+}
+
+if (!function_exists('ml_env_bool')) {
+    function ml_env_bool(string $key, bool $default = false): bool
+    {
+        $value = ml_env($key, null);
+        if ($value === null) {
+            return $default;
+        }
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
+    }
+}
+
+if (!function_exists('ml_boolish')) {
+    /**
+     * Normaliza flags booleanos usados por el motor.
+     *
+     * Acepta booleanos nativos, enteros 1/0 y strings comunes en español/inglés
+     * como "si", "sí", "true", "yes" y "on".
+     */
+    function ml_boolish($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_numeric($value)) {
+            return intval($value) === 1;
+        }
+        if (!is_scalar($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['1', 'true', 'si', 'sí', 'yes', 'on'], true);
+    }
+}
+
 // ─── Entorno ─────────────────────────────────────────────────────────────────
-// Cambiar a false en producción para ocultar errores al público
-define('ML_DEBUG', true);
+// Cambiar a true solo para depuración local controlada
+define('ML_DEBUG', ml_env_bool('ML_DEBUG', false));
 
 if (ML_DEBUG) {
     error_reporting(E_ALL);
@@ -81,22 +124,23 @@ if (ML_DEBUG) {
 }
 
 // ─── Base de datos exclusiva del módulo ──────────────────────────────────────
-define('ML_DB_HOST', 'localhost');
-define('ML_DB_USER', 'u580580751_1905');     // usuario con permisos sobre la BD nueva
-define('ML_DB_PASS', 'Lucia1319+');           // ⚠️ mover a .env antes de producción
-define('ML_DB_NAME', 'u580580751_motor_laboral');
-define('ML_DB_CHARSET', 'utf8mb4');
-define('ML_DB_PORT', 3306);
+define('ML_DB_HOST', ml_env('ML_DB_HOST', 'localhost'));
+define('ML_DB_USER', ml_env('ML_DB_USER', 'root'));
+define('ML_DB_PASS', ml_env('ML_DB_PASS', ''));
+define('ML_DB_NAME', ml_env('ML_DB_NAME', 'motor_laboral'));
+define('ML_DB_CHARSET', ml_env('ML_DB_CHARSET', 'utf8mb4'));
+define('ML_DB_PORT', intval(ml_env('ML_DB_PORT', 3306)));
 
 // ─── Email (mismo servidor que el resto del proyecto) ────────────────────────
-define('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar');
-define('ML_SMTP_FROM_NAME', 'Estudio Farias Ortiz');
-define('ML_EMAIL_ADMIN', 'pablofarias19@gmail.com');
+define('ML_SMTP_FROM', ml_env('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar'));
+define('ML_SMTP_FROM_NAME', ml_env('ML_SMTP_FROM_NAME', 'Estudio Farias Ortiz'));
+define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', ML_SMTP_FROM));
 
 // ─── Aplicación ──────────────────────────────────────────────────────────────
 define('ML_VERSION', '1.0.0');
 define('ML_APP_NAME', 'Motor de Riesgo Laboral');
-define('ML_APP_URL', 'https://fariasortiz.com.ar/motor_laboral');
+define('ML_BASE_URL', rtrim((string) ml_env('ML_BASE_URL', '/motor_laboral'), '/'));
+define('ML_APP_URL', ml_env('ML_APP_URL', 'http://localhost' . ML_BASE_URL));
 
 // ─── Rutas absolutas del módulo ──────────────────────────────────────────────
 // __DIR__ apunta a la carpeta /config — subimos un nivel para la raíz del módulo
@@ -108,7 +152,9 @@ define('ML_FPDF_PATH', dirname(ML_ROOT) . '/document/fpdf.php');
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 // Token de acceso al panel admin — cambiar antes de producción
-define('ML_ADMIN_TOKEN', 'motor2024admin');
+define('ML_ADMIN_TOKEN', ml_env('ML_ADMIN_TOKEN', ''));
+define('ML_ADMIN_USER', ml_env('ML_ADMIN_USER', 'Admin Motor Laboral'));
+define('ML_ADMIN_LOGIN_ENABLED', ML_ADMIN_TOKEN !== '');
 
 // ─── Cabeceras de seguridad ───────────────────────────────────────────────────
 // Solo se aplican en respuestas no-PDF
@@ -302,5 +348,125 @@ function ml_nivel_iril(float $score): array
         'color' => '#e74c3c',
         'clase' => 'iril-critico',
         'descripcion' => 'Situación crítica. Requiere intervención profesional urgente.'
+    ];
+}
+
+function ml_conflicto_labels(): array
+{
+    return [
+        'despido_sin_causa' => 'Despido sin causa',
+        'despido_con_causa' => 'Despido con causa',
+        'diferencias_salariales' => 'Diferencias salariales',
+        'trabajo_no_registrado' => 'Trabajo no registrado',
+        'accidente_laboral' => 'Accidente laboral',
+        'reclamo_indemnizatorio' => 'Reclamo indemnizatorio',
+        'multas_legales' => 'Multas legales',
+        'responsabilidad_solidaria' => 'Responsabilidad solidaria',
+        'riesgo_inspeccion' => 'Riesgo de inspección',
+        'auditoria_preventiva' => 'Auditoría preventiva',
+        'despido_injustificado' => 'Despido injustificado',
+        'despido_discriminatorio' => 'Despido discriminatorio',
+        'accidente_trabajo' => 'Accidente de trabajo',
+        'enfermedad_profesional' => 'Enfermedad profesional',
+        'acoso_laboral' => 'Acoso laboral',
+        'maternidad_licencias' => 'Maternidad / Licencias',
+        'reduccion_categoria' => 'Reducción de categoría',
+        'impugnacion_contrato' => 'Impugnación de contrato',
+    ];
+}
+
+function ml_conflicto_label(string $tipo): string
+{
+    $labels = ml_conflicto_labels();
+    return $labels[$tipo] ?? ucfirst(str_replace('_', ' ', $tipo));
+}
+
+function ml_iril_dimension_labels(): array
+{
+    return [
+        'saturacion_tribunalicia' => 'Saturación tribunalicia',
+        'complejidad_probatoria' => 'Complejidad probatoria',
+        'volatilidad_normativa' => 'Volatilidad normativa',
+        'riesgo_costas' => 'Riesgo de costas',
+        'riesgo_multiplicador' => 'Riesgo multiplicador',
+    ];
+}
+
+function ml_parse_iril_payload(?array $payload): array
+{
+    $payload = is_array($payload) ? $payload : [];
+    $detailKeys = array_keys(ml_iril_dimension_labels());
+
+    $detalle = [];
+    if (isset($payload['detalle']) && is_array($payload['detalle'])) {
+        $detalle = $payload['detalle'];
+    } else {
+        foreach ($detailKeys as $key) {
+            if (isset($payload[$key]) && is_array($payload[$key])) {
+                $detalle[$key] = $payload[$key];
+            }
+        }
+    }
+
+    return [
+        'score' => floatval($payload['score'] ?? 0),
+        'nivel' => $payload['nivel'] ?? null,
+        'detalle' => $detalle,
+        'alertas' => is_array($payload['alertas'] ?? null) ? $payload['alertas'] : [],
+    ];
+}
+
+function ml_build_tabla_comparativa(array $escenarios, string $recomendado): array
+{
+    $tabla = [];
+    foreach (['A', 'B', 'C', 'D'] as $letra) {
+        if (!isset($escenarios[$letra]) || !is_array($escenarios[$letra])) {
+            continue;
+        }
+
+        $esc = $escenarios[$letra];
+        $tabla[] = [
+            'codigo' => $letra,
+            'nombre' => $esc['nombre'] ?? '',
+            'costo' => ml_formato_moneda(floatval($esc['costo_estimado'] ?? 0)),
+            'beneficio' => ml_formato_moneda(floatval($esc['beneficio_estimado'] ?? 0)),
+            'vbp' => ml_formato_moneda(floatval($esc['vbp'] ?? 0)),
+            'duracion' => ($esc['duracion_min_meses'] ?? '?') . '–' . ($esc['duracion_max_meses'] ?? '?') . ' meses',
+            'riesgo' => ($esc['riesgo_institucional'] ?? 0) . '/5',
+            'intervencion' => ucfirst($esc['nivel_intervencion'] ?? ''),
+            'recomendado' => ($letra === $recomendado),
+        ];
+    }
+
+    return $tabla;
+}
+
+function ml_parse_escenarios_payload(?array $payload, string $fallbackRecommended = 'C'): array
+{
+    $payload = is_array($payload) ? $payload : [];
+    $escenarios = isset($payload['escenarios']) && is_array($payload['escenarios'])
+        ? $payload['escenarios']
+        : $payload;
+
+    $escenarios = array_filter(
+        $escenarios,
+        static fn($key) => in_array($key, ['A', 'B', 'C', 'D'], true),
+        ARRAY_FILTER_USE_KEY
+    );
+
+    $recomendado = strtoupper((string) ($payload['recomendado'] ?? $fallbackRecommended));
+    if (!in_array($recomendado, ['A', 'B', 'C', 'D'], true)) {
+        $recomendado = $fallbackRecommended;
+    }
+
+    $tablaComparativa = isset($payload['tabla_comparativa']) && is_array($payload['tabla_comparativa'])
+        ? $payload['tabla_comparativa']
+        : ml_build_tabla_comparativa($escenarios, $recomendado);
+
+    return [
+        'escenarios' => $escenarios,
+        'recomendado' => $recomendado,
+        'tabla_comparativa' => $tablaComparativa,
+        'alertas_marzo_2026' => is_array($payload['alertas_marzo_2026'] ?? null) ? $payload['alertas_marzo_2026'] : [],
     ];
 }

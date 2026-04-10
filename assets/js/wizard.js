@@ -481,7 +481,8 @@ class WizardMotorLaboral {
      *   datos_laborales: { salario, antiguedad_meses, provincia, categoria, cct, cantidad_empleados },
      *   documentacion:   { tiene_recibos, tiene_contrato, registrado_afip, tiene_testigos, auditoria_previa },
      *   situacion:       { hay_intercambio, fue_intimado, ya_despedido, urgencia, cantidad_empleados, fecha_despido, fecha_ultimo_telegrama },
-     *   email
+     *   contacto:        { email },
+     *   schema_version
      * }
      *
      * @returns {Object} Payload listo para JSON.stringify
@@ -523,6 +524,10 @@ class WizardMotorLaboral {
             categoria: leer('#categoria'),
             cct: leer('#cct'),
             cantidad_empleados: parseInt(leer('#cantidad_empleados'), 10) || 1,
+            edad: parseInt(leer('#edad'), 10) || 0,
+            tipo_registro: leer('#tipo_registro') || 'registrado',
+            salario_recibo: parseFloat(leer('#salario_recibo')) || 0,
+            antiguedad_recibo: parseInt(leer('#antiguedad_recibo'), 10) || 0,
         };
 
         // ── Paso 3: Documentación (todos Si/No) ──────────────────────────────
@@ -543,6 +548,8 @@ class WizardMotorLaboral {
             cantidad_empleados: parseInt(leer('#cantidad_empleados_sit'), 10) || 1,
             fecha_despido: leer('#fecha_despido'),
             fecha_ultimo_telegrama: leer('#fecha_ultimo_telegrama'),
+            motivo_diferencia: leer('#motivo_diferencia') || 'mala_categorizacion',
+            meses_adeudados: parseInt(leer('#meses_adeudados'), 10) || 0,
             
             // NEW v2.1: RIPTE campos dinámicos
             dia_despido: parseInt(leer('#dia_despido'), 10) || 15,
@@ -568,10 +575,16 @@ class WizardMotorLaboral {
             // NEW v2.1+: LEY 27.802 — Art. 30 (Responsabilidad Solidaria)
             cantidad_subcontratistas: parseInt(leer('#cantidad_subcontratistas'), 10) || 1,
             principal_valida_cuil: leerRadio('valida_cuil'),
-            principal_verifica_aaportes: leerRadio('valida_aportes'),
+            principal_verifica_aportes: leerRadio('valida_aportes'),
             principal_paga_directo: leerRadio('valida_pago_directo'),
             principal_valida_cbu_trabajador: leerRadio('valida_cbu'),
             principal_cubre_art: leerRadio('valida_art'),
+            actividad_esencial: leerRadio('actividad_esencial'),
+            control_documental: leerRadio('control_documental'),
+            control_operativo: leerRadio('control_operativo'),
+            integracion_estructura: leerRadio('integracion_estructura'),
+            contrato_formal: leerRadio('contrato_formal'),
+            falta_f931_art: leerRadio('falta_f931_art'),
             
             // NEW v2.2+: Nivel de cumplimiento Auditoría MTEySS/SRT
             nivel_cumplimiento: (() => {
@@ -587,6 +600,40 @@ class WizardMotorLaboral {
                 if (noCount >= 3) return 'critico'; // 3 o más incumplimientos = Riesgo Crítico MTEySS/SRT
                 return 'estable'; // Menos de 3 incumplimientos = Riesgo Estable
             })(),
+            meses_no_registrados: parseInt(leer('#meses_no_registrados'), 10) || 0,
+            meses_en_mora: parseInt(leer('#meses_en_mora'), 10) || 0,
+            aplica_blanco_laboral: leerRadio('aplica_blanco_laboral'),
+            probabilidad_condena: parseFloat(leer('#probabilidad_condena')) || 0.5,
+            inspeccion_previa: leerRadio('inspeccion_previa'),
+            chk_alta_sipa: leerRadio('chk_alta_sipa'),
+            chk_libro_art52: leerRadio('chk_libro_art52'),
+            chk_recibos_cct: leerRadio('chk_recibos_cct'),
+            chk_art_vigente: leerRadio('chk_art_vigente'),
+            chk_examenes: leerRadio('chk_examenes'),
+            chk_epp_rgrl: leerRadio('chk_epp_rgrl'),
+
+            // Accidentes / ART
+            tipo_contingencia: leer('#tipo_contingencia') || 'accidente_tipico',
+            fecha_siniestro: leer('#fecha_siniestro'),
+            porcentaje_incapacidad: parseFloat(leer('#porcentaje_incapacidad')) || 0,
+            incapacidad_tipo: leer('#incapacidad_tipo') || 'permanente_definitiva',
+            tiene_art: (() => {
+                const tieneArtRadio = leerRadioRaw('tiene_art');
+                if (tieneArtRadio) return tieneArtRadio;
+                const estadoArtEmpresa = leer('#estado_art_empresa') || 'activa_valida';
+                return estadoArtEmpresa === 'inexistente' ? 'no' : 'si';
+            })(),
+            estado_art: leer('#estado_art_empresa') || 'activa_valida',
+            culpa_grave: leerRadio('culpa_grave'),
+            via_civil: leerRadio('via_civil'),
+            denuncia_art: leerRadio('denuncia_art'),
+            rechazo_art: leerRadio('rechazo_art'),
+            comision_medica: leer('#comision_medica') || 'no_iniciada',
+            dictamen_porcentaje: parseFloat(leer('#dictamen_porcentaje')) || 0,
+            via_administrativa_agotada: leerRadio('via_administrativa_agotada'),
+            tiene_preexistencia: leerRadio('tiene_preexistencia'),
+            preexistencia_porcentaje: parseFloat(leer('#preexistencia_porcentaje')) || 0,
+            licencia_activa: leerRadio('licencia_activa'),
             
             // NEW v2.1+: LEY 27.802 — Fraude Laboral (5 indicadores)
             fraude_facturacion_desproporcionada: leerRadio('fraude_facturacion_desproporcionada'),
@@ -611,7 +658,10 @@ class WizardMotorLaboral {
             datos_laborales: datosLaborales,
             documentacion: documentacion,
             situacion: situacion,
-            email: email,
+            contacto: {
+                email: email,
+            },
+            schema_version: '2026-04',
         };
     }
 

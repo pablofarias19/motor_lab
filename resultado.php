@@ -49,34 +49,23 @@ try {
 $datosLaborales = json_decode($analisis['datos_laborales'], true) ?? [];
 $documentacion = json_decode($analisis['documentacion_json'], true) ?? [];
 $situacion = json_decode($analisis['situacion_json'], true) ?? [];
-$irilDetalle = json_decode($analisis['iril_detalle'], true) ?? [];
+$irilPayload = ml_parse_iril_payload(json_decode($analisis['iril_detalle'], true) ?? []);
 $exposicion = json_decode($analisis['exposicion_json'], true) ?? [];
-$escenarios = json_decode($analisis['escenarios_json'], true) ?? [];
+$escenariosPayload = ml_parse_escenarios_payload(
+    json_decode($analisis['escenarios_json'], true) ?? [],
+    $analisis['escenario_recomendado'] ?? 'C'
+);
 
-$irilScore = floatval($analisis['iril_score']);
-$nivelIril = ml_nivel_iril($irilScore);
-$escRecomendado = $analisis['escenario_recomendado'] ?? 'C';
+$irilDetalle = $irilPayload['detalle'];
+$alertas = $irilPayload['alertas'];
+$irilScore = $irilPayload['score'] > 0 ? $irilPayload['score'] : floatval($analisis['iril_score']);
+$nivelIril = is_array($irilPayload['nivel']) ? $irilPayload['nivel'] : ml_nivel_iril($irilScore);
+$escenarios = $escenariosPayload['escenarios'];
+$escRecomendado = $escenariosPayload['recomendado'];
+$tablaComparativa = $escenariosPayload['tabla_comparativa'];
+$alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 
-// Etiquetas legibles de tipos de conflicto
-$etiquetasConflicto = [
-    'despido_sin_causa' => 'Despido sin causa',
-    'despido_con_causa' => 'Despido con causa',
-    'diferencias_salariales' => 'Diferencias salariales',
-    'trabajo_no_registrado' => 'Trabajo no registrado',
-    'accidente_laboral' => 'Accidente laboral',
-    'reclamo_indemnizatorio' => 'Reclamo indemnizatorio',
-    'multas_legales' => 'Multas legales',
-    'responsabilidad_solidaria' => 'Responsabilidad solidaria',
-    'riesgo_inspeccion' => 'Riesgo de inspección',
-    'auditoria_preventiva' => 'Auditoría preventiva',
-];
-
-$tipoConflictoLabel = $etiquetasConflicto[$analisis['tipo_conflicto']] ?? $analisis['tipo_conflicto'];
-
-// ─── Alertas laborales ────────────────────────────────────────────────────────
-$alertas = $irilDetalle ? ($irilDetalle['alertas'] ?? []) : [];
-// Las alertas también están en el resultado del motor — las buscamos donde corresponde
-// Si no hay alertas en detalle, las calculamos desde la exposición (ya incluidas por el motor)
+$tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
 
 // ─── Registrar que el usuario vio el informe ──────────────────────────────────
 try {
@@ -132,24 +121,6 @@ try {
 } catch (Exception $e) {
     ml_logear("[resultado.php] Error recalculando Ley 27.802: " . $e->getMessage(), 'warning', 'analisis.log');
 }
-$tablaComparativa = [];
-foreach (['A', 'B', 'C', 'D'] as $letra) {
-    if (!isset($escenarios[$letra]))
-        continue;
-    $esc = $escenarios[$letra];
-    $tablaComparativa[] = [
-        'codigo' => $letra,
-        'nombre' => $esc['nombre'] ?? '',
-        'costo' => ml_formato_moneda($esc['costo_estimado'] ?? 0),
-        'beneficio' => ml_formato_moneda($esc['beneficio_estimado'] ?? 0),
-        'vbp' => ml_formato_moneda($esc['vbp'] ?? 0),
-        'duracion' => ($esc['duracion_min_meses'] ?? '?') . '–' . ($esc['duracion_max_meses'] ?? '?') . ' meses',
-        'riesgo' => ($esc['riesgo_institucional'] ?? 0) . '/5',
-        'intervencion' => ucfirst($esc['nivel_intervencion'] ?? ''),
-        'recomendado' => ($letra === $escRecomendado),
-    ];
-}
-
 // ─── Lógica adicional para el dashboard premium ──────────────────────────────
 
 // Resumen de documentación disponible
@@ -343,6 +314,7 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                         <?php if ($tienePresuncion): 
                             $pres = $ley27802['presuncion'];
                             $presOpera = $pres['presuncion_opera'] ?? false;
+                            $presRecomendacion = $pres['recomendación'] ?? ($pres['recomendacion'] ?? '');
                         ?>
                         <!-- Art. 23 — Presunción -->
                         <div style="border: 2px solid <?= $presOpera ? '#dc3545' : '#16a34a' ?>; border-radius: 10px; padding: 1rem; background: <?= $presOpera ? '#fff5f5' : '#f0fdf4' ?>;">
@@ -358,9 +330,9 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                                 <div>Pago bancario: <?= ($situacion['tiene_pago_bancario'] ?? 'no') === 'si' ? '✅ Sí' : '❌ No' ?></div>
                                 <div>Contrato escrito: <?= ($situacion['tiene_contrato_escrito'] ?? 'no') === 'si' ? '✅ Sí' : '❌ No' ?></div>
                             </div>
-                            <?php if (!empty($pres['recomendacion'])): ?>
+                            <?php if (!empty($presRecomendacion)): ?>
                             <p style="margin: 0.5rem 0 0; font-size: 0.75rem; font-style: italic; color: #666;">
-                                <?= htmlspecialchars($pres['recomendacion']) ?>
+                                <?= htmlspecialchars($presRecomendacion) ?>
                             </p>
                             <?php endif; ?>
                         </div>
@@ -369,7 +341,8 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                         <?php if ($tieneSolidaria):
                             $sol = $ley27802['solidaria'];
                             $solExento = $sol['exento'] ?? false;
-                            $solFactor = floatval($sol['factor_exencion'] ?? 0);
+                            $solControles = intval($sol['controles_validados'] ?? 0);
+                            $solFactor = floatval($sol['factor_exención'] ?? ($sol['factor_exencion'] ?? 0));
                         ?>
                         <!-- Art. 30 — Solidaria -->
                         <div style="border: 2px solid <?= $solExento ? '#16a34a' : '#f59e0b' ?>; border-radius: 10px; padding: 1rem; background: <?= $solExento ? '#f0fdf4' : '#fffbeb' ?>;">
@@ -381,7 +354,8 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                                 <strong style="font-size: 1rem;"><?= $solExento ? 'EXENTO' : 'NO EXENTO' ?></strong>
                             </div>
                             <div style="font-size: 0.8rem; color: #555;">
-                                <div>Factor exención: <strong><?= number_format($solFactor * 100, 0) ?>%</strong> (<?= intval($sol['controles_validados'] ?? 0) ?>/5 controles)</div>
+                                <div>Controles validados: <strong><?= $solControles ?>/5</strong></div>
+                                <div>Factor de exposición: <strong><?= number_format($solFactor, 1) ?>x</strong></div>
                                 <div>CUIL: <?= ($situacion['valida_cuil'] ?? 'no') === 'si' ? '✅' : '❌' ?>
                                      Aportes: <?= ($situacion['valida_aportes'] ?? 'no') === 'si' ? '✅' : '❌' ?>
                                      Pago: <?= ($situacion['valida_pago_directo'] ?? 'no') === 'si' ? '✅' : '❌' ?>
@@ -394,8 +368,9 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                         
                         <?php if ($tieneFraude):
                             $fr = $ley27802['fraude'];
-                            $frNivel = $fr['nivel_riesgo'] ?? 'NINGUNO';
+                            $frNivel = $fr['nivel'] ?? 'NINGUNO';
                             $frScore = intval($fr['indicadores_detectados'] ?? 0);
+                            $frRecomendacion = $fr['recomendación'] ?? ($fr['recomendacion'] ?? '');
                             $frColor = match($frNivel) {
                                 'CRÍTICO' => '#dc2626',
                                 'ALTO' => '#ea580c',
@@ -416,9 +391,9 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                             <div style="font-size: 0.8rem; color: #555;">
                                 Indicadores detectados: <strong><?= $frScore ?>/5</strong>
                             </div>
-                            <?php if (!empty($fr['recomendacion'])): ?>
+                            <?php if (!empty($frRecomendacion)): ?>
                             <p style="margin: 0.5rem 0 0; font-size: 0.75rem; font-style: italic; color: #666;">
-                                <?= htmlspecialchars($fr['recomendacion']) ?>
+                                <?= htmlspecialchars($frRecomendacion) ?>
                             </p>
                             <?php endif; ?>
                         </div>
@@ -452,6 +427,69 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                                 </div>
                             </div>
                         </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endif; ?>
+
+            <?php
+            $analisisEmpresa = $exposicion['analisis_empresa'] ?? [];
+            if (!empty($analisisEmpresa)): ?>
+            <div class="premium-card">
+                <div class="premium-card-header">
+                    <h3><i class="bi bi-building-check"></i> Diagnóstico específico para empresa</h3>
+                </div>
+                <div class="premium-card-body">
+                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
+                        <?php if (!empty($analisisEmpresa['art_empresa'])):
+                            $artEmp = $analisisEmpresa['art_empresa']; ?>
+                            <div style="border:1px solid #f59e0b; border-radius:12px; padding:1rem; background:#fffaf0;">
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#b45309;">🏥 Contingencia ART empresa</h4>
+                                <div><strong>Nivel:</strong> <?= htmlspecialchars($artEmp['nivel_riesgo'] ?? '-') ?></div>
+                                <div><strong>Responsable principal:</strong> <?= htmlspecialchars($artEmp['responsable_principal'] ?? '-') ?></div>
+                                <div><strong>Exposición estimada:</strong> <?= ml_formato_moneda(floatval($artEmp['exposicion_estimada_empresa'] ?? 0)) ?></div>
+                                <?php if (!empty($artEmp['alertas_juridicas'])): ?>
+                                    <ul style="margin:.75rem 0 0 1rem; font-size:.85rem; color:#6b7280;">
+                                        <?php foreach ($artEmp['alertas_juridicas'] as $alerta): ?>
+                                            <li><?= htmlspecialchars($alerta) ?></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($analisisEmpresa['solidaridad'])):
+                            $solEmp = $analisisEmpresa['solidaridad']; ?>
+                            <div style="border:1px solid #2563eb; border-radius:12px; padding:1rem; background:#f8fbff;">
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#1d4ed8;">🤝 Responsabilidad solidaria</h4>
+                                <div><strong>Riesgo:</strong> <?= htmlspecialchars($solEmp['riesgo_calificacion'] ?? '-') ?></div>
+                                <div><strong>Probabilidad de condena:</strong> <?= htmlspecialchars($solEmp['probabilidad_condena'] ?? '-') ?></div>
+                                <div><strong>Exposición esperada:</strong> <?= ml_formato_moneda(floatval($solEmp['exposicion_esperada'] ?? 0)) ?></div>
+                                <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($solEmp['recomendacion'] ?? '') ?></p>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($analisisEmpresa['auditoria'])):
+                            $auditEmp = $analisisEmpresa['auditoria']; ?>
+                            <div style="border:1px solid #7c3aed; border-radius:12px; padding:1rem; background:#faf5ff;">
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#6d28d9;">🧾 Auditoría preventiva</h4>
+                                <div><strong>Regularizar:</strong> <?= ml_formato_moneda(floatval($auditEmp['cre_costo_regularizacion'] ?? 0)) ?></div>
+                                <div><strong>Litigio esperado:</strong> <?= ml_formato_moneda(floatval($auditEmp['cll_costo_litigio_esperado'] ?? 0)) ?></div>
+                                <div><strong>Acción sugerida:</strong> <?= htmlspecialchars($auditEmp['recomendacion_accion'] ?? '-') ?></div>
+                                <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($auditEmp['texto_estrategico'] ?? '') ?></p>
+                            </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($analisisEmpresa['inspeccion'])):
+                            $inspEmp = $analisisEmpresa['inspeccion']; ?>
+                            <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;">
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;">🏛️ Inspección ARCA / Ministerio</h4>
+                                <div><strong>Capital omitido:</strong> <?= ml_formato_moneda(floatval($inspEmp['capital_omitido'] ?? 0)) ?></div>
+                                <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($inspEmp['intereses'] ?? 0)) ?></div>
+                                <div><strong>Deuda total:</strong> <?= ml_formato_moneda(floatval($inspEmp['deuda_total'] ?? 0)) ?></div>
+                                <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($inspEmp['detalle'] ?? '') ?></p>
+                            </div>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -943,12 +981,13 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                 'score' => $irilScore,
                 'nivel' => $nivelIril,
                 'detalle' => $irilDetalle,
-                'alertas' => $irilDetalle['alertas'] ?? [],
+                'alertas' => $alertas,
             ],
             'exposicion' => $exposicion,
             'escenarios' => $escenarios,
             'recomendado' => $escRecomendado,
             'tabla_comparativa' => $tablaComparativa,
+            'alertas_marzo_2026' => $alertasMarzo2026,
             'tipo_conflicto' => $analisis['tipo_conflicto'],
             'tipo_usuario' => $analisis['tipo_usuario'],
         ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
