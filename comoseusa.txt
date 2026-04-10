@@ -1,0 +1,97 @@
+Cómo funciona el Motor Laboral — paso a paso
+1. El usuario entra al wizard
+
+https://fariasortiz.com.ar/motor_laboral/index.php
+Ve un formulario de 5 pasos en pantalla:
+
+
+[Paso 1]  ¿Sos empleado o empleador? + tipo de conflicto
+[Paso 2]  Salario, antigüedad, provincia, categoría, CCT
+[Paso 3]  ¿Tenés telegramas? ¿recibos? ¿testigos? ¿alta ARCA?
+[Paso 4]  ¿Hubo intercambio de cartas? ¿Ya te despidieron? ¿Urgencia?
+[Paso 5]  Email opcional para recibir el informe
+2. Al hacer clic en "Analizar mi caso"
+El JS de wizard.js arma un JSON con todo lo completado y lo manda al servidor:
+
+
+POST → /motor_laboral/api/procesar_analisis.php
+El servidor hace 4 cosas en secuencia:
+
+
+IrilEngine       → calcula el IRIL (puntaje 1.0 a 5.0)
+                   + exposición económica en pesos (LCT)
+                   + alertas activas (prescripción, plazos, etc.)
+
+EscenariosEngine → genera 4 escenarios estratégicos
+                   A = Negociación directa
+                   B = Litigio judicial
+                   C = Estrategia mixta
+                   D = Acción preventiva
+
+DatabaseManager  → guarda todo en analisis_laborales
+                   genera un UUID único
+
+mail()           → si dejó email, manda el link al resultado
+Devuelve JSON:
+
+
+{
+  "success": true,
+  "data": {
+    "uuid": "a3f9b2c1-...",
+    "redirect": "resultado.php?uuid=a3f9b2c1-..."
+  }
+}
+3. El wizard redirige automáticamente a:
+
+https://fariasortiz.com.ar/motor_laboral/resultado.php?uuid=a3f9b2c1-...
+El usuario ve:
+
+
+┌─────────────────────────────────────────┐
+│  IRIL  3.8  ████████░░  ALTO            │
+├─────────────────────────────────────────┤
+│  Exposición económica estimada          │
+│  Indemnización:        $ 87.500,00      │
+│  Preaviso:             $ 29.166,00      │
+│  SAC proporcional:     $ 14.583,00      │
+│  TOTAL ESTIMADO:       $ 131.249,00     │
+├─────────────────────────────────────────┤
+│  Escenarios estratégicos                │
+│  [A] Negociación  VBP: $91.874  ✅ REC │
+│  [B] Litigio      VBP: $65.000         │
+│  [C] Mixta        VBP: $107.624        │
+│  [D] Preventiva   VBP: $420.000        │
+├─────────────────────────────────────────┤
+│  ⏳ Alerta: prescripción en 18 meses   │
+│  📨 Alerta: responder telegrama 48hs   │
+└─────────────────────────────────────────┘
+         [Descargar PDF]  [Consultar]
+4. El usuario descarga el PDF
+
+/motor_laboral/api/generar_informe.php?uuid=a3f9b2c1-...
+Genera un PDF con toda la información usando FPDF.
+
+5. Vos como admin lo ves en el panel
+
+https://fariasortiz.com.ar/motor_laboral/admin/
+contraseña: pablo123_motor
+
+Dashboard → KPIs + gráficos automáticos
+Lista     → todos los análisis con filtros
+Detalle   → todos los datos decodificados + escenarios + alertas
+En síntesis
+
+Usuario llena el wizard
+    ↓
+procesar_analisis.php calcula y guarda
+    ↓
+resultado.php muestra IRIL + exposición + escenarios
+    ↓
+Admin lo ve en el panel con todos los datos
+El UUID es la clave única que conecta todo. Con ese UUID podés:
+
+Ver el resultado público
+Descargar el PDF
+Ver el detalle en el admin
+Vincularlo a un trámite del sistema principal

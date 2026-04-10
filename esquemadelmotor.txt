@@ -1,0 +1,430 @@
+Este es un desglose esquemático del Motor de Riesgo Laboral, organizado por sus funciones principales, motivos de consulta y la estructura técnica que utiliza para resolver cada caso:
+
+1. Funciones del Sistema (Módulos)
+El sistema opera como un embudo de decisión estratégica dividido en cinco etapas:
+
+Wizard Interactivo: Captura de datos estructurados en 5 pasos (Perfil, Datos Laborales, Documentación, Situación Actual y Contacto).
+IrilEngine (Motor de Riesgo): Calcula el Índice de Riesgo Institucional Laboral (puntuación de 1.0 a 5.0).
+Calculadora de Exposición: Estima el impacto económico en pesos (Indemnizaciones LCT y multas).
+EscenariosEngine (Estrategia): Genera y compara 4 caminos posibles (Negociación, Litigio, Mixto, Preventivo).
+Generador de Informes: Exportación de resultados a PDF y panel de control administrativo.
+2. Motivos de Consulta (Entradas)
+El sistema segmenta el análisis según quién consulta y cuál es el conflicto:
+
+Perfil	Motivos de Consulta (Tipos de Conflicto)	Puntos Críticos Analizados
+Empleado	Despido sin causa	Cálculo de rubros retributivos e indemnizatorios básicos.
+Despido con causa	Evaluación de la solidez de la causal y riesgo de impugnación.
+Trabajo no registrado	Aplicación de multas Ley 24.013 y 25.323.
+Diferencias Salariales	Recargos por mala categorización o deudas históricas.
+Accidente Laboral	Aplicación de fórmulas (Mendez/Vuotto) y falta de ART.
+Empleador	Previsión de Despido	Costo de desvinculación y mitigación de multas.
+Auditoría Preventiva	Diagnóstico de cumplimiento de la nómina actual.
+Responsabilidad Solidaria	Riesgo por subcontratistas y tercerizados (Art. 30 LCT).
+Riesgo Inspección	Preparación ante controles de ARCA o Ministerio de Trabajo.
+3. Estructura de Análisis (El índice IRIL)
+Para cada consulta, el sistema resuelve la "fricción" del caso analizando 5 dimensiones de peso variable:
+
+Saturación Tribunalicia (20%): Evalúa el tiempo de resolución según la provincia (ej. CABA es máxima saturación: 5.0).
+Complejidad Probatoria (25%): Cruza la disponibilidad de telegramas, recibos, contratos y testigos.
+Volatilidad Normativa (15%): Riesgo basado en la estabilidad de la jurisprudencia para ese conflicto (ej. Accidentes es muy volátil: 4.5).
+Riesgo de Costas (20%): Probabilidad de condena en costas según la posición procesal y el intercambio epistolar previo.
+Riesgo Multiplicador (20%): Analiza el "efecto cascada" si el conflicto afecta a otros empleados de la empresa.
+4. Puntos a Resolver (Resultados Estratégicos)
+Por cada consulta realizada, el sistema busca dar respuesta a estos cuatro escenarios:
+
+[A] Negociación Temprana: Se busca resolver el Punto de Equilibrio (VBP) aceptando un recupero menor (aprox. 70%) para evitar el riesgo y tiempo judicial.
+[B] Litigio Judicial: Resuelve el Techo del Reclamo. Incluye todas las multas legales pero aplica el máximo descuento por duración (meses) y riesgo IRIL.
+[C] Estrategia Mixta: Resuelve la instancia administrativa (SECLO/Ministerio). Busca un recupero intermedio (aprox. 82%) mediante intimación formal.
+[D] Acción Preventiva: Resuelve la Regularización. Para empleadores, indica el costo de "curar" la relación laboral frente al costo de perder un juicio futuro.
+Resumen del Flujo de Datos
+Entrada: tipo_usuario + tipo_conflicto + datos_numéricos.
+Procesamiento: IrilEngine.php (Riesgo) + EscenariosEngine.php (Opciones).
+Salida: uuid -> resultado.php (Visualización de VAE: Valor Ajustado Estratégico).
+
+CHAT GPT INTERVIENE:
+🔵 I. CONSULTAS DE EMPLEADO
+1️⃣ DESPIDO SIN CAUSA
+🎯 Objetivo
+
+Liquidación base + evaluación estratégica.
+
+🔎 Variables críticas
+
+Salario normal y habitual (mejor remuneración)
+
+Antigüedad exacta (años y fracción > 3 meses)
+
+Fecha de ingreso
+
+Fecha de despido
+
+Provincia
+
+Entrega certificados art. 80
+
+Preaviso otorgado o no
+
+📚 Base normativa RAG obligatoria
+
+Art. 245 LCT
+
+Art. 231 LCT
+
+Art. 232 LCT
+
+Art. 233 LCT
+
+Art. 123 LCT
+
+Art. 80 LCT
+
+Jurisprudencia provincial sobre base salarial
+
+⚙️ Fórmulas a validar
+
+Indemnización = salario × años
+Preaviso = salario × meses según antigüedad
+Integración mes = salario / 30 × días restantes
+SAC proporcional
+Vacaciones proporcionales
+
+⚠ Este módulo debe ser matemáticamente exacto.
+Aquí no puede haber margen conceptual.
+
+🎯 IRIL ajustes específicos
+
+Saturación tribunalicia → alto peso
+
+Complejidad probatoria → baja si despido documentado
+
+Volatilidad normativa → baja
+
+2️⃣ DESPIDO CON CAUSA
+🎯 Objetivo
+
+Evaluar solidez causal y probabilidad de impugnación.
+
+🔎 Variables críticas
+
+Descripción del hecho imputado
+
+Existencia de sumario interno
+
+Prueba documental
+
+Testigos
+
+Proporcionalidad de sanción
+
+Intimaciones previas
+
+📚 Base RAG
+
+Art. 242 LCT
+
+Jurisprudencia sobre proporcionalidad
+
+Doctrina sobre pérdida de confianza
+
+⚙️ Evaluación IA
+
+Este módulo no es matemático.
+Debe usar modelo semántico especializado que clasifique:
+
+Gravedad
+
+Inmediatez
+
+Proporcionalidad
+
+Riesgo de reversión judicial
+
+Aquí la IA es clave.
+
+🎯 IRIL ajustes
+
+Complejidad probatoria → muy alta
+
+Riesgo costas → alto
+
+Volatilidad jurisprudencial → media
+
+3️⃣ TRABAJO NO REGISTRADO
+🎯 Objetivo
+
+Calcular multas + riesgo penal/laboral.
+
+🔎 Variables
+
+Fecha real ingreso
+
+Fecha registrada
+
+Diferencias salariales
+
+Intimación Ley 24.013 enviada o no
+
+Respuesta del empleador
+
+📚 RAG obligatorio
+
+Arts. 8, 9, 10 Ley 24.013
+
+Art. 15 Ley 24.013
+
+Ley 25.323
+
+Jurisprudencia sobre registración defectuosa
+
+⚙️ Fórmulas
+
+Multa 25% remuneraciones no registradas
+Duplicación indemnización Ley 25.323
+
+⚠ Este módulo debe distinguir:
+
+Falta total
+
+Parcial
+
+Deficiencia registral
+
+4️⃣ DIFERENCIAS SALARIALES
+🎯 Objetivo
+
+Calcular deuda acumulada.
+
+🔎 Variables
+
+Categoría correcta
+
+Categoría abonada
+
+CCT aplicable
+
+Período retroactivo
+
+📚 RAG
+
+CCT específico
+
+Escalas salariales históricas
+
+Jurisprudencia sobre encuadramiento
+
+⚙️ Motor necesario
+
+Aquí necesitás:
+Base de datos histórica salarial.
+Sin eso el cálculo es especulativo.
+
+5️⃣ ACCIDENTE LABORAL
+🎯 Objetivo
+
+Determinar vía ART vs acción civil.
+
+🔎 Variables
+
+Incapacidad %
+
+Edad
+
+Salario
+
+ART contratada
+
+Comisión médica interviniente
+
+📚 RAG
+
+Ley 24.557
+
+Ley 27.348
+
+Fórmulas Vuotto / Méndez
+
+Jurisprudencia provincial
+
+⚙️ Este módulo requiere
+
+Motor actuarial específico.
+No puede compartir lógica con despidos.
+
+🔴 II. CONSULTAS DE EMPLEADOR
+6️⃣ PREVISIÓN DE DESPIDO
+🎯 Objetivo
+
+Simular costo antes de ejecutar decisión.
+
+Variables
+
+Tipo desvinculación
+
+Posible causal
+
+Antigüedad
+
+Riesgo registral
+
+Aquí se cruzan:
+Módulo despido + módulo multas + IRIL preventivo.
+
+7️⃣ AUDITORÍA PREVENTIVA
+🎯 Objetivo
+
+Diagnóstico integral nómina.
+
+Variables
+
+Cantidad empleados
+
+Tipo contratos
+
+Registro AFIP
+
+Convenio aplicable
+
+ART
+
+Tercerización
+
+Aquí el IRIL es empresarial, no individual.
+
+8️⃣ RESPONSABILIDAD SOLIDARIA (Art. 30 LCT)
+🎯 Objetivo
+
+Evaluar riesgo por subcontratistas.
+
+Variables
+
+Tipo actividad
+
+Objeto social
+
+Integración estructural
+
+Control efectivo
+
+Este módulo requiere RAG jurisprudencial específico.
+
+9️⃣ RIESGO DE INSPECCIÓN
+🎯 Objetivo
+
+Diagnóstico ante control ARCA/Ministerio.
+
+Debe integrar:
+
+Registración
+
+Seguridad e higiene
+
+Jornada
+
+Libro digital
+
+🟣 III. IRIL — REESTRUCTURACIÓN TÉCNICA PARA RAG
+
+Actualmente IRIL es genérico.
+
+Debe transformarse en:
+
+IRIL(tipo_conflicto, provincia, calidad_prueba, riesgo_multas, riesgo_jurisprudencial)
+
+Cada tipo de conflicto debe tener pesos distintos.
+
+Ejemplo:
+
+Despido sin causa:
+Complejidad probatoria 15%
+Riesgo costas 25%
+
+Despido con causa:
+Complejidad probatoria 35%
+Riesgo costas 30%
+
+Accidente laboral:
+Volatilidad 30%
+
+🟢 IV. ESCENARIOS — REFINAMIENTO NECESARIO
+
+Los porcentajes fijos (70%, 82%) no pueden ser rígidos.
+
+Deben depender de:
+
+IRIL
+
+Tipo conflicto
+
+Provincia
+
+Capacidad económica demandado
+
+Historial conciliaciones sectoriales
+
+Aquí la IA puede predecir recupero estimado basado en casos históricos (cuando tengas base suficiente).
+
+🔵 V. QUÉ NECESITÁS PARA LLEVARLO A RAG REAL
+
+Para cada tipo de consulta:
+
+Base normativa estructurada
+
+Base jurisprudencial etiquetada
+
+Base doctrinaria resumida
+
+Base estadística provincial
+
+Motor matemático independiente
+
+🔶 Conclusión Estratégica
+
+Tu motor es conceptualmente sólido.
+
+Pero hoy está:
+
+Semi-paramétrico.
+
+Para convertirlo en:
+
+Motor Jurídico Inteligente Especializado
+
+Debe evolucionar a:
+
+Sistema multi-módulo con RAG por tipo de conflicto + motor matemático independiente + ponderaciones IRIL dinámicas.
+
+¿QUE ARCHIVOS CONSULTA?
+Cuando se realiza una consulta al Motor de Riesgo Laboral, el sistema sigue un flujo jerárquico de archivos para procesar, calcular y devolver la respuesta.
+
+Aquí tienes la lista organizada de los archivos que se consultan según su función:
+
+1. Archivo de Entrada y Orquestación
+procesar_analisis.php: Es el cerebro de la consulta. Recibe los datos del usuario (vía AJAX/JSON) y orquesta la llamada a todos los demás motores y configuraciones.
+2. Motores de Inferencia (Lógica de Negocio)
+Estos archivos contienen las fórmulas y la lógica que resuelve el caso:
+
+IrilEngine.php: Calcula el riesgo institucional (IRIL 1.0 a 5.0) y estima la exposición económica (pesos).
+EscenariosEngine.php: Utiliza los resultados del IrilEngine para proyectar los 4 escenarios estratégicos (Negociación, Litigio, Mixto y Preventivo).
+3. Archivos de Configuración y Parámetros
+El motor no inventa los números, los lee de aquí:
+
+parametros_motor.php: Es el archivo más crítico para el "ajuste". Contiene los pesos de cada riesgo, las tasas de honorarios, y los porcentajes de recupero para cada escenario.
+config.php: Define variables de entorno, rutas base y funciones globales de ayuda (helpers).
+4. Capas de Datos y Persistencia
+DatabaseManager.php: Gestiona la conexión y el guardado del análisis en la base de datos (tabla analisis_laborales).
+motor_laboral/logs/motor.log: (Si está activado) Se consulta/escribe para registrar errores o trazas del cálculo.
+5. Archivos de Respuesta y Presentación
+Una vez que el motor termina de consultar los anteriores, el usuario es redirigido a:
+
+resultado.php: Consulta nuevamente a la base de datos (vía el UUID generado) para mostrar los gráficos y tablas al usuario.
+generar_informe.php: Si el usuario pide descargar el resultado, este archivo consulta la librería FPDF para armar el documento.
+Resumen del flujo de consulta:
+index.php (Wizard) -> envía a -> procesar_analisis.php
+procesar_analisis.php llama a:
+config.php
+parametros_motor.php
+IrilEngine.php
+EscenariosEngine.php
+DatabaseManager.php
+Se genera un UUID y se guarda el resultado.
+El navegador consulta resultado.php?uuid=... para leer lo procesado.

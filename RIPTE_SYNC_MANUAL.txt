@@ -1,0 +1,410 @@
+═══════════════════════════════════════════════════════════════════════════════
+RIPTE SYNC v2.1 — MANUAL TÉCNICO
+Motor Laboral — Estudio Farias Ortiz
+═══════════════════════════════════════════════════════════════════════════════
+
+TABLA DE CONTENIDOS:
+1. Resumen General
+2. Estructura del Script
+3. Funciones Principales
+4. Cómo Ejecutar
+5. Datos Predefinidos (Fallback)
+6. Cómo Actualizar Valores
+
+═══════════════════════════════════════════════════════════════════════════════
+1. RESUMEN GENERAL
+═══════════════════════════════════════════════════════════════════════════════
+
+¿QUÉ HACE?
+El script ripte_sync.py automatiza la actualización de valores RIPTE y Pisos 
+Mínimos en la base de datos motor_laboral.
+
+CARACTERÍSTICAS:
+- ✓ Entrada manual de datos (interactivo)
+- ✓ Actualización automática en tabla ripte_indices
+- ✓ Actualización de pisos mínimos (IPP, IPD, gran_invalidez, muerte)
+- ✓ Marca automáticamente qué RIPTE es "vigente"
+- ✓ Registra en tabla ripte_sincronizaciones para auditoría
+
+REQUISITOS:
+- Python 3.7+
+- Paquete: mysql-connector-python
+- Conexión a MySQL localhost:3306
+
+═══════════════════════════════════════════════════════════════════════════════
+2. ESTRUCTURA DEL SCRIPT
+═══════════════════════════════════════════════════════════════════════════════
+
+UBICACIÓN:
+  c:\Users\USUARIO\Programacion\web PABLO_SISTEMATRAM\motor_laboral\ripte_sync.py
+
+SECCIONES:
+┌─ LÍNEAS 1-35: CONFIGURACIÓN INICIAL
+│  - Importa librerías (sys, json, datetime, mysql.connector)
+│  - Define DB_CONFIG (usuario, contraseña, host, puerto)
+│  - Define RIPTE_FALLBACK (datos predeterminados Feb 2025 - Abr 2026)
+│  - Define PISOS_FALLBACK (valores para Marzo 2026)
+│
+├─ LÍNEAS 40-200: CLASE RIPTESyncManager
+│  │
+│  ├─ __init__()            → Inicializa el gestor
+│  ├─ conectar()            → Conecta a MySQL
+│  ├─ desconectar()         → Cierra conexión
+│  ├─ actualizar_ripte_indices()    → Inserta/actualiza en ripte_indices
+│  ├─ actualizar_pisos_minimos()    → Inserta/actualiza en ripte_pisos_minimos
+│  ├─ marcar_vigente()      → Marca un mes como RIPTE vigente actual
+│  └─ registrar_sincronizacion()    → Auditoría en ripte_sincronizaciones
+│
+├─ LÍNEAS 210-270: FUNCIONES DE ENTRADA
+│  ├─ entrada_manual_ripte()       → Pide mes/año y valores al usuario
+│  ├─ entrada_manual_pisos()       → Pide valores para 4 tipos de pisos
+│  └─ _validar_mes_ano()           → Valida que formato sea YYYY-MM
+│
+└─ LÍNEAS 280-354: MAIN (Punto de Entrada)
+   - Modo fallback: carga datos predeterminados
+   - Modo manual: pide valores interactivamente
+   - Ejecuta sincronización
+
+═══════════════════════════════════════════════════════════════════════════════
+3. FUNCIONES PRINCIPALES
+═══════════════════════════════════════════════════════════════════════════════
+
+FUNCIÓN: conectar()
+PROPÓSITO: Establece conexión a MySQL
+PARÁMETROS: Ninguno (usa DB_CONFIG)
+RETORNA: True si exitosa, False si falla
+EFECTO: Establece self.conexion y self.cursor
+
+CÓDIGO CLAVE (línea ~75-90):
+  mysql.connector.connect(
+    host='localhost',
+    user='root',
+    password='',
+    database='motor_laboral'
+  )
+
+DÓNDE CAMBIAR: Si necesitas otro host/usuario/contraseña, edita DB_CONFIG (líneas 26-31)
+
+───────────────────────────────────────────────────────────────────────────────
+
+FUNCIÓN: actualizar_ripte_indices(mes_ano, valor, fecha_pub, resolucion)
+PROPÓSITO: Inserta o actualiza un valor RIPTE en la BD
+PARÁMETROS:
+  - mes_ano: Ej: "2026-03" (formato YYYY-MM)
+  - valor: Ej: 189850.75 (número con decimales)
+  - fecha_pub: Fecha de publicación (automático si omite)
+  - resolucion: Ej: "SRT 3/2026" (automático si omite)
+RETORNA: True si exitosa
+
+CÓMO FUNCIONA:
+  1. Valida que mes_ano esté en formato YYYY-MM
+  2. Usa SQL INSERT ... ON DUPLICATE KEY UPDATE
+  3. Si el mes ya existe → actualiza valor_indice y estado='vigente'
+  4. Si no existe → inserta nuevo registro
+  5. Imprime en pantalla: "✓ 2026-03: $189,850.75"
+
+TABLA AFECTADA: ripte_indices
+COLUMNAS ACTUALIZADAS:
+  - valor_indice: El monto del RIPTE
+  - estado: Se marca como 'vigente'
+  - updated_at: Se actualiza con NOW()
+
+───────────────────────────────────────────────────────────────────────────────
+
+FUNCIÓN: actualizar_pisos_minimos(vigencia, pisos)
+PROPÓSITO: Actualiza los 4 tipos de pisos mínimos para una fecha
+PARÁMETROS:
+  - vigencia: Ej: "2026-03" (formato YYYY-MM)
+  - pisos: Diccionario con 4 tipos:
+    {
+      'IPP': 2897500,
+      'IPD': 5795000,
+      'gran_invalidez': 11590000,
+      'muerte': 8692500
+    }
+RETORNA: True si exitosa
+
+TABLA AFECTADA: ripte_pisos_minimos
+COLUMNAS:
+  - tipo_incapacidad: IPP, IPD, gran_invalidez, o muerte
+  - monto_piso: Valor mínimo
+  - vigencia_desde: Desde qué fecha rige
+
+───────────────────────────────────────────────────────────────────────────────
+
+FUNCIÓN: marcar_vigente(mes_ano)
+PROPÓSITO: Marca un RIPTE como "vigente" (el actual) y los demás como "histórico"
+PARÁMETROS:
+  - mes_ano: Ej: "2026-03"
+RETORNA: True si exitosa
+
+CÓMO FUNCIONA:
+  1. UPDATE ripte_indices SET estado='histórico' WHERE estado='vigente'
+     → Marca el anterior como histórico
+  2. UPDATE ripte_indices SET estado='vigente' WHERE mes_ano='2026-03'
+     → Marca el nuevo como vigente
+
+IMPORTANTE: Solo uno debe estar marcado como 'vigente' en cada momento
+
+───────────────────────────────────────────────────────────────────────────────
+
+FUNCIÓN: registrar_sincronizacion(tipo_fuente, estado, mensaje)
+PROPÓSITO: Auditoría — registra qué se sincronizó, cuándo, y resultado
+PARÁMETROS:
+  - tipo_fuente: 'fallback_local' o 'manual'
+  - estado: 'exitoso' o 'error'
+  - mensaje: Descripción si hubo error
+RETORNA: True si exitosa
+
+TABLA AFECTADA: ripte_sincronizaciones
+AUDITORÍA: Quedan registrados:
+  - Cuántos registros nuevos se insertaron
+  - Cuántos se actualizaron
+  - Cuántos se ignoraron
+  - Timestamp de la operación
+  - Usuario que ejecutó (ripte_sync.py)
+
+═══════════════════════════════════════════════════════════════════════════════
+4. CÓMO EJECUTAR
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN A: MODO INTERACTIVO (Entrada Manual)
+─────────────────────────────────────────────
+
+COMANDO:
+  .\.venv\Scripts\python.exe ripte_sync.py
+
+PROCESO:
+  1. El script muestra dos opciones:
+     - Opción 1: Cargar datos fallback (predeterminados)
+     - Opción 2: Ingresar datos manualmente
+
+  2. Si eliges Opción 1 (fallback):
+     - Selecciona: s (sí)
+     - Carga automáticamente Feb 2025 - Abr 2026
+     - Marca Feb 2026 como vigente
+
+  3. Si eliges Opción 2 (manual):
+     - Selecciona: s (sí)
+     - Te pide: Mes y año (ej: 2026-03)
+     - Te pide: Valor RIPTE (ej: 189850.75)
+     - Puedes ingresar múltiples valores
+     - Presiona ENTER sin escribir nada para terminar
+
+SALIDA ESPERADA:
+  ✓ Desconectado de BD
+  ✓ Sincronización completada exitosamente
+
+CÓDIGO DE SALIDA:
+  - 0: Éxito
+  - 1: Error
+
+───────────────────────────────────────────────────────────────────────────────
+
+OPCIÓN B: MODO AUTOMÁTICO (Fallback)
+─────────────────────────────────────
+
+COMANDO:
+  .\.venv\Scripts\python.exe ripte_sync.py --auto
+
+EFECTO:
+  Carga automáticamente los datos fallback sin hacer preguntas
+
+═══════════════════════════════════════════════════════════════════════════════
+5. DATOS PREDEFINIDOS (FALLBACK)
+═══════════════════════════════════════════════════════════════════════════════
+
+RIPTE FALLBACK (líneas 45-60):
+─────────────────────────────────
+
+'2025-02': 100000.00
+'2025-03': 101500.00
+'2025-04': 103200.00
+'2025-05': 105100.00
+'2025-06': 107200.00
+'2025-07': 140500.00
+'2025-08': 141200.50
+'2025-09': 142100.00
+'2025-10': 145230.12
+'2025-11': 147800.90
+'2025-12': 149500.22
+'2026-01': 152100.45
+'2026-02': 185750.50  ← DATO REAL ESTIMADO FEB 2026
+'2026-03': 189850.75  ← PROYECTADO
+
+PISOS FALLBACK (líneas 62-70):
+──────────────────────────────
+
+Vigencia Marzo 2026:
+  'IPP': 2897500
+  'IPD': 5795000
+  'gran_invalidez': 11590000
+  'muerte': 8692500
+
+═══════════════════════════════════════════════════════════════════════════════
+6. CÓMO ACTUALIZAR VALORES
+═══════════════════════════════════════════════════════════════════════════════
+
+ESCENARIO A: Quiero cambiar un valor RIPTE fallback
+────────────────────────────────────────────────────
+
+PASOS:
+  1. Abre ripte_sync.py en VS Code
+  2. Ve a línea ~45 (RIPTE_FALLBACK)
+  3. Busca el mes que queres cambiar:
+     
+     Actual:  '2026-03': 189850.75
+     Nuevo:   '2026-03': 195000.00
+  
+  4. Modifica el valor
+  5. Guarda (Ctrl+S)
+  6. Ejecuta:
+     .\.venv\Scripts\python.exe ripte_sync.py --auto
+
+EFECTO: Se carga la BD con el nuevo valor
+
+───────────────────────────────────────────────────────────────────────────────
+
+ESCENARIO B: Quiero agregar un nuevo mes RIPTE
+──────────────────────────────────────────────
+
+PASOS:
+  1. Abre ripte_sync.py
+  2. Línea ~60, después de '2026-03', agrega:
+     
+     '2026-04': 195500.00,
+
+  3. Ten CUIDADO: Cada línea excepto la última termina con coma (,)
+  4. Guarda (Ctrl+S)
+  5. Ejecuta:
+     .\.venv\Scripts\python.exe ripte_sync.py --auto
+
+EFECTO: Se carga el nuevo mes en la BD
+
+───────────────────────────────────────────────────────────────────────────────
+
+ESCENARIO C: Quiero cambiar datos de Pisos Mínimos
+───────────────────────────────────────────────────
+
+PASOS:
+  1. Abre ripte_sync.py
+  2. Ve a línea ~62 (PISOS_FALLBACK)
+  3. Busca el piso que queres cambiar:
+     
+     Actual: 'IPP': 2897500
+     Nuevo:  'IPP': 2900000
+  
+  4. Modifica el valor
+  5. Guarda (Ctrl+S)
+  6. Ejecuta:
+     .\.venv\Scripts\python.exe ripte_sync.py --auto
+
+EFECTO: Se actualiza la BD con el nuevo piso
+
+───────────────────────────────────────────────────────────────────────────────
+
+ESCENARIO D: Tengo datos reales que SRT publicó y quiero cargarlos
+─────────────────────────────────────────────────────────────────
+
+OPCIÓN 1 (Recomendado): Actualiza fallback y luego ejecuta --auto
+  1. Edita RIPTE_FALLBACK y PISOS_FALLBACK en el script
+  2. .\.venv\Scripts\python.exe ripte_sync.py --auto
+
+OPCIÓN 2: Modo interactivo
+  1. .\.venv\Scripts\python.exe ripte_sync.py
+  2. Selecciona Opción 2 (Ingresar datos manualmente)
+  3. Ingresa cada mes/año y valor
+  4. ✓ Se cargan directamente en la BD
+
+═══════════════════════════════════════════════════════════════════════════════
+CONEXIÓN A BASE DE DATOS
+═══════════════════════════════════════════════════════════════════════════════
+
+CONFIGURACIÓN ACTUAL (Líneas 26-31):
+
+DB_CONFIG = {
+    'host': 'localhost',        ← Tu servidor MySQL
+    'user': 'root',             ← Usuario
+    'password': '',             ← Contraseña (vacía = sin contraseña)
+    'database': 'motor_laboral',← BD destino
+    'charset': 'utf8mb4',
+    'use_unicode': True,
+}
+
+SI NECESITAS CAMBIAR:
+  - servidor (no es localhost)
+  - usuario (no es 'root')
+  - contraseña (tiene password)
+  - BD (otra base de datos)
+
+EDITA pedir a: Líneas 26-31, modifica DB_CONFIG
+
+EJEMPLO:
+  DB_CONFIG = {
+      'host': '192.168.1.100',  ← Otro servidor
+      'user': 'admin',          ← Otro usuario
+      'password': 'miPassword123',  ← Con contraseña
+      'database': 'motor_laboral',
+      'charset': 'utf8mb4',
+      'use_unicode': True,
+  }
+
+═══════════════════════════════════════════════════════════════════════════════
+TABLA DE REFERENCIA RÁPIDA
+═══════════════════════════════════════════════════════════════════════════════
+
+TABLA: ripte_indices
+Columnas principales:
+  mes_ano            2026-03
+  valor_indice       189850.75
+  fecha_publicacion  2026-02-22
+  resolucion_srt     SRT 3/2026
+  estado             vigente ← Solo uno debe estar marcado así
+  activo             1
+
+TABLA: ripte_pisos_minimos
+Columnas principales:
+  tipo_incapacidad   IPP | IPD | gran_invalidez | muerte
+  monto_piso         2897500
+  vigencia_desde     2026-03-15
+  resolucion_srt     SRT 3/2026
+  activo             1
+
+TABLA: ripte_sincronizaciones
+Columnas principales:
+  tipo_fuente        fallback_local | manual
+  registros_nuevos   5
+  estado             exitoso | error
+  mensaje_error      NULL (si estado=exitoso) o descripción del error
+  created_at         Timestamp de cuándo se ejecutó
+
+═══════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════════════════════
+
+ERROR: "Can't connect to MySQL server"
+→ MySQL no está corriendo o la configuración es incorrecta
+→ SOLUCIÓN: Verifica DB_CONFIG (líneas 26-31) o inicia MySQL
+
+ERROR: "No such module 'mysql.connector'"
+→ No instalaste mysql-connector-python
+→ SOLUCIÓN: 
+   .\.venv\Scripts\pip.exe install mysql-connector-python
+
+ERROR: "Formato inválido. Usá YYYY-MM"
+→ Ingresaste mal el mes (ej: 2026/3 en lugar de 2026-03)
+→ SOLUCIÓN: Usa formato YYYY-MM (ej: 2026-03)
+
+═══════════════════════════════════════════════════════════════════════════════
+RESUMEN PARA ACTUALIZAR RIPTE RÁPIDAMENTE
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: Obtener datos reales de SRT (boletinoficial.gob.ar)
+PASO 2: Editar ripte_sync.py, actualizar RIPTE_FALLBACK y PISOS_FALLBACK
+PASO 3: Ejecutar:
+        .\.venv\Scripts\python.exe ripte_sync.py --auto
+PASO 4: Verificar en phpMyAdmin → ripte_indices → estado=vigente
+
+✓ RIPTE ACTUALIZADO EN LA BD
+
+═══════════════════════════════════════════════════════════════════════════════

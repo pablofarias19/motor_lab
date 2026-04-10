@@ -1,0 +1,525 @@
+/* ═════════════════════════════════════════════════════════════════════════════
+   MOTOR LABORAL v2.1 — MEJORAS UI/UX
+   Extensión de motor.css con mejor contexto visual y ayuda para usuarios
+ ═════════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOOLTIPS INFORMATIVOS (Ayuda contextual)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.form-help-icon {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: help;
+    margin-left: 0.4rem;
+    position: relative;
+}
+
+.form-help-icon:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary-dark);
+    color: white;
+    padding: 0.6rem 0.8rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    font-weight: 400;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    line-height: 1.4;
+    pointer-events: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TARJETAS INFORMATIVAS (Explicación de secciones)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.paso-info-card {
+    background: linear-gradient(135deg, var(--primary-xlight) 0%, var(--bg-light) 100%);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.paso-info-card-icon {
+    flex-shrink: 0;
+    color: var(--primary);
+    font-size: 1.5rem;
+}
+
+.paso-info-card-content h4 {
+    margin: 0 0 0.3rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+
+.paso-info-card-content p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CAMPOS CON ICONO Y EJEMPLOS
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.form-group-with-icon {
+    position: relative;
+}
+
+/* Emojis ahora van directamente en el label HTML, no se necesita ::before */
+.form-group-with-icon label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.form-group-with-icon input,
+.form-group-with-icon select {
+    padding-left: 0.5rem;
+}
+
+/* Ejemplos desplegables */
+.form-example-toggle {
+    font-size: 0.75rem;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.3rem;
+    user-select: none;
+}
+
+.form-example-toggle:hover {
+    text-decoration: underline;
+}
+
+.form-example {
+    display: none;
+    background: var(--bg-light);
+    border-radius: var(--radius-sm);
+    padding: 0.8rem;
+    margin-top: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    border-left: 3px solid var(--primary);
+}
+
+.form-example.active {
+    display: block;
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MEJORA DE LABELS Y AYUDA
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.form-group label {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+}
+
+.form-label-main {
+    flex: 1;
+}
+
+/* Ayuda mejorada: más descriptiva */
+.form-ayuda {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.form-ayuda strong {
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.form-ayuda-critica {
+    background: #fff3cd;
+    border-left: 3px solid #ffc107;
+    padding: 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CAMPOS OPCIONALES VS OBLIGATORIOS (Visual)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.form-group.opcional {
+    opacity: 0.9;
+}
+
+.form-group.opcional .form-ayuda::before {
+    content: '💡 ';
+}
+
+.req {
+    color: var(--alerta-critica);
+    font-weight: 700;
+    margin-left: 0.2rem;
+}
+
+.opcional-badge {
+    font-size: 0.7rem;
+    background: var(--bg-light);
+    color: var(--text-muted);
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin-left: 0.3rem;
+    font-weight: 400;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   OPCIONES SI/NO MEJORADAS
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.opcion-si-no {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.6rem;
+}
+
+.opcion-pill {
+    flex: 1;
+    position: relative;
+}
+
+.opcion-pill input[type="radio"] {
+    display: none;
+}
+
+.opcion-pill span {
+    display: block;
+    padding: 0.8rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: var(--radius-sm);
+    text-align: center;
+    cursor: pointer;
+    transition: var(--transition);
+    background: var(--bg-white);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.opcion-pill input[type="radio"]:checked + span {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 2px 8px rgba(42, 100, 182, 0.3);
+}
+
+.opcion-pill:hover span {
+    border-color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SECCIONES CONDICIONALES (Mejor visual)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.seccion-condicional {
+    border-left: 3px solid var(--primary);
+    background: var(--primary-xlight);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    margin-top: 1rem;
+}
+
+.seccion-condicional > h4 {
+    margin-top: 0;
+    color: var(--primary);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   INDICADORES DE PROGRESO (Visual)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.paso-numero {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-right: 0.5rem;
+}
+
+.paso-titulo {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.paso-titulo i {
+    color: var(--primary);
+    font-size: 1.3rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   AVISOS IMPORTANTES (Ley Bases, etc)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.aviso-importante {
+    background: linear-gradient(135deg, #fff3cd 0%, #fffbf0 100%);
+    border-left: 4px solid #ff9800;
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin: 1rem 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.aviso-importante-icono {
+    flex-shrink: 0;
+    font-size: 1.3rem;
+}
+
+.aviso-importante-content {
+    flex: 1;
+}
+
+.aviso-importante-content strong {
+    display: block;
+    color: #ff6f00;
+    margin-bottom: 0.3rem;
+}
+
+.aviso-importante-content p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CAMPOS NUMÉRICOS CON PREFIX/SUFFIX
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.input-prefix-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-prefix,
+.input-suffix {
+    position: absolute;
+    font-weight: 600;
+    color: var(--primary);
+    pointer-events: none;
+    padding: 0 0.8rem;
+}
+
+.input-prefix {
+    left: 0;
+}
+
+.input-suffix {
+    right: 0;
+}
+
+.input-prefix-wrapper input {
+    padding-left: 1.8rem;
+}
+
+.input-prefix-wrapper input:focus {
+    padding-left: 1.8rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VALIDACIÓN VISUAL DE CAMPOS
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.form-group input:valid:not(:placeholder-shown),
+.form-group select:valid {
+    border-color: #28a745;
+}
+
+.form-group input:invalid:not(:placeholder-shown),
+.form-group select:invalid {
+    border-color: #dc3545;
+}
+
+.form-error {
+    display: block;
+    color: #dc3545;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    min-height: 1.1rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TARJETA COMPARATIVA (Para explicar diferencias)
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.comparativa-rapida {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+
+.comparativa-item {
+    background: var(--bg-light);
+    padding: 0.8rem;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--border);
+}
+
+.comparativa-item.si {
+    border-left-color: #28a745;
+    background: #f0f8f5;
+}
+
+.comparativa-item.no {
+    border-left-color: #dc3545;
+    background: #fdf8f8;
+}
+
+.comparativa-item h5 {
+    margin: 0 0 0.3rem 0;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+.comparativa-item p {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MEJORA DE TEXTAREAS
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BOTONES MEJORADOS
+ ───────────────────────────────────────────────────────────────────────────── */
+
+.btn-group-nav {
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.btn-nav {
+    padding: 0.85rem 1.5rem;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    border: 2px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.btn-nav-primary {
+    background: var(--primary);
+    color: white;
+}
+
+.btn-nav-primary:hover {
+    background: var(--primary-dark);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-nav-primary:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-nav-outline {
+    background: transparent;
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.btn-nav-outline:hover {
+    background: var(--primary-light);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+ ───────────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .paso-info-card {
+        flex-direction: column;
+    }
+
+    .opcion-si-no {
+        flex-direction: column;
+    }
+
+    .comparativa-rapida {
+        grid-template-columns: 1fr;
+    }
+
+    .form-help-icon:hover::after {
+        white-space: normal;
+        width: 200px;
+        text-align: center;
+    }
+
+    .btn-group-nav {
+        flex-direction: column;
+    }
+}

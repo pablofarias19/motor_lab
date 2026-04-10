@@ -1,0 +1,20 @@
+El archivo parametros_motor.php tiene los valores reales? o sea que si los cambio, cambia los calculos efectuados?
+
+
+¡Exactamente! Sí, son los valores reales.
+
+He configurado el sistema para que deje de usar números ocultos en el código y pase a usar este archivo como su única "fuente de verdad".
+
+¿Qué pasa si cambias un valor?
+Si abres 
+parametros_motor.php
+ y haces un cambio, los cálculos se actualizan inmediatamente para el próximo análisis que realices. Por ejemplo:
+
+En la Negociación: Si cambias 'tasa_recupero_base' => 0.70 por 0.50, el sistema automáticamente pasará a calcular que en un acuerdo temprano se recupera solo el 50% en lugar del 70%.
+En el Riesgo (IRIL): Si cambias el peso de 'probatoria' => 0.25 a 0.40, la documentación pasará a tener mucha más importancia en la nota final del riesgo que antes.
+En los Tiempos: Si el poder judicial se vuelve más lento y cambias la 'duracion_promedio' => 36 por 48 en el escenario de Litigio, el usuario verá que el juicio ahora se estima en 4 años en lugar de 3.
+Recomendación:
+Como ahora tienes el "poder" de calibrar el motor, te sugiero cambiar los valores de a uno y probar con un caso testigo para ver cómo impacta en el VBP (Valor Bruto Proyectado) y en la recomendación final.
+
+¡Es tu tablero de control total del motor legal! ¿Quieres que te ayude a ajustar algún valor inicial para probar?
+

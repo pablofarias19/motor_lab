@@ -1,0 +1,1953 @@
+<?php
+/**
+ * index.php — Formulario wizard público del Motor de Riesgo Laboral
+ *
+ * Presenta el formulario de 5 pasos al usuario (empleado o empleador).
+ * No requiere login. Acceso libre.
+ *
+ * Pasos del wizard:
+ *   1. Perfil:           tipo de usuario + tipo de conflicto
+ *   2. Datos laborales:  salario, antigüedad, provincia, categoría, CCT
+ *   3. Documentación:    telegramas, recibos, ARCA, testigos, contrato
+ *   4. Situación actual: urgencia, intercambio epistolar, plazos
+ *   5. Contacto:         email opcional para recibir informe
+ *
+ * El formulario envía JSON al endpoint api/procesar_analisis.php
+ * y redirige a resultado.php?uuid=XXX
+ */
+
+require_once __DIR__ . '/config/config.php';
+
+// Provincias argentinas (para el selector del paso 2)
+$provincias = [
+    'CABA',
+    'Buenos Aires',
+    'Catamarca',
+    'Chaco',
+    'Chubut',
+    'Córdoba',
+    'Corrientes',
+    'Entre Ríos',
+    'Formosa',
+    'Jujuy',
+    'La Pampa',
+    'La Rioja',
+    'Mendoza',
+    'Misiones',
+    'Neuquén',
+    'Río Negro',
+    'Salta',
+    'San Juan',
+    'San Luis',
+    'Santa Cruz',
+    'Santa Fe',
+    'Santiago del Estero',
+    'Tierra del Fuego',
+    'Tucumán',
+    'Internacional'
+];
+?>
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motor de Riesgo Laboral — Estudio Farias Ortiz</title>
+    <meta name="description"
+        content="Análisis estratégico de conflictos laborales. Calculá tu exposición económica y evaluá tus opciones.">
+
+    <!-- CSS del módulo -->
+    <link rel="stylesheet" href="assets/css/motor.css">
+    <link rel="stylesheet" href="assets/css/motor-ui-mejorado.css">
+
+    <!-- Bootstrap Icons (mismo CDN que el resto del proyecto) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+
+<body class="motor-wrapper">
+
+    <!-- ═══════════════════════════════════════════════════════════
+     ENCABEZADO
+═══════════════════════════════════════════════════════════ -->
+    <header class="motor-header">
+        <div class="motor-header-inner">
+            <div class="motor-logo">
+                <a href="https://fariasortiz.com.ar" target="_blank" class="logo-link">
+                    <img src="../document/image/logo1.png" alt="Estudio Farias Ortiz" class="logo-img">
+                    <div class="logo-divider"></div>
+                    <span class="motor-logo-modulo">Motor de Riesgo Laboral</span>
+                </a>
+            </div>
+            <div class="motor-header-badge">
+                <i class="bi bi-shield-check"></i> Análisis Estratégico
+            </div>
+        </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════════════════
+     CONTENEDOR PRINCIPAL
+═══════════════════════════════════════════════════════════ -->
+    <main class="motor-main">
+        <div class="motor-container">
+
+            <!-- Intro -->
+            <div class="motor-intro">
+                <h1 class="motor-titulo">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    Análisis Estratégico de Riesgo Laboral
+                </h1>
+                <p class="motor-subtitulo">
+                    Evaluá la estructura de tu conflicto laboral. Calculamos tu exposición económica,
+                    el índice IRIL y comparamos escenarios estratégicos.
+                    <strong>No estimamos probabilidades. Organizamos decisiones.</strong>
+                </p>
+                <!-- Aviso legal visible desde el inicio -->
+                <div class="motor-aviso-legal">
+                    <i class="bi bi-info-circle"></i>
+                    <span>Este análisis es <strong>estructural y preventivo:</strong> no constituye asesoramiento legal
+                        definitivo. Se recomienda siempre consulta profesional.</span>
+                </div>
+            </div>
+
+            <!-- ─────────────────────────────────────────────────
+             WIZARD PRINCIPAL
+        ───────────────────────────────────────────────── -->
+            <div class="wizard-container" id="form-motor-laboral">
+
+                <!-- Indicadores de progreso -->
+                <div class="wizard-steps" id="wizard-steps">
+                    <div class="wizard-step-item activo" data-paso="1">
+                        <div class="paso-indicator">1</div>
+                        <span class="paso-label">Perfil</span>
+                    </div>
+                    <div class="wizard-step-item" data-paso="2">
+                        <div class="paso-indicator">2</div>
+                        <span class="paso-label">Datos</span>
+                    </div>
+                    <div class="wizard-step-item" data-paso="3">
+                        <div class="paso-indicator">3</div>
+                        <span class="paso-label">Documentación</span>
+                    </div>
+                    <div class="wizard-step-item" data-paso="4">
+                        <div class="paso-indicator">4</div>
+                        <span class="paso-label">Situación</span>
+                    </div>
+                    <div class="wizard-step-item" data-paso="5">
+                        <div class="paso-indicator">5</div>
+                        <span class="paso-label">Contacto</span>
+                    </div>
+                    <div class="progreso-linea" id="progreso-linea"></div>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+                 PASO 1 — Perfil del usuario
+            ══════════════════════════════════════════ -->
+                <div class="wizard-paso activo" id="paso-1">
+                    <h2 class="paso-titulo">
+                        <i class="bi bi-person-circle"></i> ¿Cuál es tu situación?
+                    </h2>
+
+                    <!-- Tipo de usuario -->
+                    <div class="form-section">
+                        <h3 class="form-section-titulo">Soy...</h3>
+                        <!-- form-group necesario para que _mostrarError() del wizard pueda mostrar errores -->
+                        <div class="form-group">
+                            <!-- Campo oculto sincronizado con los radios — usado por wizard.js para validar #tipo_usuario -->
+                            <input type="hidden" id="tipo_usuario" name="tipo_usuario" value="">
+
+                            <div class="opcion-cards-group" id="grupo-tipo-usuario">
+                                <label class="opcion-card opcion-grande" for="tipo-empleado">
+                                    <input type="radio" name="tipo_usuario_radio" id="tipo-empleado" value="empleado">
+                                    <div class="opcion-card-icono"><i class="bi bi-person-badge"></i></div>
+                                    <div class="opcion-card-texto">
+                                        <strong>Empleado / Trabajador</strong>
+                                        <small>Fui despedido, tengo deudas salariales o quiero reclamar</small>
+                                    </div>
+                                </label>
+                                <label class="opcion-card opcion-grande" for="tipo-empleador">
+                                    <input type="radio" name="tipo_usuario_radio" id="tipo-empleador" value="empleador">
+                                    <div class="opcion-card-icono"><i class="bi bi-building"></i></div>
+                                    <div class="opcion-card-texto">
+                                        <strong>Empleador / Empresa</strong>
+                                        <small>Quiero prevenir riesgos o gestionar un conflicto activo</small>
+                                    </div>
+                                </label>
+                            </div>
+                            <span class="form-error" id="error-tipo_usuario"></span>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de conflicto -->
+                    <div class="form-section">
+                        <h3 class="form-section-titulo"><i class="bi bi-search"></i> Seleccioná el motivo de consulta
+                        </h3>
+                        <p class="form-section-desc">Elegí la opción que mejor represente tu situación actual para
+                            personalizar el análisis.</p>
+
+                        <div class="form-group">
+                            <!-- Campo oculto para el valor del conflicto -->
+                            <input type="hidden" name="tipo_conflicto" id="tipo_conflicto" value="">
+
+                            <div class="conflictos-gallery" id="galeria-conflictos">
+                                <!-- Grupo: Despido -->
+                                <div class="conflicto-card" data-valor="despido_sin_causa" data-grupo="ambos">
+                                    <div class="conflicto-icon color-despido">
+                                        <img src="assets/img/icons/despido.svg" alt="Despido" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Despido sin causa</strong>
+                                        <span>Cese laboral sin motivo justificado.</span>
+                                    </div>
+                                </div>
+                                <div class="conflicto-card" data-valor="despido_con_causa" data-grupo="ambos">
+                                    <div class="conflicto-icon color-despido">
+                                        <img src="assets/img/icons/despido.svg" alt="Despido" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Despido con causa</strong>
+                                        <span>Notificación de cese por falta disciplinaria.</span>
+                                    </div>
+                                </div>
+                                <div class="conflicto-card" data-valor="trabajo_no_registrado" data-grupo="ambos">
+                                    <div class="conflicto-icon color-negro">
+                                        <img src="assets/img/icons/negro.svg" alt="Trabajo en negro"
+                                            class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Trabajo en negro</strong>
+                                        <span>Relación laboral no registrada o irregular.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Grupo: Conflictos Activos -->
+                                <div class="conflicto-card" data-valor="diferencias_salariales" data-grupo="ambos">
+                                    <div class="conflicto-icon color-salarial">
+                                        <img src="assets/img/icons/salarial.svg" alt="Salarial" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Diferencias / Deudas</strong>
+                                        <span>Sueldos impagos, horas extras o mala categoría.</span>
+                                    </div>
+                                </div>
+                                <div class="conflicto-card" data-valor="accidente_laboral" data-grupo="ambos">
+                                    <div class="conflicto-icon color-accidente">
+                                        <img src="assets/img/icons/accidente.svg" alt="Accidente" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Accidente / Enfermedad</strong>
+                                        <span>Lesiones en el trabajo o licencias médicas.</span>
+                                    </div>
+                                </div>
+
+                                <!-- Grupo: Empresas -->
+                                <div class="conflicto-card" data-valor="responsabilidad_solidaria" data-grupo="empresa"
+                                    style="display:none;">
+                                    <div class="conflicto-icon color-empresa">
+                                        <img src="assets/img/icons/empresa.svg" alt="Empresa" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Responsabilidad Solidaria</strong>
+                                        <span>Riesgos por contratistas o tercerizados.</span>
+                                    </div>
+                                </div>
+                                <div class="conflicto-card" data-valor="auditoria_preventiva" data-grupo="empresa"
+                                    style="display:none;">
+                                    <div class="conflicto-icon color-empresa">
+                                        <img src="assets/img/icons/empresa.svg" alt="Empresa" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Auditoría Preventiva</strong>
+                                        <span>Diagnóstico de cumplimiento and riesgos.</span>
+                                    </div>
+                                </div>
+                                <div class="conflicto-card" data-valor="riesgo_inspeccion" data-grupo="empresa"
+                                    style="display:none;">
+                                    <div class="conflicto-icon color-arca">
+                                        <img src="assets/img/icons/arca.svg" alt="ARCA" class="conflicto-svg">
+                                    </div>
+                                    <div class="conflicto-info">
+                                        <strong>Inspección ARCA/Ministerio</strong>
+                                        <span>Acompañamiento ante controles oficiales.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="form-error" id="error-tipo_conflicto"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+                 PASO 2 — Datos laborales
+            ══════════════════════════════════════════ -->
+                <div class="wizard-paso" id="paso-2" style="display:none;">
+                    <h2 class="paso-titulo">
+                        <i class="bi bi-briefcase"></i> Datos de la relación laboral
+                    </h2>
+
+                    <!-- TARJETA INFORMATIVA -->
+                    <div class="paso-info-card">
+                        <div class="paso-info-card-icon">
+                            <i class="bi bi-info-circle"></i>
+                        </div>
+                        <div class="paso-info-card-content">
+                            <h4>¿Por qué pedimos esto?</h4>
+                            <p>Los datos laborales son la base del cálculo. El motor usa tu salario, antigüedad y provincia para calcular montos de indemnización, multas y plazos legales.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="form-grid-2">
+                            <!-- Salario -->
+                            <div class="form-group form-group-with-icon">
+                                <label for="salario">
+                                    <span class="form-label-main">💵 Mejor salario mensual bruto</span>
+                                    <span class="req">*</span>
+                                </label>
+                                <div class="input-prefix-wrapper">
+                                    <input type="text" id="salario" name="salario" placeholder="$350.000"
+                                        autocomplete="off" inputmode="numeric" required
+                                        data-tooltip="Salario más alto que cobraste en los últimos 12 meses">
+                                    <span class="form-help-icon" data-tooltip="Incluir descuentos, son con salario BRUTO (antes de impuestos)">?</span>
+                                </div>
+                                <small class="form-ayuda">Es el salario más alto que cobraste en los <strong>últimos 12 meses</strong>. Incluye lo que aparece en el recibo.</small>
+                                <div class="form-example" id="ej-salario">
+                                    <strong>📋 Ejemplos:</strong><br>
+                                    ✓ $350.000 (debe ser sin puntos ni comas)<br>
+                                    ✓ $85500 (números enteros)<br>
+                                    ✗ $350.000,00 (no poner decimales)
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-salario').classList.toggle('active')">
+                                    📌 Ver ejemplos
+                                </span>
+                                <span class="form-error" id="error-salario"></span>
+                            </div>
+
+                            <!-- Antigüedad -->
+                            <div class="form-group form-group-with-icon">
+                                <label for="antiguedad_meses">
+                                    <span class="form-label-main">📅 ¿Cuántos meses trabajaste?</span>
+                                    <span class="req">*</span>
+                                </label>
+                                <input type="number" id="antiguedad_meses" name="antiguedad_meses" min="0" max="600"
+                                    placeholder="Ej: 36" required
+                                    data-tooltip="Meses totales de antigüedad">
+                                <small class="form-ayuda">Convertí los años a meses. <strong>Si son 2 años y 3 meses = 27 meses</strong></small>
+                                <div class="form-example" id="ej-antiguedad">
+                                    <strong>🧮 Cómo calcular:</strong><br>
+                                    • 1 año = 12 meses<br>
+                                    • 2 años = 24 meses<br>
+                                    • 2 años 6 meses = 30 meses<br>
+                                    • 3 años 3 meses = 39 meses
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-antiguedad').classList.toggle('active')">
+                                    🧮 Calculadora
+                                </span>
+                                <span class="form-error" id="error-antiguedad_meses"></span>
+                            </div>
+
+                            <!-- Edad (Solo visible para Accidentes por ahora) -->
+                            <div class="form-group form-group-with-icon solo-accidente" style="display:none;">
+                                <label for="edad">
+                                    <span class="form-label-main">🆔 ¿Cuántos años tenías al accidentarte?</span>
+                                    <span class="req">*</span>
+                                </label>
+                                <input type="number" id="edad" name="edad" min="16" max="90" placeholder="Ej: 45"
+                                    data-tooltip="Tu edad completa en años">
+                                <small class="form-ayuda">Dato necesario para calcular <strong>indemnización con incapacidad laboral</strong>. Afecta el monto final.</small>
+                                <span class="form-error" id="error-edad"></span>
+                            </div>
+
+                            <!-- Tipo de registro (Solo para Despidos/Trabajo no registrado) -->
+                            <div class="form-group solo-registro-irregular" style="display:none;">
+                                <label for="tipo_registro">
+                                    <span class="form-label-main">¿Cómo estabas registrado?</span>
+                                </label>
+                                <select id="tipo_registro" name="tipo_registro">
+                                    <option value="registrado" selected>✓ Correctamente (en ARCA/AFIP)</option>
+                                    <option value="no_registrado">✗ "En negro" (sin recibos)</option>
+                                    <option value="deficiente_fecha">⚠ Fecha falsa en recibos</option>
+                                    <option value="deficiente_salario">⚠ Parte del sueldo "en negro"</option>
+                                </select>
+                                <small class="form-ayuda">Esto <strong>impacta el cálculo</strong> de fraude laboral y daños complementarios (Ley 27.802).</small>
+                                <div class="comparativa-rapida">
+                                    <div class="comparativa-item si">
+                                        <h5>✓ Registrado</h5>
+                                        <p>Indemnización normal</p>
+                                    </div>
+                                    <div class="comparativa-item no">
+                                        <h5>✗ En negro</h5>
+                                        <p>Fraude + Daño complementario (Ley 27.802)</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Campos condicionales de registro deficiente -->
+                        <div class="form-grid-2 solo-registro-deficiente seccion-condicional" style="display:none;">
+                            <h4><i class="bi bi-exclamation-triangle"></i> Detalles del registro incompleto</h4>
+                            <div class="form-group">
+                                <label for="salario_recibo">Sueldo que figura en el recibo ($)</label>
+                                <input type="number" id="salario_recibo" name="salario_recibo" placeholder="Ej: 200000"
+                                    data-tooltip="Monto declarado ante AFIP">
+                                <small class="form-ayuda">Si cobrás <strong>más de lo que dice el papel</strong>, la diferencia es "en negro".</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="antiguedad_recibo">Meses según el recibo (diferente)</label>
+                                <input type="number" id="antiguedad_recibo" name="antiguedad_recibo" min="0"
+                                    placeholder="Meses en registro"
+                                    data-tooltip="Antigüedad registrada, si es menor que la real">
+                                <small class="form-ayuda">Si te registraron mucho después de que empezaste a trabajar.</small>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <!-- Provincia -->
+                            <div class="form-group form-group-with-icon">
+                                <label for="provincia">
+                                    <span class="form-label-main">🗺️ ¿En qué provincia trabajabas?</span>
+                                    <span class="req">*</span>
+                                </label>
+                                <select id="provincia" name="provincia" required
+                                    data-tooltip="Define qué leyes laborales aplican">
+                                    <option value="">-- Seleccioná provincia --</option>
+                                    <?php foreach ($provincias as $prov): ?>
+                                        <option value="<?= htmlspecialchars($prov) ?>"><?= htmlspecialchars($prov) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                                <small class="form-ayuda">Donde trabajabas (no donde vivas). Afecta <strong>tasas de interés y plazos</strong>.</small>
+                                <span class="form-error" id="error-provincia"></span>
+                            </div>
+
+                            <!-- Cantidad empleados -->
+                            <div class="form-group form-group-with-icon">
+                                <label for="cantidad_empleados">👥 ¿Cuántas personas trabajaban en la empresa?</label>
+                                <select id="cantidad_empleados" name="cantidad_empleados"
+                                    data-tooltip="Afecta procedimientos laborales">
+                                    <option value="1">1 (Solo yo)</option>
+                                    <option value="3">2 a 5 personas</option>
+                                    <option value="7">6 a 10 personas</option>
+                                    <option value="25">11 a 50 personas</option>
+                                    <option value="100">Más de 50 personas</option>
+                                </select>
+                                <small class="form-ayuda">Importante para <strong>triplicación de indemnización</strong> (empresas grandes tienen límites diferentes).</small>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <!-- Categoría -->
+                            <div class="form-group form-group-with-icon">
+                                <label for="categoria">
+                                    <span class="form-label-main">💼 ¿Cuál era tu cargo/función?</span>
+                                    <span class="opcional-badge">Opcional</span>
+                                </label>
+                                <input type="text" id="categoria" name="categoria"
+                                    placeholder="Ej: Operario, Vendedor, Capataz, Encargado"
+                                    data-tooltip="Tu puesto de trabajo">
+                                <small class="form-ayuda">Ayuda a contextualizarvera caso. Escribí lo que figura en tu contrato o recibos.</small>
+                                <div class="form-example" id="ej-categoria">
+                                    <strong>📝 Ejemplos:</strong><br>
+                                    • Operario calificado<br>
+                                    • Vendedor<br>
+                                    • Capataz de obra<br>
+                                    • Encargado de almacén<br>
+                                    • Empleado administrativo
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-categoria').classList.toggle('active')">
+                                    📋 Ver ejemplos
+                                </span>
+                            </div>
+
+                            <!-- CCT -->
+                            <div class="form-group form-group-with-icon">
+                                <label for="cct">
+                                    <span class="form-label-main">📜 ¿Qué convenio aplica? (Opcional)</span>
+                                    <span class="opcional-badge">Opcional</span>
+                                </label>
+                                <input type="text" id="cct" name="cct" 
+                                    placeholder="Ej: UOCRA, UOM, Comercio, Construcción"
+                                    data-tooltip="Convenio Colectivo de Trabajo">
+                                <small class="form-ayuda">Si no sabés, <strong>no importa</strong> — dejá vacío. El motor puede funcionar sin esto.</small>
+                                <div class="form-example" id="ej-cct">
+                                    <strong>🔍 Convenios comunes:</strong><br>
+                                    • UOCRA (Construcción)<br>
+                                    • UOM (Metalurgía)<br>
+                                    • Comercio 130/75<br>
+                                    • Textiles<br>
+                                    • Si no sabés, dejá en blanco
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-cct').classList.toggle('active')">
+                                    🔍 Ver convenios
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+                 PASO 3 — Documentación disponible
+            ══════════════════════════════════════════ -->
+                <div class="wizard-paso" id="paso-3" style="display:none;">
+                    <h2 class="paso-titulo">
+                        <i class="bi bi-folder2-open"></i> Documentación disponible
+                    </h2>
+                    <p class="paso-descripcion">
+                        La documentación disponible es clave para evaluar el riesgo probatorio.
+                        Respondé con honestidad — esto impacta directamente en el IRIL.
+                    </p>
+
+                    <div class="form-section">
+                        <!-- Recibos de sueldo -->
+                        <div class="form-group form-group-si-no">
+                            <label>¿Tenés recibos de sueldo firmados? <span class="req">*</span></label>
+                            <div class="opcion-si-no" id="grupo-tiene_recibos">
+                                <label class="opcion-pill" for="rec-si">
+                                    <input type="radio" name="tiene_recibos" id="rec-si" value="si" required>
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="rec-no">
+                                    <input type="radio" name="tiene_recibos" id="rec-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                            <span class="form-error" id="error-tiene_recibos"></span>
+                        </div>
+
+                        <!-- Contrato -->
+                        <div class="form-group form-group-si-no">
+                            <label>¿Existe contrato de trabajo escrito? <span class="req">*</span></label>
+                            <div class="opcion-si-no" id="grupo-tiene_contrato">
+                                <label class="opcion-pill" for="con-si">
+                                    <input type="radio" name="tiene_contrato" id="con-si" value="si" required>
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="con-no">
+                                    <input type="radio" name="tiene_contrato" id="con-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                            <span class="form-error" id="error-tiene_contrato"></span>
+                        </div>
+
+                        <!-- ARCA -->
+                        <div class="form-group form-group-si-no">
+                            <label>¿La relación laboral está registrada en ARCA? <span class="req">*</span></label>
+                            <div class="opcion-si-no" id="grupo-registrado_afip">
+                                <label class="opcion-pill" for="afip-si">
+                                    <input type="radio" name="registrado_afip" id="afip-si" value="si" required>
+                                    <span>Sí (en blanco)</span>
+                                </label>
+                                <label class="opcion-pill" for="afip-no">
+                                    <input type="radio" name="registrado_afip" id="afip-no" value="no">
+                                    <span>No (en negro)</span>
+                                </label>
+                            </div>
+                            <span class="form-error" id="error-registrado_afip"></span>
+                        </div>
+
+                        <!-- Testigos -->
+                        <div class="form-group form-group-si-no">
+                            <label>¿Contás con testigos disponibles?</label>
+                            <div class="opcion-si-no" id="grupo-tiene_testigos">
+                                <label class="opcion-pill" for="test-si">
+                                    <input type="radio" name="tiene_testigos" id="test-si" value="si">
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="test-no">
+                                    <input type="radio" name="tiene_testigos" id="test-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Auditoría previa (empleadores) -->
+                        <div class="form-group form-group-si-no solo-empleador" id="grupo-auditoria"
+                            style="display:none;">
+                            <label>¿Se realizó auditoría laboral preventiva en los últimos 2 años?</label>
+                            <div class="opcion-si-no">
+                                <label class="opcion-pill" for="aud-si">
+                                    <input type="radio" name="auditoria_previa" id="aud-si" value="si">
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="aud-no">
+                                    <input type="radio" name="auditoria_previa" id="aud-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Checklist MTEySS / SRT (Auditorías preventivas o Inspecciones) -->
+                        <div class="form-group solo-auditoria" style="display:none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                            <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 1rem;">
+                                <i class="bi bi-clipboard-check"></i> Checklist MTEySS / ARCA (Registral)
+                            </h4>
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Trabajadores con Alta Temprana (SIPA)?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="alta-si"><input type="radio" name="chk_alta_sipa" id="alta-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="alta-no"><input type="radio" name="chk_alta_sipa" id="alta-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Libro de Sueldos (Art. 52 LCT) al día?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="l52-si"><input type="radio" name="chk_libro_art52" id="l52-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="l52-no"><input type="radio" name="chk_libro_art52" id="l52-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Recibos reflejan remuneración real s/CCT?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="recibo-cct-si"><input type="radio" name="chk_recibos_cct" id="recibo-cct-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="recibo-cct-no"><input type="radio" name="chk_recibos_cct" id="recibo-cct-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+
+                            <h4 style="font-size: 0.95rem; color: var(--primary); margin: 1.5rem 0 1rem;">
+                                <i class="bi bi-shield-check"></i> Checklist SRT (Higiene y Seguridad)
+                            </h4>
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Contrato de ART vigente y sin deuda?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="chk-art-si"><input type="radio" name="chk_art_vigente" id="chk-art-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="chk-art-no"><input type="radio" name="chk_art_vigente" id="chk-art-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Exámenes médicos pre/periódicos (Res 886/15)?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="chk-examen-si"><input type="radio" name="chk_examenes" id="chk-examen-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="chk-examen-no"><input type="radio" name="chk_examenes" id="chk-examen-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+                            <div class="form-group-si-no">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Entrega de EPP y cumplimiento RGRL?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="chk-epp-si"><input type="radio" name="chk_epp_rgrl" id="chk-epp-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="chk-epp-no"><input type="radio" name="chk_epp_rgrl" id="chk-epp-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+                            
+                            <h4 style="font-size: 0.95rem; color: #16a085; margin: 1.5rem 0 1rem;">
+                                <i class="bi bi-calculator"></i> Simulador Económico: Regularizar vs Litigar
+                            </h4>
+                            <div class="form-group" style="margin-bottom: 0.8rem;">
+                                <label for="meses_no_registrados">Meses pendientes de regularización (no registrados o deficientes)</label>
+                                <input type="number" id="meses_no_registrados" name="meses_no_registrados" min="0" max="120" placeholder="Ej: 24">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0.8rem;">
+                                <label for="meses_en_mora">Antigüedad promedio de la deuda (meses en mora de aportes)</label>
+                                <input type="number" id="meses_en_mora" name="meses_en_mora" min="0" max="120" placeholder="Ej: 12">
+                            </div>
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label>¿Adherirá a régimen de blanqueo laboral (Ej: Ley Bases)?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="blanco-si"><input type="radio" name="aplica_blanco_laboral" id="blanco-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="blanco-no"><input type="radio" name="aplica_blanco_laboral" id="blanco-no" value="no" checked><span>No</span></label>
+                                </div>
+                                <small class="form-ayuda">Aplica condonación de multas y reducción de intereses de AFIP.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="probabilidad_condena">Estimación de Probabilidad de Condena (Litigio)</label>
+                                <select id="probabilidad_condena" name="probabilidad_condena">
+                                    <option value="0.2">Baja (20%) - Relación encubierta débil</option>
+                                    <option value="0.5" selected>Media (50%) - Zona de riesgo gris</option>
+                                    <option value="0.8">Alta (80%) - Trabajo en negro evidente</option>
+                                    <option value="0.95">Inminente (95%) - Con inspección y actas</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Panel de Responsabilidad Solidaria (Art. 30 LCT) -->
+                        <div class="form-group solo-solidaridad" style="display:none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #eee;">
+                            <h4 style="font-size: 0.95rem; color: var(--primary); margin-bottom: 1rem;">
+                                <i class="bi bi-diagram-3"></i> Cuestionario de Responsabilidad Solidaria (Art. 30 LCT)
+                            </h4>
+                            <p style="font-size: 0.85rem; color: #555; margin-bottom: 1rem;">Este test predice el nivel de exposición de su empresa frente a las demandas de empleados de empresas contratistas, de acuerdo a la jurisprudencia actual.</p>
+
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿La tarea tercerizada forma parte de la <strong>actividad normal y específica propia</strong> de su empresa?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="sol-act-si"><input type="radio" name="actividad_esencial" id="sol-act-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="sol-act-no"><input type="radio" name="actividad_esencial" id="sol-act-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿La empresa controla periódicamente el alta temprana, F931 y ART del contratista?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="sol-doc-si"><input type="radio" name="control_documental" id="sol-doc-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="sol-doc-no"><input type="radio" name="control_documental" id="sol-doc-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿La empresa ejerce <strong>control directo sobre el trabajo</strong> (dar horarios, órdenes, supervisión directa)?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="sol-ope-si"><input type="radio" name="control_operativo" id="sol-ope-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="sol-ope-no"><input type="radio" name="control_operativo" id="sol-ope-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿El trabajador tercerizado utiliza <strong>instalaciones, herramientas o vehículos</strong> de su empresa?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="sol-int-si"><input type="radio" name="integracion_estructura" id="sol-int-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="sol-int-no"><input type="radio" name="integracion_estructura" id="sol-int-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem;">
+                                <label style="font-weight:normal; font-size: 0.9rem;">¿Existe un <strong>contrato formal comercial</strong> con cláusulas de cumplimiento laboral y auditoría?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="sol-con-si"><input type="radio" name="contrato_formal" id="sol-con-si" value="si"><span>Sí</span></label>
+                                    <label class="opcion-pill" for="sol-con-no"><input type="radio" name="contrato_formal" id="sol-con-no" value="no"><span>No</span></label>
+                                </div>
+                            </div>
+
+                            <div class="form-group-si-no" style="margin-bottom: 0.8rem; background: #fff5f5; padding: 10px; border-left: 4px solid #e74c3c;">
+                                <label style="font-weight:normal; font-size: 0.9rem; color: #c0392b;"><strong>Alerta de Incumplimiento Grave:</strong> ¿Ha verificado formalmente la ausencia de presentación del Formulario 931 o póliza de ART por parte del contratista?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="sol-falt-si"><input type="radio" name="falta_f931_art" id="sol-falt-si" value="si"><span>Sí, faltan</span></label>
+                                    <label class="opcion-pill" for="sol-falt-no"><input type="radio" name="falta_f931_art" id="sol-falt-no" value="no" checked><span>No (Todo en regla o se desconoce)</span></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+                 PASO 4 — Situación actual
+            ══════════════════════════════════════════ -->
+                <div class="wizard-paso" id="paso-4" style="display:none;">
+                    <h2 class="paso-titulo">
+                        <i class="bi bi-clock-history"></i> Situación actual
+                    </h2>
+
+                    <div class="form-section">
+                        <!-- Intercambio telegráfico -->
+                        <div class="form-group form-group-si-no">
+                            <label>¿Ya hubo intercambio de telegramas entre las partes? <span
+                                    class="req">*</span></label>
+                            <div class="opcion-si-no" id="grupo-hay_intercambio">
+                                <label class="opcion-pill" for="int-si">
+                                    <input type="radio" name="hay_intercambio" id="int-si" value="si" required>
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="int-no">
+                                    <input type="radio" name="hay_intercambio" id="int-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                            <span class="form-error" id="error-hay_intercambio"></span>
+                        </div>
+
+                        <!-- Fecha del último telegrama (condicional) -->
+                        <div class="form-group" id="campo-fecha-telegrama" style="display:none;">
+                            <label for="fecha_ultimo_telegrama">Fecha del último telegrama recibido</label>
+                            <input type="date" id="fecha_ultimo_telegrama" name="fecha_ultimo_telegrama"
+                                max="<?= date('Y-m-d') ?>">
+                            <small class="form-ayuda">Importante para detectar plazos de respuesta urgentes (48/72
+                                hs)</small>
+                        </div>
+
+                        <!-- Fue intimado (empleadores) -->
+                        <div class="form-group form-group-si-no solo-empleador" id="grupo-fue_intimado"
+                            style="display:none;">
+                            <label>¿La empresa ya fue intimada formalmente por el empleado?</label>
+                            <div class="opcion-si-no">
+                                <label class="opcion-pill" for="intim-si">
+                                    <input type="radio" name="fue_intimado" id="intim-si" value="si">
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="intim-no">
+                                    <input type="radio" name="fue_intimado" id="intim-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Ya despedido / desvinculado (Ambos perfiles, Ocultar si es accidente) -->
+                        <div class="form-group form-group-si-no no-accidente" id="grupo-ya_despedido"
+                            style="display:none;">
+                            <label>¿Ya se produjo el despido o notificación formal? <span class="req">*</span></label>
+                            <div class="opcion-si-no" id="grupo-ya_despedido-opts">
+                                <label class="opcion-pill" for="desp-si">
+                                    <input type="radio" name="ya_despedido" id="desp-si" value="si">
+                                    <span>Sí</span>
+                                </label>
+                                <label class="opcion-pill" for="desp-no">
+                                    <input type="radio" name="ya_despedido" id="desp-no" value="no">
+                                    <span>No</span>
+                                </label>
+                            </div>
+                            <span class="form-error" id="error-ya_despedido"></span>
+                        </div>
+
+                        <!-- Fecha de despido (condicional / ocultar si es accidente) -->
+                        <div class="form-group no-accidente" id="campo-fecha-despido" style="display:none;">
+                            <label for="fecha_despido">Fecha de notificación del despido</label>
+                            <input type="date" id="fecha_despido" name="fecha_despido" max="<?= date('Y-m-d') ?>">
+                            <small class="form-ayuda">Necesario para calcular prescripción (2 años — Art. 256
+                                LCT)</small>
+                        </div>
+
+                        <!-- DETALLES ESPECÍFICOS DE ACCIDENTE / ENFERMEDAD LABORAL -->
+                        <div class="form-section solo-accidente"
+                            style="display:none; border-top: 1px solid #eee; padding-top: 1rem;">
+                            <h4 style="font-size: 0.9rem; color: var(--primary); margin-bottom: 1rem;">Datos del
+                                Siniestro</h4>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="tipo_contingencia">Tipo de contingencia <span class="req">*</span></label>
+                                    <select id="tipo_contingencia" name="tipo_contingencia">
+                                        <option value="accidente_tipico">Accidente de trabajo (típico)</option>
+                                        <option value="in_itinere">Accidente in itinere (trayecto)</option>
+                                        <option value="enfermedad_profesional">Enfermedad profesional</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="fecha_siniestro">Fecha del siniestro</label>
+                                    <input type="date" id="fecha_siniestro" name="fecha_siniestro"
+                                        max="<?= date('Y-m-d') ?>">
+                                    <small class="form-ayuda">Importante para calcular prescripción (2 años desde PMI)</small>
+                                </div>
+                            </div>
+
+                            <div class="form-grid-2">
+                                <div class="form-group">
+                                    <label for="porcentaje_incapacidad">Incapacidad estimada o dictaminada (%)</label>
+                                    <input type="number" id="porcentaje_incapacidad" name="porcentaje_incapacidad"
+                                        min="0" max="100" step="0.5" placeholder="Ej: 15">
+                                    <small class="form-ayuda">Si tenés dictamen de CM o pericia, poné el % exacto</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="incapacidad_tipo">Tipo de incapacidad</label>
+                                    <select id="incapacidad_tipo" name="incapacidad_tipo">
+                                        <option value="transitoria">Incapacidad Laboral Transitoria (ILT)</option>
+                                        <option value="permanente_provisoria">Permanente Provisoria</option>
+                                        <option value="permanente_definitiva" selected>Permanente Definitiva</option>
+                                        <option value="gran_invalidez">Gran Invalidez (+66%)</option>
+                                        <option value="muerte">Muerte del trabajador</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h4 style="font-size: 0.9rem; color: var(--primary); margin: 1rem 0 0.5rem;">Estado ante la ART</h4>
+
+                            <div class="form-group form-group-si-no solo-empleado">
+                                <label>¿Tiene cobertura de ART activa? <span class="req">*</span></label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="art-si">
+                                        <input type="radio" name="tiene_art" id="art-si" value="si">
+                                        <span>Sí</span>
+                                    </label>
+                                    <label class="opcion-pill" for="art-no">
+                                        <input type="radio" name="tiene_art" id="art-no" value="no">
+                                        <span>No / Desconozco</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Módulo Empresarial: Estado ART y Vía Civil (Solo Empleador) -->
+                            <div class="solo-empleador form-section" style="display:none; background: #fffcf5; border-left: 4px solid #f39c12; padding: 1rem; border-radius: 4px; margin-top: 1rem;">
+                                <h4 style="font-size: 0.9rem; color: #d35400; margin-bottom: 1rem;"><i class="bi bi-shield-exclamation"></i> Calificación de Cumplimiento ART y Riesgo Civil</h4>
+                                
+                                <div class="form-group">
+                                    <label for="estado_art_empresa">Estado real de cobertura ART</label>
+                                    <select id="estado_art_empresa" name="estado_art">
+                                        <option value="activa_valida" selected>Activa y Válida (Registrado y al día)</option>
+                                        <option value="activa_incumplida">Activa pero Incumplida (Falta registrar empleado, etc.)</option>
+                                        <option value="inexistente">Inexistente (Sin contrato ART o en negro absoluto)</option>
+                                    </select>
+                                    <small class="form-ayuda">Define si la ART responderá, si habrá repetición, o si la empresa asume el 100%.</small>
+                                </div>
+
+                                <div class="form-grid-2">
+                                    <div class="form-group form-group-si-no">
+                                        <label>¿Hubo Culpa Grave del Empleador?</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="culpa-si"><input type="radio" name="culpa_grave" id="culpa-si" value="si"><span>Sí</span></label>
+                                            <label class="opcion-pill" for="culpa-no"><input type="radio" name="culpa_grave" id="culpa-no" value="no" checked><span>No</span></label>
+                                        </div>
+                                        <small class="form-ayuda">Falta de higiene/seguridad, negligencia comprobable.</small>
+                                    </div>
+                                    <div class="form-group form-group-si-no">
+                                        <label>¿Existe reclamo por Vía Civil (Daño Moral/Psicológico)?</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="civil-si"><input type="radio" name="via_civil" id="civil-si" value="si"><span>Sí</span></label>
+                                            <label class="opcion-pill" for="civil-no"><input type="radio" name="via_civil" id="civil-no" value="no" checked><span>No</span></label>
+                                        </div>
+                                        <small class="form-ayuda">Acción civil integral fuera de la tarifa de la LRT.</small>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                            <!-- Campos adicionales ART (solo visibles si tiene_art = si) -->
+                            <div class="solo-tiene-art" style="display:none;">
+                                <div class="form-group form-group-si-no">
+                                    <label>¿Denunció el siniestro ante la ART?</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="denuncia-art-si">
+                                            <input type="radio" name="denuncia_art" id="denuncia-art-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="denuncia-art-no">
+                                            <input type="radio" name="denuncia_art" id="denuncia-art-no" value="no">
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group form-group-si-no">
+                                    <label>¿La ART rechazó el siniestro?</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="rechazo-art-si">
+                                            <input type="radio" name="rechazo_art" id="rechazo-art-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="rechazo-art-no">
+                                            <input type="radio" name="rechazo_art" id="rechazo-art-no" value="no">
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <h4 style="font-size: 0.9rem; color: var(--primary); margin: 1rem 0 0.5rem;">Trámite ante Comisión Médica</h4>
+
+                                <div class="form-group">
+                                    <label for="comision_medica">Estado del trámite en Comisión Médica</label>
+                                    <select id="comision_medica" name="comision_medica">
+                                        <option value="no_iniciada" selected>No iniciado</option>
+                                        <option value="en_tramite">En trámite</option>
+                                        <option value="dictamen_emitido">Dictamen emitido</option>
+                                        <option value="homologado">Acuerdo homologado</option>
+                                    </select>
+                                    <small class="form-ayuda">La Ley 27.348 exige agotar esta vía antes de ir a juicio</small>
+                                </div>
+
+                                <div class="form-group" id="campo-dictamen-porcentaje" style="display:none;">
+                                    <label for="dictamen_porcentaje">% de incapacidad dictaminado por CM</label>
+                                    <input type="number" id="dictamen_porcentaje" name="dictamen_porcentaje"
+                                        min="0" max="100" step="0.5" placeholder="Ej: 12.5">
+                                </div>
+
+                                <div class="form-group form-group-si-no">
+                                    <label>¿Vía administrativa agotada?</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="via-admin-si">
+                                            <input type="radio" name="via_administrativa_agotada" id="via-admin-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="via-admin-no">
+                                            <input type="radio" name="via_administrativa_agotada" id="via-admin-no" value="no">
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h4 style="font-size: 0.9rem; color: var(--primary); margin: 1rem 0 0.5rem;">Información adicional</h4>
+
+                            <div class="form-group form-group-si-no">
+                                <label>¿Tiene incapacidades preexistentes?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="preex-si">
+                                        <input type="radio" name="tiene_preexistencia" id="preex-si" value="si">
+                                        <span>Sí</span>
+                                    </label>
+                                    <label class="opcion-pill" for="preex-no">
+                                        <input type="radio" name="tiene_preexistencia" id="preex-no" value="no">
+                                        <span>No</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group" id="campo-preexistencia-porcentaje" style="display:none;">
+                                <label for="preexistencia_porcentaje">% de incapacidad preexistente</label>
+                                <input type="number" id="preexistencia_porcentaje" name="preexistencia_porcentaje"
+                                    min="0" max="100" step="0.5" placeholder="Ej: 5">
+                                <small class="form-ayuda">Se aplica fórmula de Balthazard para descontar preexistencia</small>
+                            </div>
+
+                            <div class="form-group form-group-si-no">
+                                <label>¿Se encuentra con licencia médica actualmente?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="lic-si">
+                                        <input type="radio" name="licencia_activa" id="lic-si" value="si">
+                                        <span>Sí</span>
+                                    </label>
+                                    <label class="opcion-pill" for="lic-no">
+                                        <input type="radio" name="licencia_activa" id="lic-no" value="no">
+                                        <span>No</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DETALLES ESPECÍFICOS DE DIFERENCIAS SALARIALES -->
+                        <div class="form-section solo-diferencias"
+                            style="display:none; border-top: 1px solid #eee; padding-top: 1rem;">
+                            <h4 style="font-size: 0.9rem; color: var(--primary); margin-bottom: 1rem;">Detalles del
+                                Reclamo Salarial</h4>
+
+                            <div class="form-group">
+                                <label for="motivo_diferencia">Principal motivo del reclamo</label>
+                                <select id="motivo_diferencia" name="motivo_diferencia">
+                                    <option value="mala_categorizacion">Diferencia por Categoría (CCT)</option>
+                                    <option value="falta_pago">Sueldos adeudados (No pago)</option>
+                                    <option value="horas_extras">Horas extras no liquidadas</option>
+                                    <option value="escala_no_aplicada">Falta de aplicación de escalas/aumentos</option>
+                                    <option value="otros">Otros conceptos no remunerativos</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="meses_adeudados">¿Cuántos meses abarca el reclamo? <span
+                                        class="req">*</span></label>
+                                <input type="number" id="meses_adeudados" name="meses_adeudados" min="1" max="24"
+                                    placeholder="Ej: 12">
+                                <small class="form-ayuda">El límite legal de reclamo retroactivo es de 24 meses
+                                    (Prescripción).</small>
+                            </div>
+                        </div>
+
+                        <!-- DETALLES ESPECÍFICOS DE PREVENCIÓN CORPORATIVA -->
+                        <div class="form-section solo-prevencion"
+                            style="display:none; border-top: 1px solid #eee; padding-top: 1rem;">
+                            <h4 style="font-size: 0.9rem; color: var(--primary); margin-bottom: 1rem;">Contexto de
+                                Prevención / Inspección</h4>
+
+                            <div class="form-group form-group-si-no">
+                                <label>¿Recibió inspecciones del Ministerio o ARCA recientemente?</label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="insp-si">
+                                        <input type="radio" name="inspeccion_previa" id="insp-si" value="si">
+                                        <span>Sí</span>
+                                    </label>
+                                    <label class="opcion-pill" for="insp-no">
+                                        <input type="radio" name="inspeccion_previa" id="insp-no" value="no">
+                                        <span>No</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="cantidad_subcontratistas">Cantidad de contratistas / proveedores
+                                    externos</label>
+                                <input type="number" id="cantidad_subcontratistas" name="cantidad_subcontratistas"
+                                    min="0" placeholder="Ej: 5">
+                                <small class="form-ayuda">Dato clave para evaluar responsabilidad solidaria (Art. 30
+                                    LCT).</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="nivel_cumplimiento">Nivel de cumplimiento detectado (Interno)</label>
+                                <select id="nivel_cumplimiento" name="nivel_cumplimiento">
+                                    <option value="total">Cumplimiento Total (Documentado)</option>
+                                    <option value="parcial">Cumplimiento Parcial (Con observaciones)</option>
+                                    <option value="critico">Riesgo Crítico (Falta de registro/deudas)</option>
+                                    <option value="desconocido">No auditado actualmente</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Nivel de urgencia -->
+                        <div class="form-group">
+                            <label for="urgencia">Nivel de urgencia que sentís <span class="req">*</span></label>
+                            <select id="urgencia" name="urgencia" required>
+                                <option value="">-- Seleccioná --</option>
+                                <option value="alta">Alta — hay plazos inminentes o ya vencidos</option>
+                                <option value="media">Media — hay tiempo pero necesito orientación</option>
+                                <option value="baja">Baja — evaluación preventiva sin urgencia</option>
+                            </select>
+                            <span class="form-error" id="error-urgencia"></span>
+                        </div>
+
+                        <!-- ═════════════════════════════════════════════════════════════════
+                             RIPTE v2.1 — Cálculos especiales para Ley Bases 27.742
+                        ════════════════════════════════════════════════════════════════ -->
+                        <div class="form-section seccion-condicional" 
+                            style="border-left: 3px solid var(--primary); background:var(--primary-xlight); padding: 1.5rem; margin-top: 1.5rem;">
+                            
+                            <!-- Header con explicación -->
+                            <div class="paso-info-card">
+                                <div class="paso-info-card-icon">
+                                    <i class="bi bi-calculator"></i>
+                                </div>
+                                <div class="paso-info-card-content">
+                                    <h4>Datos especiales para cálculos avanzados (v2.1)</h4>
+                                    <p>El motor ahora puede aplicar la Ley Bases y calcular intereses por provincia. Estos datos son completamente opcionales.</p>
+                                </div>
+                            </div>
+
+                            <!-- Día del despido -->
+                            <div class="form-group form-group-with-icon" style="margin-top: 1rem;">
+                                <label for="dia_despido">
+                                    <span class="form-label-main">📅 ¿Qué día exacto fue el despido?</span>
+                                    <span class="opcional-badge">Opcional</span>
+                                </label>
+                                <input type="number" id="dia_despido" name="dia_despido" 
+                                    min="1" max="31" value="15" placeholder="Ej: 15"
+                                    data-tooltip="Día del mes (1 al 31)">
+                                <small class="form-ayuda">
+                                    Escribí solo el <strong>número del día</strong> (1 a 31). Si no sabés exacto, dejá <strong>15</strong>.
+                                    <br>Sirve para cálculos precisos de Art. 233 LCT.
+                                </small>
+                                <div class="form-example" id="ej-dia-despido">
+                                    <strong>📌 Ejemplos:</strong><br>
+                                    • Te despidieron el 5 de marzo → escribí <strong>5</strong><br>
+                                    • Te despidieron el 28 de junio → escribí <strong>28</strong><br>
+                                    • No te acordás → dejá <strong>15</strong> (valor por defecto, funciona igual)
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-dia-despido').classList.toggle('active')">
+                                    📋 Ver ejemplos
+                                </span>
+                            </div>
+
+                            <!-- Check Ley Bases (IMPORTANTE) -->
+                            <div class="form-group form-group-si-no" style="margin-top: 1.5rem;">
+                                <label style="font-weight: 700; color: var(--alerta-alta); display:flex; align-items:center; gap:0.5rem;">
+                                    <i class="bi bi-exclamation-triangle-fill"></i> 
+                                    <span>¿Te despidieron ANTES del <strong>9 de Julio de 2024</strong>?</span>
+                                </label>
+                                <div class="opcion-si-no">
+                                    <label class="opcion-pill" for="check-lb-si">
+                                        <input type="radio" name="check_inconstitucionalidad" 
+                                            id="check-lb-si" value="si">
+                                        <span>✓ SÍ (Antes del 9/7/24)</span>
+                                    </label>
+                                    <label class="opcion-pill" for="check-lb-no">
+                                        <input type="radio" name="check_inconstitucionalidad" 
+                                            id="check-lb-no" value="no" checked>
+                                        <span>✗ NO (Después del 9/7/24)</span>
+                                    </label>
+                                </div>
+                                <div class="aviso-importante">
+                                    <div class="aviso-importante-icono">⚖️</div>
+                                    <div class="aviso-importante-content">
+                                        <strong>Esto cambió MUCHO con la Ley Bases:</strong>
+                                        <p>Antes de julio 2024 → Te debemos multas por vulneración de derechos. Después de julio 2024 → Esas multas están suspendidas (pero hay casos en tribunales que pueden restaurarlas).</p>
+                                    </div>
+                                </div>
+                                <small class="form-ayuda" style="margin-top:0.5rem;">
+                                    <strong>Ejemplos:</strong> Despido 20/Junio/2024 = SÍ | Despido 20/Agosto/2024 = NO
+                                </small>
+                            </div>
+
+                            <!-- Jurisdicción (tasas de interés) -->
+                            <div class="form-group form-group-with-icon" style="margin-top: 1.5rem;">
+                                <label for="jurisdiccion">
+                                    <span class="form-label-main">🗺️ ¿En qué provincia se demandaría?</span>
+                                    <span class="opcional-badge">Opcional</span>
+                                </label>
+                                <select id="jurisdiccion" name="jurisdiccion"
+                                    data-tooltip="Afecta tasas de interés">
+                                    <option value="CABA">CABA / Juzgados Cap. Federal — Tasa 6.5%</option>
+                                    <option value="PBA">Buenos Aires (PBA) — Tasa 6.2%</option>
+                                    <option value="CORDOBA">Córdoba — Tasa 6.0%</option>
+                                    <option value="SANTA_FE">Santa Fe — Tasa 5.8%</option>
+                                    <option value="default" selected>Otra provincia — Tasa 5.5%</option>
+                                </select>
+                                <small class="form-ayuda">
+                                    Si hay juicio, la <strong>provincia define cuántos intereses se acumulan</strong>.
+                                    <br>CABA tiene mayor tasa → más dinero por demora.
+                                </small>
+                            </div>
+
+                            <!-- Salarios históricos (IBM preciso) -->
+                            <div class="form-group" style="margin-top: 1.5rem;">
+                                <label for="salarios_historicos">
+                                    <span class="form-label-main">
+                                        <i class="bi bi-graph-up"></i> Tus últimos 12 salarios mensuales
+                                    </span>
+                                    <span class="opcional-badge">MUY Opcional</span>
+                                </label>
+                                <textarea id="salarios_historicos" name="salarios_historicos" 
+                                    rows="5" 
+                                    placeholder='Un salario por línea (números sin puntos):'
+                                    spellcheck="false"
+                                    data-tooltip="Últimos 12 salarios"></textarea>
+                                <small class="form-ayuda">
+                                    <strong>Podés dejar VACÍO sin problema.</strong> El motor usa el salario del Paso 2.
+                                    <br>Si querés mayor precisión, pegá tus últimos 12 salarios (de ARCA o recibos).
+                                </small>
+                                <div class="form-example" id="ej-salarios">
+                                    <strong>📋 Cómo si querés ser preciso:</strong><br><br>
+                                    1. Abrí tu ARCA o descargá 12 recibos<br>
+                                    2. Anot cada salario mensual<br>
+                                    3. Pegá acá, cada uno en una línea (sin $, sin puntos)<br><br>
+                                    <code style="background:#f0f0f0; padding:0.8rem; display:block; border-radius:4px; font-size:0.8rem; font-family:monospace;">
+100000<br>
+101500<br>
+102000<br>
+103200<br>
+102800<br>
+105000<br>
+106200<br>
+107500<br>
+108100<br>
+109500<br>
+110800<br>
+115000
+                                    </code>
+                                    <br>
+                                    💡 <strong>Si NO lo haces:</strong> El motor asume que todos los meses cobró lo mismo que en el Paso 2. Funciona igual, solo es menos preciso.
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-salarios').classList.toggle('active')">
+                                    📋 Mostrar cómo ingresar (si quiero ser exacto)
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- ═════════════════════════════════════════════════════════════════
+                             LEY 27.802 — Campos de análisis avanzado (Marzo 2026)
+                        ════════════════════════════════════════════════════════════════ -->
+                        <div class="form-section seccion-condicional" 
+                            style="border-left: 3px solid #1a5276; background: linear-gradient(135deg, #f0f7fb 0%, #e8f4f8 100%); padding: 1.5rem; margin-top: 1.5rem; border-radius: 0 8px 8px 0;">
+                            
+                            <!-- Header con explicación -->
+                            <div class="paso-info-card">
+                                <div class="paso-info-card-icon">
+                                    <i class="bi bi-shield-check"></i>
+                                </div>
+                                <div class="paso-info-card-content">
+                                    <h4>Ley 27.802 — Análisis de Presunción, Solidaria, Fraude y Daño</h4>
+                                    <p>Estos campos permiten al motor evaluar presunción laboral (Art. 23), responsabilidad solidaria (Art. 30), indicadores de fraude y daño complementario. <strong>Son opcionales</strong> — si no sabés, dejá los valores por defecto.</p>
+                                </div>
+                            </div>
+
+                            <!-- ─── ART. 23 LCT: Presunción Laboral ─── -->
+                            <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
+                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;">🔍 <strong>Art. 23 LCT (Ley 27.802)</strong> — ¿Presunción de Relación Laboral?</legend>
+                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">La presunción NO OPERA si coexisten los 3 elementos:</p>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>¿Tiene facturación de servicios/productos?</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="fact-si">
+                                            <input type="radio" name="tiene_facturacion" id="fact-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="fact-no">
+                                            <input type="radio" name="tiene_facturacion" id="fact-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Comprobantes de servicios o productos emitidos</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>¿Hay pagos bancarios (no efectivo)?</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="pagob-si">
+                                            <input type="radio" name="tiene_pago_bancario" id="pagob-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="pagob-no">
+                                            <input type="radio" name="tiene_pago_bancario" id="pagob-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Transferencias, depósitos, cheques (no efectivo)</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>¿Existe contrato escrito formal?</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="contesc-si">
+                                            <input type="radio" name="tiene_contrato_escrito" id="contesc-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="contesc-no">
+                                            <input type="radio" name="tiene_contrato_escrito" id="contesc-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Acuerdo formalizado, orden de compra o documento equivalente</small>
+                                </div>
+                            </fieldset>
+
+                            <!-- ─── ART. 30 LCT: Responsabilidad Solidaria ─── -->
+                            <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
+                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;">⚖️ <strong>Art. 30 LCT (Ley 27.802)</strong> — Controles Exención Solidaria</legend>
+                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Principal es EXENTO si valida los 5 controles:</p>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>✓ CUIL registrado y actualizado</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="vcuil-si">
+                                            <input type="radio" name="valida_cuil" id="vcuil-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="vcuil-no">
+                                            <input type="radio" name="valida_cuil" id="vcuil-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Verificación en AFIP (C.U.I.L. activo)</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>✓ Aportes SRT pagados regularmente</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="vaportes-si">
+                                            <input type="radio" name="valida_aportes" id="vaportes-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="vaportes-no">
+                                            <input type="radio" name="valida_aportes" id="vaportes-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Contribuciones a la Superintendencia de Riesgos del Trabajo</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>✓ Pago remuneración directo al trabajador</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="vpago-si">
+                                            <input type="radio" name="valida_pago_directo" id="vpago-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="vpago-no">
+                                            <input type="radio" name="valida_pago_directo" id="vpago-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Nómina transferida directamente (no a intermediarios)</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>✓ Clave Bancaria Única (CBU) verificada</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="vcbu-si">
+                                            <input type="radio" name="valida_cbu" id="vcbu-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="vcbu-no">
+                                            <input type="radio" name="valida_cbu" id="vcbu-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Para transferencias bancarias de salarios</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>✓ ART vigente en función</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="vart-si">
+                                            <input type="radio" name="valida_art" id="vart-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="vart-no">
+                                            <input type="radio" name="valida_art" id="vart-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Cobertura de ART actualmente en vigencia</small>
+                                </div>
+                            </fieldset>
+
+                            <!-- ─── FRAUDE LABORAL: Indicadores ─── -->
+                            <fieldset class="fieldset-ley27802 fieldset-fraude" style="border: 2px solid #e8f4f8; border-left: 4px solid #dc3545; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fff8f8;">
+                                <legend style="font-size: 1rem; font-weight: 600; color: #dc3545; padding: 0 10px;">⚠️ <strong>Fraude Laboral</strong> — Indicadores de Riesgo</legend>
+                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Seleccionar si los siguientes patrones están presentes:</p>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>Facturación desproporcionada vs. servicios</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="fr-factdesp-si">
+                                            <input type="radio" name="fraude_facturacion_desproporcionada" id="fr-factdesp-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="fr-factdesp-no">
+                                            <input type="radio" name="fraude_facturacion_desproporcionada" id="fr-factdesp-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>Intermitencia sospechosa (pausa-reanudación anómala)</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="fr-intsosp-si">
+                                            <input type="radio" name="fraude_intermitencia_sospechosa" id="fr-intsosp-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="fr-intsosp-no">
+                                            <input type="radio" name="fraude_intermitencia_sospechosa" id="fr-intsosp-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>Evasión sistemática de registros/documentación</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="fr-evasist-si">
+                                            <input type="radio" name="fraude_evasion_sistematica" id="fr-evasist-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="fr-evasist-no">
+                                            <input type="radio" name="fraude_evasion_sistematica" id="fr-evasist-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>Sobre-facturación (monto > servicios reales)</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="fr-sobrefact-si">
+                                            <input type="radio" name="fraude_sobre_facturacion" id="fr-sobrefact-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="fr-sobrefact-no">
+                                            <input type="radio" name="fraude_sobre_facturacion" id="fr-sobrefact-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>Estructura opaca (intermediarios múltiples, offshoring)</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="fr-estopaca-si">
+                                            <input type="radio" name="fraude_estructura_opaca" id="fr-estopaca-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="fr-estopaca-no">
+                                            <input type="radio" name="fraude_estructura_opaca" id="fr-estopaca-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </fieldset>
+
+                            <!-- ─── DAÑO COMPLEMENTARIO (Art. 527 CCCN) ─── -->
+                            <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
+                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;">💔 <strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
+                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Para evaluar daños morales, patrimoniales y reputacionales:</p>
+                                
+                                <div class="form-group">
+                                    <label for="tipo_extincion">Tipo de terminación de la relación:</label>
+                                    <select id="tipo_extincion" name="tipo_extincion">
+                                        <option value="despido" selected>Despido directo</option>
+                                        <option value="renuncia_previa">Renuncia previa (coercitiva)</option>
+                                        <option value="constructivo">Terminación constructiva (opresiva)</option>
+                                        <option value="suspensión">Suspensión (incertidumbre laboral)</option>
+                                    </select>
+                                    <small class="form-ayuda">Afecta el cálculo del daño moral y patrimonial</small>
+                                </div>
+                                
+                                <div class="form-group form-group-si-no">
+                                    <label>¿Fue violenta? (discriminación, acoso, violencia)</label>
+                                    <div class="opcion-si-no">
+                                        <label class="opcion-pill" for="violenta-si">
+                                            <input type="radio" name="fue_violenta" id="violenta-si" value="si">
+                                            <span>Sí</span>
+                                        </label>
+                                        <label class="opcion-pill" for="violenta-no">
+                                            <input type="radio" name="fue_violenta" id="violenta-no" value="no" checked>
+                                            <span>No</span>
+                                        </label>
+                                    </div>
+                                    <small class="form-ayuda">Incrementa multiplicador de daño moral hasta 50%</small>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="meses_litigio">Duración estimada del litigio (meses):</label>
+                                    <input type="number" id="meses_litigio" name="meses_litigio" min="12" max="120" value="36"
+                                        data-tooltip="Meses estimados de proceso judicial">
+                                    <small class="form-ayuda">Default: 36 meses. Afecta cálculo de lucro cesante</small>
+                                </div>
+                            </fieldset>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════════════════
+                 PASO 5 — Contacto (opcional)
+            ══════════════════════════════════════════ -->
+                <div class="wizard-paso" id="paso-5" style="display:none;">
+                    <h2 class="paso-titulo">
+                        <i class="bi bi-envelope-check"></i> Recibí tu análisis por email
+                    </h2>
+                    <p class="paso-descripcion">
+                        Podés recibir el análisis completo en tu correo. Es <strong>completamente opcional</strong>.
+                        Si no querés dejarlo, igual podés ver el resultado en pantalla.
+                    </p>
+
+                    <div class="form-section">
+                        <div class="form-group">
+                            <label for="email">Correo electrónico <span class="opcional">(opcional)</span></label>
+                            <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com"
+                                autocomplete="email">
+                            <small class="form-ayuda">
+                                Solo se usará para enviarte este análisis. No enviamos spam.
+                            </small>
+                            <span class="form-error" id="error-email"></span>
+                        </div>
+
+                        <!-- Resumen antes de enviar -->
+                        <div class="resumen-previo" id="resumen-previo">
+                            <h4><i class="bi bi-list-check"></i> Resumen de tu análisis</h4>
+                            <div id="resumen-contenido">
+                                <!-- Se llena por JS desde wizard.js -->
+                            </div>
+                        </div>
+
+                        <!-- Aviso legal final -->
+                        <div class="motor-aviso-legal" style="margin-top: 20px;">
+                            <i class="bi bi-shield-exclamation"></i>
+                            Al procesar el análisis aceptás que los resultados son de carácter
+                            <strong>estructural y preventivo</strong>, no constituyen asesoramiento legal
+                            definitivo y no garantizan resultado judicial.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ─────────────────────────────────────────
+                 NAVEGACIÓN DEL WIZARD
+            ───────────────────────────────────────── -->
+                <div class="wizard-nav">
+                    <button type="button" id="btn-anterior" class="btn-wizard btn-anterior oculto">
+                        <i class="bi bi-arrow-left"></i> Anterior
+                    </button>
+                    <button type="button" id="btn-siguiente" class="btn-wizard btn-siguiente">
+                        Siguiente <i class="bi bi-arrow-right"></i>
+                    </button>
+                    <button type="button" id="btn-enviar" class="btn-wizard btn-procesar oculto">
+                        <i class="bi bi-graph-up"></i> Generar Análisis
+                    </button>
+                </div>
+
+            </div><!-- /wizard-container -->
+
+            <!-- ─────────────────────────────────────────
+             OVERLAY DE CARGA
+        ───────────────────────────────────────── -->
+            <!-- Visibilidad controlada por JS con clase .activo (opacity/visibility en motor.css) -->
+            <div class="motor-loading-overlay" id="motor-loading-overlay">
+                <div class="motor-loading-box">
+                    <div class="motor-spinner"></div>
+                    <p>Procesando tu análisis...</p>
+                    <small>Calculando IRIL y escenarios estratégicos</small>
+                </div>
+            </div>
+
+        </div><!-- /motor-container -->
+    </main>
+
+    <!-- ═══════════════════════════════════════════════════════════
+     NOTA EXPLICATIVA DEL ÍNDICE IRIL
+═══════════════════════════════════════════════════════════ -->
+    <section class="iril-nota-pie">
+        <div class="iril-nota-inner">
+
+            <div class="iril-nota-encabezado">
+                <div class="iril-nota-titulo-bloque">
+                    <span class="iril-nota-badge">¿Qué es el IRIL?</span>
+                    <h2 class="iril-nota-titulo">Índice de Riesgo Institucional Laboral</h2>
+                    <p class="iril-nota-subtitulo">
+                        Una herramienta de análisis estructural para empleados y empresas.
+                        No mide probabilidad de ganar o perder: mide complejidad, exposición y fricción procesal.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Escala visual -->
+            <div class="iril-escala">
+                <div class="iril-escala-item bajo">
+                    <span class="iril-escala-num">1 – 2</span>
+                    <span class="iril-escala-label">Bajo</span>
+                    <span class="iril-escala-desc">Situación simple, resolución directa posible</span>
+                </div>
+                <div class="iril-escala-item moderado">
+                    <span class="iril-escala-num">2 – 3</span>
+                    <span class="iril-escala-label">Moderado</span>
+                    <span class="iril-escala-desc">Consulta profesional preventiva recomendada</span>
+                </div>
+                <div class="iril-escala-item alto">
+                    <span class="iril-escala-num">3 – 4</span>
+                    <span class="iril-escala-label">Alto</span>
+                    <span class="iril-escala-desc">Intervención profesional recomendada</span>
+                </div>
+                <div class="iril-escala-item critico">
+                    <span class="iril-escala-num">4 – 5</span>
+                    <span class="iril-escala-label">Crítico</span>
+                    <span class="iril-escala-desc">Requiere abogado laboral de forma urgente</span>
+                </div>
+            </div>
+
+            <!-- Dimensiones -->
+            <div class="iril-dimensiones-nota">
+                <h3 class="iril-dimensiones-titulo">Las 5 dimensiones que componen el índice</h3>
+                <div class="iril-dims-grid">
+                    <div class="iril-dim-item">
+                        <span class="iril-dim-icono"><i class="bi bi-building-fill-exclamation"></i></span>
+                        <div>
+                            <strong>Saturación tribunalicia</strong> <em>(20%)</em>
+                            <p>Carga procesal del fuero laboral según la provincia. CABA y Buenos Aires presentan los
+                                índices más altos del país.</p>
+                        </div>
+                    </div>
+                    <div class="iril-dim-item">
+                        <span class="iril-dim-icono"><i class="bi bi-folder2-open"></i></span>
+                        <div>
+                            <strong>Complejidad probatoria</strong> <em>(25%)</em>
+                            <p>Cuánta documentación respalda la situación: recibos de sueldo, telegramas, contrato
+                                escrito, registración en ARCA, testigos.</p>
+                        </div>
+                    </div>
+                    <div class="iril-dim-item">
+                        <span class="iril-dim-icono"><i class="bi bi-journal-text"></i></span>
+                        <div>
+                            <strong>Volatilidad normativa</strong> <em>(15%)</em>
+                            <p>Qué tan estable es la jurisprudencia para ese tipo de conflicto. Los accidentes laborales
+                                y responsabilidades solidarias son los más volátiles.</p>
+                        </div>
+                    </div>
+                    <div class="iril-dim-item">
+                        <span class="iril-dim-icono"><i class="bi bi-cash-stack"></i></span>
+                        <div>
+                            <strong>Riesgo de costas</strong> <em>(20%)</em>
+                            <p>Exposición a ser condenado al pago de costas del juicio. Aumenta si ya existe intercambio
+                                telegráfico o intimaciones formales.</p>
+                        </div>
+                    </div>
+                    <div class="iril-dim-item">
+                        <span class="iril-dim-icono"><i class="bi bi-people-fill"></i></span>
+                        <div>
+                            <strong>Riesgo multiplicador</strong> <em>(20%)</em>
+                            <p>Efecto cascada: en empresas con muchos empleados, un conflicto puede replicarse generando
+                                demandas en cadena.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Ejemplo empresa -->
+            <div class="iril-ejemplo">
+                <div class="iril-ejemplo-badge"><i class="bi bi-lightbulb-fill"></i> Ejemplo práctico para una empresa
+                </div>
+                <div class="iril-ejemplo-cuerpo">
+                    <p>
+                        Una <strong>empresa de 30 empleados en Buenos Aires</strong>, con un despido sin causa donde
+                        el empleado no tiene recibos de sueldo firmados ni registración en ARCA, podría obtener un
+                        <strong>IRIL entre 3.8 y 4.2</strong> — nivel <span
+                            class="iril-badge-inline critico">Crítico</span>.
+                    </p>
+                    <p>
+                        Eso implica: alta saturación tribunalicia (4.5), complejidad probatoria elevada para el
+                        empleador
+                        (sin documentación = difícil defenderse), riesgo por <strong>fraude laboral y daños
+                            complementarios</strong>
+                        (Ley 27.802 — trabajo no registrado), exposición multiplicadora por la cantidad de empleados, y posibilidad
+                        de efecto contagio si otros empleados en la misma situación inician reclamos.
+                    </p>
+                    <p class="iril-ejemplo-conclusion">
+                        <i class="bi bi-shield-check"></i>
+                        Un IRIL alto no es una condena — es una señal de alerta temprana para actuar antes de que
+                        el conflicto escale. La intervención profesional preventiva reduce drásticamente la exposición
+                        económica.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="motor-footer">
+        <p>
+            &copy; <?= date('Y') ?>
+            <a href="https://fariasortiz.com.ar" target="_blank">Estudio Farias Ortiz</a>
+            — Asesores Legales
+            | Dr. Pablo Nicolás Farías — MP 1-33775
+        </p>
+        <p class="motor-footer-aviso">
+            Este motor de análisis no constituye asesoramiento legal y no garantiza resultado judicial.
+        </p>
+    </footer>
+
+    <!-- Script del wizard -->
+    <script src="assets/js/wizard.js"></script>
+    <script>
+        // NOTA: wizard.js ya inicializa el wizard automáticamente (window.wizardMotor).
+        // Solo se agregan aquí los listeners de campos condicionales.
+        document.addEventListener('DOMContentLoaded', function () {
+
+            // Mostrar/ocultar campo de fecha del último telegrama según intercambio
+            document.querySelectorAll('input[name="hay_intercambio"]').forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    const campoFecha = document.getElementById('campo-fecha-telegrama');
+                    if (campoFecha) {
+                        campoFecha.style.display = this.value === 'si' ? 'block' : 'none';
+                    }
+                });
+            });
+
+            // Gestión de click en tarjetas de conflicto
+            document.querySelectorAll('.conflicto-card').forEach(card => {
+                card.addEventListener('click', function () {
+                    const valor = this.getAttribute('data-valor');
+                    const hiddenConflicto = document.getElementById('tipo_conflicto');
+                    if (hiddenConflicto) {
+                        hiddenConflicto.value = valor;
+                        // Disparar evento change manualmente para activar la lógica de campos condicionales
+                        hiddenConflicto.dispatchEvent(new Event('change'));
+                    }
+
+                    // Estética de selección
+                    document.querySelectorAll('.conflicto-card').forEach(c => c.classList.remove('selected'));
+                    this.classList.add('selected');
+
+                    // Quitar error si existía
+                    const errorSpan = document.getElementById('error-tipo_conflicto');
+                    if (errorSpan) errorSpan.style.display = 'none';
+                });
+            });
+
+            // Sincronizar radio tipo_usuario con campo oculto #tipo_usuario + mostrar/ocultar secciones
+            document.querySelectorAll('input[name="tipo_usuario_radio"]').forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    const perfil = this.value;
+                    const hiddenTipoUsuario = document.getElementById('tipo_usuario');
+                    if (hiddenTipoUsuario) hiddenTipoUsuario.value = perfil;
+
+                    // 1. Filtrar galería de conflictos
+                    document.querySelectorAll('.conflicto-card').forEach(card => {
+                        const grupo = card.getAttribute('data-grupo');
+                        if (perfil === 'empleado') {
+                            card.style.display = (grupo === 'ambos') ? 'flex' : 'none';
+                        } else {
+                            card.style.display = (grupo === 'ambos' || grupo === 'empresa') ? 'flex' : 'none';
+                        }
+
+                        // Resetear selección si se oculta el card activo
+                        if (card.style.display === 'none' && card.classList.contains('selected')) {
+                            card.classList.remove('selected');
+                            const hiddenConflicto = document.getElementById('tipo_conflicto');
+                            if (hiddenConflicto) {
+                                hiddenConflicto.value = '';
+                                hiddenConflicto.dispatchEvent(new Event('change'));
+                            }
+                        }
+                    });
+
+                    // 2. Ocultar secciones específicas del paso 2 y 4
+                    const soloEmpleador = document.querySelectorAll('.solo-empleador');
+                    const soloEmpleado = document.querySelectorAll('.solo-empleado');
+                    if (perfil === 'empleador') {
+                        soloEmpleador.forEach(el => el.style.display = 'block');
+                        soloEmpleado.forEach(el => {
+                            el.style.display = 'none';
+                            el.querySelectorAll('input, select, textarea').forEach(i => i.removeAttribute('required'));
+                        });
+                    } else {
+                        soloEmpleador.forEach(el => {
+                            el.style.display = 'none';
+                            el.querySelectorAll('input, select, textarea').forEach(i => i.removeAttribute('required'));
+                        });
+                        soloEmpleado.forEach(el => el.style.display = 'block');
+                    }
+
+                    // 3. Cambiar etiquetas visuales según el rol para evitar confusión (UX Empleador)
+                    const isEmp = perfil === 'empleador';
+                    
+                    const labelSalario = document.querySelector('label[for="salario"] .form-label-main');
+                    if(labelSalario && labelSalario.innerHTML.indexOf('Masa Salarial') === -1) { 
+                        labelSalario.innerHTML = isEmp ? '💵 Mejor salario mensual bruto del empleado' : '💵 Mejor salario mensual bruto';
+                    }
+
+                    const labelAntiguedad = document.querySelector('label[for="antiguedad_meses"] .form-label-main');
+                    if(labelAntiguedad) labelAntiguedad.innerHTML = isEmp ? '📅 ¿Cuántos meses trabajó el empleado?' : '📅 ¿Cuántos meses trabajaste?';
+
+                    const labelProvincia = document.querySelector('label[for="provincia"] .form-label-main');
+                    if(labelProvincia) labelProvincia.innerHTML = isEmp ? '🗺️ ¿En qué provincia ocurre el conflicto?' : '🗺️ ¿En qué provincia trabajabas?';
+
+                    const labelCategoria = document.querySelector('label[for="categoria"] .form-label-main');
+                    if(labelCategoria) labelCategoria.innerHTML = isEmp ? '💼 ¿Cuál era el cargo/función del trabajador?' : '💼 ¿Cuál era tu cargo/función?';
+
+                    const labelEdad = document.querySelector('label[for="edad"] .form-label-main');
+                    if(labelEdad) labelEdad.innerHTML = isEmp ? '🆔 ¿Cuántos años tenía el empleado al accidentarse?' : '🆔 ¿Cuántos años tenías al accidentarte?';
+
+                    // BARRIDO GLOBAL ANTI-BLOQUEO:
+                    setTimeout(() => {
+                        document.querySelectorAll('#form-motor-laboral input, #form-motor-laboral select, #form-motor-laboral textarea').forEach(el => {
+                            if (el.hasAttribute('required')) {
+                                if (el.offsetWidth === 0 || el.offsetHeight === 0 || el.closest('[style*="display: none"]')) {
+                                    el.removeAttribute('required');
+                                    el.setAttribute('data-was-required', 'true');
+                                }
+                            }
+                        });
+                    }, 50);
+
+                });
+            });
+
+            // Lógica de campos condicionales centralizada
+            const hiddenConflictoInput = document.getElementById('tipo_conflicto');
+            if (hiddenConflictoInput) {
+                hiddenConflictoInput.addEventListener('change', function () {
+                    const val = this.value;
+                    const esAccidente = val === 'accidente_laboral';
+                    const esDiferencia = val === 'diferencias_salariales';
+                    const esPrevencion = ['responsabilidad_solidaria', 'multas_legales', 'riesgo_inspeccion', 'auditoria_preventiva'].includes(val);
+                    const esRegistroIrregular = ['trabajo_no_registrado', 'despido_sin_causa', 'despido_con_causa'].includes(val);
+
+                    // 1. Campos SOLO ACCIDENTE
+                    document.querySelectorAll('.solo-accidente').forEach(el => {
+                        el.style.display = esAccidente ? 'block' : 'none';
+                        el.querySelectorAll('input, select').forEach(input => {
+                            if (esAccidente && input.id !== 'porcentaje_incapacidad') {
+                                input.setAttribute('required', 'required');
+                            } else {
+                                input.removeAttribute('required');
+                            }
+                        });
+                    });
+
+                    // 2. Campos SOLO DIFERENCIAS
+                    document.querySelectorAll('.solo-diferencias').forEach(el => {
+                        el.style.display = esDiferencia ? 'block' : 'none';
+                        el.querySelectorAll('input, select').forEach(input => {
+                            if (esDiferencia) {
+                                input.setAttribute('required', 'required');
+                            } else {
+                                input.removeAttribute('required');
+                            }
+                        });
+                    });
+
+                    // 3. Campos SOLO PREVENCIÓN / AUDITORÍA / SOLIDARIDAD
+                    document.querySelectorAll('.solo-prevencion').forEach(el => {
+                        el.style.display = esPrevencion ? 'block' : 'none';
+                    });
+                    
+                    const esAuditoria = val === 'auditoria_preventiva' || val === 'riesgo_inspeccion';
+                    document.querySelectorAll('.solo-auditoria').forEach(el => {
+                        el.style.display = esAuditoria ? 'block' : 'none';
+                    });
+                    const esSolidaridad = val === 'responsabilidad_solidaria';
+                    document.querySelectorAll('.solo-solidaridad').forEach(el => {
+                        el.style.display = esSolidaridad ? 'block' : 'none';
+                    });
+
+                    // Modificar etiquetas para Prevención (Ej: Salario -> Masa Salarial)
+                    const lblSalario = document.querySelector('label[for="salario"] .form-label-main');
+                    if (lblSalario) {
+                        lblSalario.innerHTML = esPrevencion ? '💵 Masa Salarial o Salario Promedio Afectado ($)' : '💵 Mejor salario mensual bruto ($)';
+                    }
+                    
+                    // Ocultar campo de antigüedad si es auditoría (no aplica)
+                    const grpAntiguedad = document.getElementById('antiguedad_meses')?.closest('.form-group');
+                    if (grpAntiguedad) {
+                        if (esAuditoria || esSolidaridad) {
+                            grpAntiguedad.style.display = 'none';
+                            document.getElementById('antiguedad_meses').removeAttribute('required');
+                        } else {
+                            grpAntiguedad.style.display = 'block';
+                            document.getElementById('antiguedad_meses').setAttribute('required', 'required');
+                        }
+                    }
+
+                    // 4. Campos registro irregular
+                    document.querySelectorAll('.solo-registro-irregular').forEach(el => {
+                        el.style.display = esRegistroIrregular ? 'block' : 'none';
+                    });
+
+                    // 5. Ocultar campos de DESPIDO que no aplican
+                    document.querySelectorAll('.no-accidente').forEach(el => {
+                        const esCasoEspecial = esAccidente || esDiferencia || (esPrevencion && val !== 'multas_legales'); // multas legales puede tener despido
+                        
+                        if (esCasoEspecial) {
+                            el.style.display = 'none';
+                            el.querySelectorAll('input, select').forEach(i => i.removeAttribute('required'));
+                        } else {
+                            // Mostrar a todos si no es un caso especial
+                            el.style.display = 'block';
+                            if (el.id === 'grupo-ya_despedido') {
+                                el.querySelector('#desp-si').setAttribute('required', 'required');
+                            }
+                        }
+                    });
+
+                    // BARRIDO GLOBAL ANTI-BLOQUEO: 
+                    // Remover 'required' de todo elemento que esté oculto en el formulario para evitar 
+                    // el error de validación silenciosa "invalid form control is not focusable" o validación del wizard js.
+                    setTimeout(() => {
+                        document.querySelectorAll('#form-motor-laboral input, #form-motor-laboral select, #form-motor-laboral textarea').forEach(el => {
+                            if (el.hasAttribute('required')) {
+                                // Si el elemento o algún contenedor padre tiene display none, o offsetHeight == 0
+                                if (el.offsetWidth === 0 || el.offsetHeight === 0 || el.closest('[style*="display: none"]')) {
+                                    el.removeAttribute('required');
+                                    // Marcar como que fue removido para restaurar después si se muestra?
+                                    el.setAttribute('data-was-required', 'true');
+                                }
+                            } else if (el.hasAttribute('data-was-required')) {
+                                // Si volvió a ser visible, evaluar si se debe restaurar (cuidado con casos especiales, mejor dejar que la lógica superior lo imponga, o forzarlo).
+                                if (el.offsetWidth > 0 && el.offsetHeight > 0 && !el.closest('[style*="display: none"]')) {
+                                    // Se deja actuar a la lógica principal de arriba.
+                                }
+                            }
+                        });
+                    }, 50);
+
+                });
+
+            }
+
+            // ── Lógica ART: mostrar/ocultar campos según tiene_art ──
+            document.querySelectorAll('input[name="tiene_art"]').forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    const soloArt = document.querySelectorAll('.solo-tiene-art');
+                    soloArt.forEach(el => {
+                        el.style.display = this.value === 'si' ? 'block' : 'none';
+                    });
+                });
+            });
+
+            // Mostrar campo dictamen_porcentaje si CM emitió dictamen
+            const selectCM = document.getElementById('comision_medica');
+            if (selectCM) {
+                selectCM.addEventListener('change', function () {
+                    const campoDictamen = document.getElementById('campo-dictamen-porcentaje');
+                    if (campoDictamen) {
+                        campoDictamen.style.display = ['dictamen_emitido', 'homologado'].includes(this.value) ? 'block' : 'none';
+                    }
+                });
+            }
+
+            // Mostrar campo preexistencia_porcentaje si tiene preexistencia
+            document.querySelectorAll('input[name="tiene_preexistencia"]').forEach(function (radio) {
+                radio.addEventListener('change', function () {
+                    const campoPreex = document.getElementById('campo-preexistencia-porcentaje');
+                    if (campoPreex) {
+                        campoPreex.style.display = this.value === 'si' ? 'block' : 'none';
+                    }
+                });
+            });
+
+            // Lógica interna para registro deficiente (sueldo/fecha)
+            const selectTipoRegistro = document.getElementById('tipo_registro');
+            if (selectTipoRegistro) {
+                selectTipoRegistro.addEventListener('change', function () {
+                    const esDeficiente = ['no_registrado', 'deficiente_fecha', 'deficiente_salario'].includes(this.value);
+                    document.querySelectorAll('.solo-registro-deficiente').forEach(el => {
+                        el.style.display = esDeficiente ? 'grid' : 'none';
+                    });
+                });
+            }
+        });
+    </script>
+
+</body>
+
+</html>

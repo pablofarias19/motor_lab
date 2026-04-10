@@ -1,0 +1,375 @@
+/**
+ * motor_laboral/admin/assets/css/admin.css
+ * Estilos del panel de administración del Motor de Riesgo Laboral.
+ *
+ * Sigue el mismo esquema visual que /admin/assets/css/admin.css del sistema
+ * principal: variables idénticas, mismo sidebar, mismas cards y tablas.
+ * Se añaden estilos específicos para IRIL, escenarios y badges de riesgo.
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   VARIABLES GLOBALES — idénticas al sistema principal
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+    --primary:       #2a64b6;
+    --primary-dark:  #1e4a8b;
+    --primary-light: #e8f0fb;
+    --text:          #333;
+    --border:        #dee2e6;
+    --bg-light:      #f8f9fa;
+
+    /* Niveles IRIL */
+    --iril-bajo:     #28a745;
+    --iril-moderado: #ffc107;
+    --iril-alto:     #fd7e14;
+    --iril-critico:  #dc3545;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LAYOUT BASE
+───────────────────────────────────────────────────────────────────────────── */
+body {
+    background-color: var(--bg-light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    color: var(--text);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SIDEBAR
+───────────────────────────────────────────────────────────────────────────── */
+.sidebar {
+    background-color: var(--bg-light);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 56px;          /* altura del navbar */
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+    min-height: 100%;
+}
+
+.sidebar .nav-link {
+    color: var(--text);
+    padding: 10px 16px;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    font-size: 14px;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #e9ecef;
+    border-left-color: var(--primary);
+    color: var(--primary);
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--primary-light);
+    border-left-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.sidebar .nav-link i {
+    margin-right: 8px;
+    min-width: 18px;
+    text-align: center;
+}
+
+main {
+    background-color: #fff;
+    min-height: calc(100vh - 56px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   NAVBAR OVERRIDE — fuerza colores del sistema
+───────────────────────────────────────────────────────────────────────────── */
+.navbar.bg-primary {
+    background-color: var(--primary) !important;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   CARDS KPI (dashboard)
+───────────────────────────────────────────────────────────────────────────── */
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.card-kpi h3 {
+    font-size: 36px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: var(--primary);
+}
+
+.card-kpi p {
+    font-size: 13px;
+    color: #666;
+    margin: 0;
+}
+
+.card-kpi .icon-wrapper {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TABLAS
+───────────────────────────────────────────────────────────────────────────── */
+.table {
+    font-size: 13px;
+}
+
+.table thead th {
+    background-color: var(--bg-light);
+    color: #555;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+}
+
+.table tbody tr:hover {
+    background-color: var(--primary-light);
+}
+
+.table tbody td {
+    vertical-align: middle;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BADGES DE NIVEL IRIL
+───────────────────────────────────────────────────────────────────────────── */
+.badge-iril {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-iril.bajo     { background: #d4edda; color: #155724; }
+.badge-iril.moderado { background: #fff3cd; color: #856404; }
+.badge-iril.alto     { background: #ffe5d0; color: #8a3d00; }
+.badge-iril.critico  { background: #f8d7da; color: #721c24; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BADGE ESCENARIO RECOMENDADO
+───────────────────────────────────────────────────────────────────────────── */
+.badge-escenario {
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 28px;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.badge-escenario.A { background: #d4edda; color: #155724; }
+.badge-escenario.B { background: #f8d7da; color: #721c24; }
+.badge-escenario.C { background: #cce5ff; color: #004085; }
+.badge-escenario.D { background: #fff3cd; color: #856404; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BARRA IRIL EN TABLA (mini gauge)
+───────────────────────────────────────────────────────────────────────────── */
+.iril-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.iril-bar {
+    flex: 1;
+    height: 6px;
+    background: #e9ecef;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.iril-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.iril-bar-fill.bajo     { background: var(--iril-bajo); }
+.iril-bar-fill.moderado { background: var(--iril-moderado); }
+.iril-bar-fill.alto     { background: var(--iril-alto); }
+.iril-bar-fill.critico  { background: var(--iril-critico); }
+
+.iril-bar-val {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 28px;
+    text-align: right;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TARJETA DETALLE DE ANÁLISIS
+───────────────────────────────────────────────────────────────────────────── */
+.detalle-section {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 20px;
+}
+
+.detalle-section h5 {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--primary-light);
+}
+
+.dato-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--bg-light);
+    font-size: 13px;
+}
+
+.dato-row:last-child { border-bottom: none; }
+
+.dato-row .label { color: #666; }
+.dato-row .valor { font-weight: 500; text-align: right; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ESCENARIO CARD en detalle
+───────────────────────────────────────────────────────────────────────────── */
+.esc-card {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.2s;
+}
+
+.esc-card.recomendado {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.esc-card .esc-letra {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.esc-card .esc-beneficio { color: #28a745; font-weight: 700; }
+.esc-card .esc-costo     { color: #dc3545; font-weight: 700; }
+.esc-card .esc-vbp       { color: var(--primary); font-weight: 700; font-size: 15px; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   FILTROS EN LISTA
+───────────────────────────────────────────────────────────────────────────── */
+.filtros-card {
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 20px;
+}
+
+.filtros-card label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   PAGINACIÓN
+───────────────────────────────────────────────────────────────────────────── */
+.pagination .page-link {
+    color: var(--primary);
+    border-color: var(--border);
+    font-size: 13px;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ALERTAS EN DETALLE
+───────────────────────────────────────────────────────────────────────────── */
+.alerta-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+}
+
+.alerta-item.prescripcion { background: #f8d7da; }
+.alerta-item.telegrama    { background: #fff3cd; }
+.alerta-item.derivacion   { background: #cce5ff; }
+.alerta-item.general      { background: #e2e3e5; }
+
+.alerta-icon { font-size: 20px; }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   UUID TAG
+───────────────────────────────────────────────────────────────────────────── */
+.uuid-tag {
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #666;
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE
+───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+    .sidebar {
+        position: relative;
+        top: auto;
+        height: auto;
+    }
+
+    .card-kpi h3 { font-size: 28px; }
+}
+
+@media (max-width: 480px) {
+    main { padding: 12px !important; }
+    .filtros-card { padding: 12px; }
+}
