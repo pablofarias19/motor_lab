@@ -35,7 +35,9 @@ final class ComplementaryLegalAnalysisBuilder
     {
         return validar_responsabilidad_solidaria(
             $situacion['valida_cuil'] ?? false,
-            $situacion['valida_aportes'] ?? false,
+            $situacion['valida_aportes']
+                ?? ($situacion['principal_verifica_aportes']
+                ?? ($situacion['principal_verifica_aaportes'] ?? false)),
             $situacion['valida_pago_directo'] ?? false,
             $situacion['valida_cbu'] ?? false,
             $situacion['valida_art'] ?? false
