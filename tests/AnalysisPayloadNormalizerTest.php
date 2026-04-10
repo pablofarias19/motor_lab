@@ -60,6 +60,46 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame('2026-03-01', $payloadConFechas['situacion']['fecha_despido']);
         $this->assertEquals(0.7, $payloadConFechas['situacion']['probabilidad_condena']);
 
+        $payloadPreventivo = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleador',
+            'tipo_conflicto' => 'auditoria_preventiva',
+            'datos_laborales' => [
+                'salario' => '1250000',
+                'antiguedad_meses' => '0',
+                'provincia' => 'CABA',
+                'cantidad_empleados' => '25',
+            ],
+            'situacion' => [
+                'urgencia' => 'media',
+                'probabilidad_condena' => '0.35',
+            ],
+        ]);
+
+        $this->assertSame('auditoria_preventiva', $payloadPreventivo['tipo_conflicto']);
+        $this->assertSame(0, $payloadPreventivo['datos_laborales']['antiguedad_meses']);
+        $this->assertSame(25, $payloadPreventivo['datos_laborales']['cantidad_empleados']);
+
+        try {
+            AnalysisPayloadNormalizer::normalize([
+                'tipo_usuario' => 'empleador',
+                'tipo_conflicto' => 'accidente_laboral',
+                'datos_laborales' => [
+                    'salario' => '900000',
+                    'antiguedad_meses' => '12',
+                    'provincia' => 'Buenos Aires',
+                    'edad' => '0',
+                ],
+                'situacion' => [
+                    'fecha_siniestro' => '2026-02-10',
+                ],
+            ]);
+
+            throw new \RuntimeException('Expected InvalidPayloadException for accident payload without valid age');
+        } catch (InvalidPayloadException $e) {
+            $errors = $e->getErrors();
+            $this->assertSame('Para accidentes, la edad debe estar entre 16 y 90 años.', $errors['datos_laborales.edad']);
+        }
+
         try {
             AnalysisPayloadNormalizer::normalize([
                 'tipo_usuario' => 'otro',

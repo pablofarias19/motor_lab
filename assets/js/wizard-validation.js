@@ -3,10 +3,24 @@
 window.WizardValidation = class WizardValidation {
     static validateStepLaborales(formulario, callbacks) {
         let valido = true;
-        const { mostrarError, limpiarErrorCampo, actualizarCampoOculto } = callbacks;
+        const {
+            tipoConflicto = '',
+            mostrarError,
+            limpiarErrorCampo,
+            actualizarCampoOculto,
+        } = callbacks;
+        const esVisible = (campo) => {
+            if (!campo) return false;
+            const estilos = window.getComputedStyle(campo);
+            if (estilos.display === 'none' || estilos.visibility === 'hidden') {
+                return false;
+            }
+
+            return campo.offsetParent !== null || estilos.position === 'fixed';
+        };
 
         const campoSalario = formulario.querySelector('#salario');
-        if (campoSalario) {
+        if (campoSalario && esVisible(campoSalario)) {
             const valorRaw = campoSalario.value.replace(/\./g, '').replace(',', '.');
             const salario = parseFloat(valorRaw);
 
@@ -20,7 +34,7 @@ window.WizardValidation = class WizardValidation {
         }
 
         const campoAntiguedad = formulario.querySelector('#antiguedad_meses');
-        if (campoAntiguedad) {
+        if (campoAntiguedad && esVisible(campoAntiguedad)) {
             const antiguedad = parseInt(campoAntiguedad.value, 10);
             if (Number.isNaN(antiguedad) || antiguedad < 0) {
                 mostrarError(campoAntiguedad, 'La antigüedad no puede ser negativa (0 o más meses).');
@@ -31,7 +45,7 @@ window.WizardValidation = class WizardValidation {
         }
 
         const campoCantidad = formulario.querySelector('#cantidad_empleados');
-        if (campoCantidad) {
+        if (campoCantidad && esVisible(campoCantidad)) {
             const cantidad = parseInt(campoCantidad.value, 10);
             if (Number.isNaN(cantidad) || cantidad < 1) {
                 mostrarError(campoCantidad, 'La cantidad de empleados debe ser al menos 1.');
@@ -39,6 +53,19 @@ window.WizardValidation = class WizardValidation {
             } else {
                 limpiarErrorCampo(campoCantidad);
             }
+        }
+
+        const campoEdad = formulario.querySelector('#edad');
+        if (tipoConflicto === 'accidente_laboral' && campoEdad && esVisible(campoEdad)) {
+            const edad = parseInt(campoEdad.value, 10);
+            if (Number.isNaN(edad) || edad < 16 || edad > 90) {
+                mostrarError(campoEdad, 'Para accidentes, la edad debe estar entre 16 y 90 años.');
+                valido = false;
+            } else {
+                limpiarErrorCampo(campoEdad);
+            }
+        } else if (campoEdad) {
+            limpiarErrorCampo(campoEdad);
         }
 
         return valido;

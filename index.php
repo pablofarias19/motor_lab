@@ -1784,8 +1784,180 @@ $provincias = [
                 });
             }
 
+            function actualizarTextoElemento(selector, html) {
+                const el = document.querySelector(selector);
+                if (!el) return;
+                if (!el.dataset.defaultHtml) {
+                    el.dataset.defaultHtml = el.innerHTML;
+                }
+                el.innerHTML = html;
+            }
+
+            function restaurarTextoElemento(selector) {
+                const el = document.querySelector(selector);
+                if (el && el.dataset.defaultHtml) {
+                    el.innerHTML = el.dataset.defaultHtml;
+                }
+            }
+
+            function actualizarPlaceholder(selector, valor) {
+                const el = document.querySelector(selector);
+                if (!el) return;
+                if (!el.dataset.defaultPlaceholder) {
+                    el.dataset.defaultPlaceholder = el.getAttribute('placeholder') || '';
+                }
+                el.setAttribute('placeholder', valor);
+            }
+
+            function restaurarPlaceholder(selector) {
+                const el = document.querySelector(selector);
+                if (el && el.dataset.defaultPlaceholder !== undefined) {
+                    el.setAttribute('placeholder', el.dataset.defaultPlaceholder);
+                }
+            }
+
+            function actualizarAyudaCampo(selectorCampo, html) {
+                const campo = document.querySelector(selectorCampo);
+                const ayuda = campo?.closest('.form-group')?.querySelector('.form-ayuda');
+                if (!ayuda) return;
+                if (!ayuda.dataset.defaultHtml) {
+                    ayuda.dataset.defaultHtml = ayuda.innerHTML;
+                }
+                ayuda.innerHTML = html;
+            }
+
+            function restaurarAyudaCampo(selectorCampo) {
+                const campo = document.querySelector(selectorCampo);
+                const ayuda = campo?.closest('.form-group')?.querySelector('.form-ayuda');
+                if (ayuda && ayuda.dataset.defaultHtml) {
+                    ayuda.innerHTML = ayuda.dataset.defaultHtml;
+                }
+            }
+
+            function actualizarLabelGrupo(selectorGrupo, html) {
+                const grupo = document.querySelector(selectorGrupo);
+                const label = grupo?.closest('.form-group')?.querySelector('label');
+                if (!label) return;
+                if (!label.dataset.defaultHtml) {
+                    label.dataset.defaultHtml = label.innerHTML;
+                }
+                label.innerHTML = html;
+            }
+
+            function restaurarLabelGrupo(selectorGrupo) {
+                const grupo = document.querySelector(selectorGrupo);
+                const label = grupo?.closest('.form-group')?.querySelector('label');
+                if (label && label.dataset.defaultHtml) {
+                    label.innerHTML = label.dataset.defaultHtml;
+                }
+            }
+
+            function actualizarCopyContextual(perfil, conflicto) {
+                const esEmpleador = perfil === 'empleador';
+                const esPrevencion = ['responsabilidad_solidaria', 'auditoria_preventiva', 'riesgo_inspeccion'].includes(conflicto);
+                const esAccidente = conflicto === 'accidente_laboral';
+
+                if (!esEmpleador) {
+                    [
+                        '#paso-2 .paso-titulo',
+                        '#paso-2 .paso-info-card-content h4',
+                        '#paso-2 .paso-info-card-content p',
+                        'label[for="salario"] .form-label-main',
+                        'label[for="antiguedad_meses"] .form-label-main',
+                        '#antiguedad_meses + .form-ayuda',
+                        'label[for="edad"] .form-label-main',
+                        'label[for="provincia"] .form-label-main',
+                        '#provincia + .form-ayuda',
+                        'label[for="cantidad_empleados"]',
+                        '#cantidad_empleados + .form-ayuda',
+                        'label[for="categoria"] .form-label-main',
+                        '#categoria + .form-ayuda',
+                    ].forEach(restaurarTextoElemento);
+                    ['#salario'].forEach(restaurarAyudaCampo);
+
+                    ['#salario', '#categoria'].forEach(restaurarPlaceholder);
+
+                    [
+                        '#grupo-tiene_recibos',
+                        '#grupo-tiene_contrato',
+                        '#grupo-registrado_afip',
+                        '#grupo-tiene_testigos',
+                        '#grupo-hay_intercambio',
+                        '#grupo-ya_despedido-opts',
+                    ].forEach(restaurarLabelGrupo);
+                    return;
+                }
+
+                actualizarTextoElemento(
+                    '#paso-2 .paso-titulo',
+                    esPrevencion ? '<i class="bi bi-briefcase"></i> Datos base de la empresa' : '<i class="bi bi-briefcase"></i> Datos base del caso'
+                );
+                actualizarTextoElemento('#paso-2 .paso-info-card-content h4', '¿Qué necesitamos para orientar a la empresa?');
+                actualizarTextoElemento(
+                    '#paso-2 .paso-info-card-content p',
+                    esPrevencion
+                        ? 'Tomamos referencias generales de la empresa o del sector involucrado para estimar exposición, cumplimiento y urgencia de acción sin pedir datos irrelevantes.'
+                        : 'Tomamos los datos del trabajador o del caso involucrado para medir la exposición de la empresa y organizar la respuesta estratégica.'
+                );
+
+                actualizarTextoElemento(
+                    'label[for="salario"] .form-label-main',
+                    esPrevencion ? '💵 Masa salarial o salario promedio comprometido ($)' : '💵 Mejor salario mensual bruto del trabajador involucrado'
+                );
+                actualizarAyudaCampo(
+                    '#salario',
+                    esPrevencion
+                        ? 'Usalo como referencia del puesto, sector o universo afectado por la contingencia. No hace falta cargar datos de un trabajador si el análisis es preventivo.'
+                        : 'Informá la mejor remuneración bruta del trabajador involucrado. Nos sirve para estimar la exposición potencial de la empresa.'
+                );
+                actualizarPlaceholder('#salario', esPrevencion ? '$1.200.000' : '$350.000');
+
+                actualizarTextoElemento('label[for="antiguedad_meses"] .form-label-main', '📅 ¿Cuántos meses trabajó el empleado involucrado?');
+                actualizarTextoElemento(
+                    '#antiguedad_meses + .form-ayuda',
+                    'Solo se solicita cuando la antigüedad impacta el cálculo del caso. Si la pantalla la oculta, el análisis seguirá sin ese dato.'
+                );
+                actualizarTextoElemento('label[for="edad"] .form-label-main', '🆔 ¿Cuántos años tenía el trabajador al momento del siniestro?');
+
+                actualizarTextoElemento('label[for="provincia"] .form-label-main', '🗺️ ¿En qué provincia ocurre el conflicto o la contingencia?');
+                actualizarTextoElemento(
+                    '#provincia + .form-ayuda',
+                    'Definí la jurisdicción principal del caso o del establecimiento fiscalizado. Afecta criterios legales, tasas e inspecciones.'
+                );
+
+                actualizarTextoElemento('label[for="cantidad_empleados"]', '👥 ¿Cuántas personas trabajan en la empresa o sector analizado?');
+                actualizarTextoElemento(
+                    '#cantidad_empleados + .form-ayuda',
+                    'Ayuda a medir riesgo multiplicador, escala operativa e impacto potencial de la contingencia sobre la empresa.'
+                );
+
+                actualizarTextoElemento('label[for="categoria"] .form-label-main', '💼 ¿Qué puesto, área o contratista está involucrado?');
+                actualizarTextoElemento(
+                    '#categoria + .form-ayuda',
+                    esPrevencion
+                        ? 'Podés indicar el área auditada, el tipo de tarea o el contratista crítico. Sirve para contextualizar el foco del análisis.'
+                        : 'Indicá el puesto o función del trabajador involucrado para contextualizar mejor la contingencia.'
+                );
+                actualizarPlaceholder('#categoria', esPrevencion ? 'Ej: Logística, Administración, Contratista de limpieza' : 'Ej: Operario, Chofer, Encargado');
+
+                actualizarLabelGrupo('#grupo-tiene_recibos', '¿La empresa conserva recibos de sueldo firmados? <span class="req">*</span>');
+                actualizarLabelGrupo('#grupo-tiene_contrato', '¿Existe contrato, legajo o documentación laboral respaldatoria? <span class="req">*</span>');
+                actualizarLabelGrupo('#grupo-registrado_afip', '¿El personal involucrado está correctamente registrado en ARCA? <span class="req">*</span>');
+                actualizarLabelGrupo('#grupo-tiene_testigos', '¿Hay referentes, mandos o testigos que puedan respaldar los hechos?');
+                actualizarLabelGrupo('#grupo-hay_intercambio', '¿Ya hubo intercambio formal, intimación o requerimiento? <span class="req">*</span>');
+                actualizarLabelGrupo('#grupo-ya_despedido-opts', '¿Ya hubo despido o desvinculación formal del trabajador involucrado? <span class="req">*</span>');
+
+                if (esAccidente) {
+                    actualizarTextoElemento(
+                        '#paso-2 .paso-info-card-content p',
+                        'Cargá los datos base del trabajador y del siniestro para estimar cobertura ART, riesgo civil y exposición directa de la empresa.'
+                    );
+                }
+            }
+
             actualizarAyudaConflictos('');
             actualizarTarjetasConflicto('');
+            actualizarCopyContextual('', '');
 
             // Mostrar/ocultar campo de fecha del último telegrama según intercambio
             document.querySelectorAll('input[name="hay_intercambio"]').forEach(function (radio) {
@@ -1864,25 +2036,9 @@ $provincias = [
                         soloEmpleado.forEach(el => el.style.display = 'block');
                     }
 
-                    // 3. Cambiar etiquetas visuales según el rol para evitar confusión (UX Empleador)
-                    const isEmp = perfil === 'empleador';
-                    
-                    const labelSalario = document.querySelector('label[for="salario"] .form-label-main');
-                    if(labelSalario && labelSalario.innerHTML.indexOf('Masa Salarial') === -1) { 
-                        labelSalario.innerHTML = isEmp ? '💵 Mejor salario mensual bruto del empleado' : '💵 Mejor salario mensual bruto';
-                    }
-
-                    const labelAntiguedad = document.querySelector('label[for="antiguedad_meses"] .form-label-main');
-                    if(labelAntiguedad) labelAntiguedad.innerHTML = isEmp ? '📅 ¿Cuántos meses trabajó el empleado?' : '📅 ¿Cuántos meses trabajaste?';
-
-                    const labelProvincia = document.querySelector('label[for="provincia"] .form-label-main');
-                    if(labelProvincia) labelProvincia.innerHTML = isEmp ? '🗺️ ¿En qué provincia ocurre el conflicto?' : '🗺️ ¿En qué provincia trabajabas?';
-
-                    const labelCategoria = document.querySelector('label[for="categoria"] .form-label-main');
-                    if(labelCategoria) labelCategoria.innerHTML = isEmp ? '💼 ¿Cuál era el cargo/función del trabajador?' : '💼 ¿Cuál era tu cargo/función?';
-
-                    const labelEdad = document.querySelector('label[for="edad"] .form-label-main');
-                    if(labelEdad) labelEdad.innerHTML = isEmp ? '🆔 ¿Cuántos años tenía el empleado al accidentarse?' : '🆔 ¿Cuántos años tenías al accidentarte?';
+                    // 3. Ajustar copy contextual según perfil para evitar preguntas orientadas al actor equivocado
+                    const conflictoActual = document.getElementById('tipo_conflicto')?.value || '';
+                    actualizarCopyContextual(perfil, conflictoActual);
 
                     // BARRIDO GLOBAL ANTI-BLOQUEO:
                     setTimeout(() => {
@@ -1947,12 +2103,9 @@ $provincias = [
                         el.style.display = esSolidaridad ? 'block' : 'none';
                     });
 
-                    // Modificar etiquetas para Prevención (Ej: Salario -> Masa Salarial)
-                    const lblSalario = document.querySelector('label[for="salario"] .form-label-main');
-                    if (lblSalario) {
-                        lblSalario.innerHTML = esPrevencion ? '💵 Masa Salarial o Salario Promedio Afectado ($)' : '💵 Mejor salario mensual bruto ($)';
-                    }
-                    
+                    const perfilActual = document.getElementById('tipo_usuario')?.value || '';
+                    actualizarCopyContextual(perfilActual, val);
+
                     // Ocultar campo de antigüedad si es auditoría (no aplica)
                     const grpAntiguedad = document.getElementById('antiguedad_meses')?.closest('.form-group');
                     if (grpAntiguedad) {
