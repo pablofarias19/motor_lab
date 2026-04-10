@@ -79,6 +79,22 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame(0, $payloadPreventivo['datos_laborales']['antiguedad_meses']);
         $this->assertSame(25, $payloadPreventivo['datos_laborales']['cantidad_empleados']);
 
+        $payloadAccidenteValido = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleador',
+            'tipo_conflicto' => 'accidente_laboral',
+            'datos_laborales' => [
+                'salario' => '900000',
+                'antiguedad_meses' => '12',
+                'provincia' => 'Buenos Aires',
+                'edad' => 30,
+            ],
+            'situacion' => [
+                'fecha_siniestro' => '2026-02-10',
+            ],
+        ]);
+
+        $this->assertSame(30, $payloadAccidenteValido['datos_laborales']['edad']);
+
         try {
             AnalysisPayloadNormalizer::normalize([
                 'tipo_usuario' => 'empleador',

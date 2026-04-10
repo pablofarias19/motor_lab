@@ -1803,16 +1803,24 @@ $provincias = [
             function actualizarPlaceholder(selector, valor) {
                 const el = document.querySelector(selector);
                 if (!el) return;
-                if (!el.dataset.defaultPlaceholder) {
-                    el.dataset.defaultPlaceholder = el.getAttribute('placeholder') || '';
+                if (!el.dataset.hasDefaultPlaceholder) {
+                    const placeholderActual = el.getAttribute('placeholder');
+                    if (placeholderActual !== null) {
+                        el.dataset.defaultPlaceholder = placeholderActual;
+                    }
+                    el.dataset.hasDefaultPlaceholder = 'true';
                 }
                 el.setAttribute('placeholder', valor);
             }
 
             function restaurarPlaceholder(selector) {
                 const el = document.querySelector(selector);
-                if (el && el.dataset.defaultPlaceholder !== undefined) {
-                    el.setAttribute('placeholder', el.dataset.defaultPlaceholder);
+                if (el && el.dataset.hasDefaultPlaceholder) {
+                    if (el.dataset.defaultPlaceholder !== undefined) {
+                        el.setAttribute('placeholder', el.dataset.defaultPlaceholder);
+                        return;
+                    }
+                    el.removeAttribute('placeholder');
                 }
             }
 

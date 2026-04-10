@@ -1002,6 +1002,7 @@ class WizardMotorLaboral {
             return false;
         }
 
+        // Los elementos fixed pueden no tener offsetParent aunque sigan visibles.
         return campo.offsetParent !== null || estilos.position === 'fixed';
     }
 

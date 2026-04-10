@@ -1,5 +1,8 @@
 'use strict';
 
+const MIN_ACCIDENT_AGE = 16;
+const MAX_ACCIDENT_AGE = 90;
+
 window.WizardValidation = class WizardValidation {
     static validateStepLaborales(formulario, callbacks) {
         let valido = true;
@@ -50,8 +53,8 @@ window.WizardValidation = class WizardValidation {
         const campoEdad = formulario.querySelector('#edad');
         if (tipoConflicto === 'accidente_laboral' && campoEdad && esVisible(campoEdad)) {
             const edad = parseInt(campoEdad.value, 10);
-            if (Number.isNaN(edad) || edad < 16 || edad > 90) {
-                mostrarError(campoEdad, 'Para accidentes, la edad debe estar entre 16 y 90 años.');
+            if (Number.isNaN(edad) || edad < MIN_ACCIDENT_AGE || edad > MAX_ACCIDENT_AGE) {
+                mostrarError(campoEdad, `Para accidentes, la edad debe estar entre ${MIN_ACCIDENT_AGE} y ${MAX_ACCIDENT_AGE} años.`);
                 valido = false;
             } else {
                 limpiarErrorCampo(campoEdad);
