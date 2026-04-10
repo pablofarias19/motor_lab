@@ -280,24 +280,17 @@ $labelConflicto = fn(string $t): string => ml_conflicto_label($t);
                     * Estimación orientativa. No constituye asesoramiento legal ni predice resultados judiciales.
                 </p>
                 <?php
-                $conceptos = [
-                    'indemnizacion' => 'Indemnización (Art. 245 LCT)',
-                    'preaviso' => 'Preaviso (Art. 231/233 LCT)',
-                    'sac_proporcional' => 'SAC proporcional (Art. 123 LCT)',
-                    'vacaciones' => 'Vacaciones proporcionales (Art. 150 LCT)',
-                    'multa_25323' => 'Ley 25.323 Art. 2 (DEROGADA)',
-                    'multa_24013' => 'Ley 24.013 Art. 8 (DEROGADA — Ley 27.742)',
-                    'art80_lct' => 'Art. 80 LCT (certificados)',
-                ];
+                $conceptos = $exposJson['conceptos'] ?? [];
                 $total = 0;
-                foreach ($conceptos as $key => $label):
-                    $val = floatval($exposJson[$key] ?? 0);
-                    if ($val <= 0)
+                foreach ($conceptos as $concepto):
+                    $val = floatval($concepto['monto'] ?? 0);
+                    if ($val <= 0) {
                         continue;
+                    }
                     $total += $val;
                     ?>
                     <div class="dato-row">
-                        <span class="label"><?php echo $label; ?></span>
+                        <span class="label"><?php echo htmlspecialchars($concepto['descripcion'] ?? 'Concepto'); ?></span>
                         <span class="valor"><?php echo detMoneda($val); ?></span>
                     </div>
                 <?php endforeach; ?>
@@ -311,13 +304,32 @@ $labelConflicto = fn(string $t): string => ml_conflicto_label($t);
             </div>
         <?php endif; ?>
 
+        <?php if (!empty($exposJson['analisis_empresa'])): ?>
+            <div class="detalle-section">
+                <h5><i class="bi bi-building-check me-2"></i>Diagnóstico específico para empresa</h5>
+                <?php foreach (($exposJson['analisis_empresa'] ?? []) as $modulo => $detalle): ?>
+                    <?php if (!is_array($detalle)) continue; ?>
+                    <div class="mt-3 pt-2" style="border-top:1px solid #eee;">
+                        <div class="fw-bold mb-2"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $modulo))); ?></div>
+                        <?php foreach ($detalle as $clave => $valor): ?>
+                            <?php if (is_array($valor)) continue; ?>
+                            <div class="dato-row">
+                                <span class="label"><?php echo htmlspecialchars(ucfirst(str_replace('_', ' ', $clave))); ?></span>
+                                <span class="valor"><?php echo htmlspecialchars((string) $valor); ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+
         <!-- ESCENARIOS ESTRATÉGICOS -->
         <?php if (!empty($escenJson)): ?>
             <div class="detalle-section">
                 <h5><i class="bi bi-diagram-3 me-2"></i>Escenarios estratégicos</h5>
                 <div class="row g-2">
                     <?php foreach ($escenJson as $esc):
-                        $letra = strtoupper($esc['letra'] ?? '');
+                        $letra = strtoupper($esc['codigo'] ?? ($esc['letra'] ?? ''));
                         $esRec = $letra === $escRec;
                         ?>
                         <div class="col-md-6">

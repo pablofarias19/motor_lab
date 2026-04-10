@@ -307,6 +307,39 @@ try {
         $pdf->Cell(0, 7, ml_formato_moneda($exposicion['total_con_multas']), 0, 1, 'R');
     }
 
+    if (!empty($exposicion['analisis_empresa']) && is_array($exposicion['analisis_empresa'])) {
+        $pdf->seccion('4. Diagnóstico específico para empresa');
+
+        foreach ($exposicion['analisis_empresa'] as $modulo => $detalle) {
+            if (!is_array($detalle)) {
+                continue;
+            }
+
+            $titulo = match ($modulo) {
+                'art_empresa' => 'Contingencia ART empresa',
+                'solidaridad' => 'Responsabilidad solidaria',
+                'auditoria' => 'Auditoría preventiva',
+                'inspeccion' => 'Riesgo de inspección',
+                default => ucfirst(str_replace('_', ' ', $modulo)),
+            };
+
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(0, 6, pdf_latin1($titulo), 0, 1);
+            $pdf->SetFont('Arial', '', 8);
+
+            foreach ($detalle as $clave => $valor) {
+                if (is_array($valor)) {
+                    continue;
+                }
+
+                $texto = is_bool($valor) ? ($valor ? 'Sí' : 'No') : (string) $valor;
+                $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', $clave)) . ': ' . $texto), 0, 'L');
+            }
+
+            $pdf->Ln(1);
+        }
+    }
+
     // ── Sección ART específica (solo accidente_laboral con ART) ────────────────
     $esArtPDF = ($analisis['tipo_conflicto'] === 'accidente_laboral')
         && (($situacion['tiene_art'] ?? 'no') === 'si');
@@ -386,7 +419,7 @@ try {
     // ── Escenarios estratégicos ───────────────────────────────────────────────
     if (!empty($escenarios)) {
         $pdf->AddPage();
-        $pdf->seccion('4. Escenarios Estratégicos Comparativos');
+        $pdf->seccion('Escenarios Estratégicos Comparativos');
 
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->MultiCell(0, 4, pdf_latin1('El sistema presenta escenarios estructurales comparativos. No recomienda resultado. La decisión corresponde al profesional y al cliente.'), 0, 'J');

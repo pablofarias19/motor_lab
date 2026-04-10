@@ -643,6 +643,23 @@ input[type="number"].form-control::-webkit-outer-spin-button {
 }
 
 /* ── GALERÍA DE CONFLICTOS (TARJETAS) ── */
+.conflicto-role-helper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: 1rem;
+    padding: 0.9rem 1rem;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, #eef4fc 0%, #f8fbff 100%);
+    border: 1px solid var(--primary-light);
+    color: var(--primary-dark);
+    font-size: 0.85rem;
+}
+
+.conflicto-role-helper strong {
+    font-size: 0.92rem;
+}
+
 .conflictos-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -682,6 +699,11 @@ input[type="number"].form-control::-webkit-outer-spin-button {
     border-color: var(--primary);
     background-color: var(--primary-xlight);
     box-shadow: 0 0 0 3px rgba(42, 100, 182, 0.1);
+}
+
+.conflicto-card.destacado {
+    border-color: rgba(42, 100, 182, 0.35);
+    background: #f8fbff;
 }
 
 .conflicto-card.selected::after {

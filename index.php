@@ -185,6 +185,11 @@ $provincias = [
                         <p class="form-section-desc">Elegí la opción que mejor represente tu situación actual para
                             personalizar el análisis.</p>
 
+                        <div id="conflicto-role-helper" class="conflicto-role-helper">
+                            <strong>Elegí primero tu perfil.</strong>
+                            <span>Cuando selecciones empleado o empresa, te vamos a ordenar las opciones más relevantes y mostrar solo las rutas más útiles para ese caso.</span>
+                        </div>
+
                         <div class="form-group">
                             <!-- Campo oculto para el valor del conflicto -->
                             <input type="hidden" name="tipo_conflicto" id="tipo_conflicto" value="">
@@ -1681,6 +1686,76 @@ $provincias = [
         // NOTA: wizard.js ya inicializa el wizard automáticamente (window.wizardMotor).
         // Solo se agregan aquí los listeners de campos condicionales.
         document.addEventListener('DOMContentLoaded', function () {
+            const conflictoRoleHelper = document.getElementById('conflicto-role-helper');
+
+            function actualizarAyudaConflictos(perfil) {
+                if (!conflictoRoleHelper) return;
+
+                if (perfil === 'empleador') {
+                    conflictoRoleHelper.innerHTML = `
+                        <strong>Ruta sugerida para empresa:</strong>
+                        <span><strong>1.</strong> Accidente / ART empresa &nbsp; <strong>2.</strong> Responsabilidad solidaria por contratistas &nbsp; <strong>3.</strong> Auditoría preventiva &nbsp; <strong>4.</strong> Riesgo de inspección.</span>
+                    `;
+                } else if (perfil === 'empleado') {
+                    conflictoRoleHelper.innerHTML = `
+                        <strong>Ruta sugerida para trabajador:</strong>
+                        <span>Elegí el motivo principal del reclamo y te mostraremos solo los datos necesarios para ese caso.</span>
+                    `;
+                } else {
+                    conflictoRoleHelper.innerHTML = `
+                        <strong>Elegí primero tu perfil.</strong>
+                        <span>Cuando selecciones empleado o empresa, te vamos a ordenar las opciones más relevantes y mostrar solo las rutas más útiles para ese caso.</span>
+                    `;
+                }
+            }
+
+            function actualizarTarjetasConflicto(perfil) {
+                const employerPriority = {
+                    accidente_laboral: 1,
+                    responsabilidad_solidaria: 2,
+                    auditoria_preventiva: 3,
+                    riesgo_inspeccion: 4,
+                    diferencias_salariales: 5,
+                    despido_sin_causa: 6,
+                    despido_con_causa: 7,
+                    trabajo_no_registrado: 8,
+                };
+
+                const employerCopy = {
+                    accidente_laboral: ['Accidente / ART empresa', 'Accidente, enfermedad profesional o reclamo civil contra la empresa.'],
+                    responsabilidad_solidaria: ['Contratistas y tercerización', 'Riesgos por personal tercerizado, proveedores o control deficiente.'],
+                    auditoria_preventiva: ['Auditoría de cumplimiento', 'Chequeo preventivo para ordenar registración, ART y documentación laboral.'],
+                    riesgo_inspeccion: ['Inspección ARCA / Ministerio', 'Evaluación rápida del impacto económico ante fiscalización o acta.'],
+                };
+
+                document.querySelectorAll('.conflicto-card').forEach(card => {
+                    const valor = card.getAttribute('data-valor');
+                    const titleEl = card.querySelector('.conflicto-info strong');
+                    const descEl = card.querySelector('.conflicto-info span');
+                    if (!titleEl || !descEl) return;
+
+                    if (!card.dataset.defaultTitle) {
+                        card.dataset.defaultTitle = titleEl.textContent.trim();
+                        card.dataset.defaultDesc = descEl.textContent.trim();
+                    }
+
+                    if (perfil === 'empleador' && employerCopy[valor]) {
+                        titleEl.textContent = employerCopy[valor][0];
+                        descEl.textContent = employerCopy[valor][1];
+                    } else {
+                        titleEl.textContent = card.dataset.defaultTitle;
+                        descEl.textContent = card.dataset.defaultDesc;
+                    }
+
+                    card.style.order = perfil === 'empleador'
+                        ? String(employerPriority[valor] ?? 20)
+                        : '0';
+                    card.classList.toggle('destacado', perfil === 'empleador' && (employerPriority[valor] ?? 20) <= 4);
+                });
+            }
+
+            actualizarAyudaConflictos('');
+            actualizarTarjetasConflicto('');
 
             // Mostrar/ocultar campo de fecha del último telegrama según intercambio
             document.querySelectorAll('input[name="hay_intercambio"]').forEach(function (radio) {
@@ -1719,6 +1794,8 @@ $provincias = [
                     const perfil = this.value;
                     const hiddenTipoUsuario = document.getElementById('tipo_usuario');
                     if (hiddenTipoUsuario) hiddenTipoUsuario.value = perfil;
+                    actualizarAyudaConflictos(perfil);
+                    actualizarTarjetasConflicto(perfil);
 
                     // 1. Filtrar galería de conflictos
                     document.querySelectorAll('.conflicto-card').forEach(card => {

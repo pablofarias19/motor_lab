@@ -7,6 +7,7 @@ final class AnalysisPayloadNormalizer
 {
     public static function normalize(array $input): array
     {
+        $tipoUsuario = self::string($input['tipo_usuario'] ?? '');
         $datosInput = is_array($input['datos_laborales'] ?? null) ? $input['datos_laborales'] : [];
         $documentacionInput = is_array($input['documentacion'] ?? null) ? $input['documentacion'] : [];
         $situacionInput = is_array($input['situacion'] ?? null) ? $input['situacion'] : [];
@@ -69,10 +70,27 @@ final class AnalysisPayloadNormalizer
             'cantidad_empleados' => self::int($situacionInput['cantidad_empleados'] ?? 1, 1),
             'fecha_despido' => self::string($situacionInput['fecha_despido'] ?? ''),
             'fecha_ultimo_telegrama' => self::string($situacionInput['fecha_ultimo_telegrama'] ?? ''),
+            'motivo_diferencia' => self::string($situacionInput['motivo_diferencia'] ?? 'mala_categorizacion', 'mala_categorizacion'),
+            'meses_adeudados' => self::int($situacionInput['meses_adeudados'] ?? 0),
             'dia_despido' => max(1, min(31, self::int($situacionInput['dia_despido'] ?? 15, 15))),
             'check_inconstitucionalidad' => self::flag($situacionInput['check_inconstitucionalidad'] ?? 'no'),
             'jurisdiccion' => self::string($situacionInput['jurisdiccion'] ?? 'CABA', 'CABA'),
             'salarios_historicos' => array_values(array_map('floatval', array_filter($salariosHistoricos, 'is_numeric'))),
+            'tipo_contingencia' => self::string($situacionInput['tipo_contingencia'] ?? 'accidente_tipico', 'accidente_tipico'),
+            'fecha_siniestro' => self::string($situacionInput['fecha_siniestro'] ?? ''),
+            'porcentaje_incapacidad' => self::float($situacionInput['porcentaje_incapacidad'] ?? 0),
+            'incapacidad_tipo' => self::string($situacionInput['incapacidad_tipo'] ?? 'permanente_definitiva', 'permanente_definitiva'),
+            'estado_art' => self::string($situacionInput['estado_art'] ?? 'activa_valida', 'activa_valida'),
+            'culpa_grave' => self::flag($situacionInput['culpa_grave'] ?? 'no'),
+            'via_civil' => self::flag($situacionInput['via_civil'] ?? 'no'),
+            'denuncia_art' => self::flag($situacionInput['denuncia_art'] ?? 'no'),
+            'rechazo_art' => self::flag($situacionInput['rechazo_art'] ?? 'no'),
+            'comision_medica' => self::string($situacionInput['comision_medica'] ?? 'no_iniciada', 'no_iniciada'),
+            'dictamen_porcentaje' => self::float($situacionInput['dictamen_porcentaje'] ?? 0),
+            'via_administrativa_agotada' => self::flag($situacionInput['via_administrativa_agotada'] ?? 'no'),
+            'tiene_preexistencia' => self::flag($situacionInput['tiene_preexistencia'] ?? 'no'),
+            'preexistencia_porcentaje' => self::float($situacionInput['preexistencia_porcentaje'] ?? 0),
+            'licencia_activa' => self::flag($situacionInput['licencia_activa'] ?? 'no'),
             'tiene_facturacion' => self::flag($situacionInput['tiene_facturacion'] ?? 'no'),
             'tiene_pago_bancario' => self::flag($situacionInput['tiene_pago_bancario'] ?? 'no'),
             'tiene_contrato_escrito' => self::flag($situacionInput['tiene_contrato_escrito'] ?? 'no'),
@@ -83,6 +101,23 @@ final class AnalysisPayloadNormalizer
             'valida_cbu' => self::flag($situacionInput['valida_cbu'] ?? ($situacionInput['principal_valida_cbu_trabajador'] ?? 'no')),
             'valida_art' => self::flag($situacionInput['valida_art'] ?? ($situacionInput['principal_cubre_art'] ?? 'no')),
             'nivel_cumplimiento' => self::string($situacionInput['nivel_cumplimiento'] ?? 'desconocido', 'desconocido'),
+            'actividad_esencial' => self::flag($situacionInput['actividad_esencial'] ?? 'no'),
+            'control_documental' => self::flag($situacionInput['control_documental'] ?? 'no'),
+            'control_operativo' => self::flag($situacionInput['control_operativo'] ?? 'no'),
+            'integracion_estructura' => self::flag($situacionInput['integracion_estructura'] ?? 'no'),
+            'contrato_formal' => self::flag($situacionInput['contrato_formal'] ?? 'no'),
+            'falta_f931_art' => self::flag($situacionInput['falta_f931_art'] ?? 'no'),
+            'meses_no_registrados' => self::int($situacionInput['meses_no_registrados'] ?? 0),
+            'meses_en_mora' => self::int($situacionInput['meses_en_mora'] ?? 0),
+            'aplica_blanco_laboral' => self::flag($situacionInput['aplica_blanco_laboral'] ?? 'no'),
+            'probabilidad_condena' => self::float($situacionInput['probabilidad_condena'] ?? 0.5, 0.5),
+            'inspeccion_previa' => self::flag($situacionInput['inspeccion_previa'] ?? 'no'),
+            'chk_alta_sipa' => self::flag($situacionInput['chk_alta_sipa'] ?? 'no'),
+            'chk_libro_art52' => self::flag($situacionInput['chk_libro_art52'] ?? 'no'),
+            'chk_recibos_cct' => self::flag($situacionInput['chk_recibos_cct'] ?? 'no'),
+            'chk_art_vigente' => self::flag($situacionInput['chk_art_vigente'] ?? 'no'),
+            'chk_examenes' => self::flag($situacionInput['chk_examenes'] ?? 'no'),
+            'chk_epp_rgrl' => self::flag($situacionInput['chk_epp_rgrl'] ?? 'no'),
             'fraude_facturacion_desproporcionada' => self::flag($situacionInput['fraude_facturacion_desproporcionada'] ?? 'no'),
             'fraude_intermitencia_sospechosa' => self::flag($situacionInput['fraude_intermitencia_sospechosa'] ?? 'no'),
             'fraude_evasion_sistematica' => self::flag($situacionInput['fraude_evasion_sistematica'] ?? 'no'),
@@ -98,9 +133,14 @@ final class AnalysisPayloadNormalizer
         $situacion['principal_paga_directo'] = $situacion['valida_pago_directo'];
         $situacion['principal_valida_cbu_trabajador'] = $situacion['valida_cbu'];
         $situacion['principal_cubre_art'] = $situacion['valida_art'];
+        $situacion['tiene_art'] = self::flag(
+            $tipoUsuario === 'empleador'
+                ? (($situacion['estado_art'] ?? 'activa_valida') === 'inexistente' ? 'no' : 'si')
+                : ($situacionInput['tiene_art'] ?? 'no')
+        );
 
         return [
-            'tipo_usuario' => self::string($input['tipo_usuario'] ?? ''),
+            'tipo_usuario' => $tipoUsuario,
             'tipo_conflicto' => self::string($input['tipo_conflicto'] ?? ''),
             'datos_laborales' => $datosLaborales,
             'documentacion' => $documentacion,
