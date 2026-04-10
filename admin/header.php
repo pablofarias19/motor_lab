@@ -96,13 +96,16 @@ if (!$adminLogueado) {
     // Procesar intento de login
     $errorLogin = ML_ADMIN_TOKEN === '' ? 'Configure ML_ADMIN_TOKEN en el entorno para habilitar el acceso admin.' : '';
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ml_token'])) {
+        $postedToken = $_POST['ml_token'] ?? null;
         if (ML_ADMIN_TOKEN === '') {
             $errorLogin = 'Configure ML_ADMIN_TOKEN en el entorno para habilitar el acceso admin.';
         } elseif (!ml_admin_csrf_is_valid($_POST['csrf_token'] ?? null)) {
             $errorLogin = 'La sesión expiró. Recargá la página e intentá nuevamente.';
         } elseif (ml_admin_login_limited()) {
             $errorLogin = 'Demasiados intentos fallidos. Esperá 15 minutos antes de volver a intentar.';
-        } elseif (hash_equals(ML_ADMIN_TOKEN, (string) $_POST['ml_token'])) {
+        } elseif (!is_string($postedToken)) {
+            $errorLogin = 'Solicitud inválida.';
+        } elseif (hash_equals(ML_ADMIN_TOKEN, $postedToken)) {
             session_regenerate_id(true);
             $_SESSION['ml_admin_logged'] = true;
             $_SESSION['ml_admin_user']   = ML_ADMIN_USER;
