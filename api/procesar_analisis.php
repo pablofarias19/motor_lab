@@ -10,6 +10,7 @@ require_once dirname(__DIR__) . '/autoload.php';
 require_once dirname(__DIR__) . '/config/config.php';
 require_once dirname(__DIR__) . '/config/ripte_functions.php';
 
+$requestId = substr(ml_uuid(), 0, 8);
 $requestStart = microtime(true);
 $logRequest = static function (string $estado, int $httpCode, array $contexto = []) use ($requestStart): void {
     ml_log_metric('api.procesar_analisis', [
@@ -52,9 +53,31 @@ try {
     $controller = new \App\Controllers\AnalisisController();
     $resultado = $controller->procesar($input);
     
-    $logRequest('ok', 200, ['schema_version' => $resultado['schema_version'] ?? null]);
+    $logRequest('ok', 200, [
+        'schema_version' => $resultado['schema_version'] ?? null,
+        'tipo_usuario' => $input['tipo_usuario'] ?? null,
+        'tipo_conflicto' => $input['tipo_conflicto'] ?? null,
+        'request_id' => $requestId,
+    ]);
     ml_respuesta(true, 'Análisis procesado correctamente.', $resultado);
-} catch (\Exception $e) {
-    $logRequest('error', 500, ['error' => $e->getMessage()]);
-    ml_respuesta(false, $e->getMessage(), null, null, 500);
+} catch (\App\Support\InvalidPayloadException $e) {
+    $errors = $e->getErrors();
+    $logRequest('payload_invalido', 422, [
+        'request_id' => $requestId,
+        'tipo_usuario' => $input['tipo_usuario'] ?? null,
+        'tipo_conflicto' => $input['tipo_conflicto'] ?? null,
+        'errores' => array_keys($errors),
+    ]);
+    ml_respuesta(false, $e->getMessage(), null, $errors, 422);
+} catch (\Throwable $e) {
+    ml_logear(sprintf('[api/procesar_analisis][%s] %s', $requestId, $e->getMessage()), 'error', 'error.log');
+    $logRequest('error', 500, [
+        'request_id' => $requestId,
+        'tipo_usuario' => $input['tipo_usuario'] ?? null,
+        'tipo_conflicto' => $input['tipo_conflicto'] ?? null,
+        'error_class' => get_class($e),
+    ]);
+    ml_respuesta(false, 'Ocurrió un error interno al procesar el análisis.', null, [
+        'request_id' => $requestId,
+    ], 500);
 }
