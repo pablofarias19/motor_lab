@@ -188,6 +188,22 @@ function ml_logear(string $mensaje, string $nivel = 'info', string $archivo = 'a
     error_log($entrada, 3, $rutaLog);
 }
 
+function ml_log_metric(string $evento, array $contexto = [], string $archivo = 'metrics.log'): void
+{
+    $payload = ['evento' => $evento] + $contexto;
+    ml_logear(json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'info', $archivo);
+}
+
+function ml_logo_src(): string
+{
+    $remotePath = dirname(ML_ROOT) . '/document/image/logo1.png';
+    if (file_exists($remotePath)) {
+        return '../document/image/logo1.png';
+    }
+
+    return 'assets/img/logo-placeholder.svg';
+}
+
 /**
  * ml_respuesta() — Devuelve una respuesta JSON estandarizada y termina la ejecución.
  *

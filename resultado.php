@@ -74,53 +74,24 @@ try {
     // No interrumpir si falla el registro de acción
 }
 
-// ─── Construir tabla comparativa para resultados.js ───────────────────────────
-// ── Recalcular datos LEY 27.802 desde $situacion almacenada ──────────────────
-require_once __DIR__ . '/config/ripte_functions.php';
+$analisisComplementario = is_array($exposicion['analisis_complementario'] ?? null)
+    ? $exposicion['analisis_complementario']
+    : [];
 
-$ley27802 = ['presuncion' => null, 'solidaria' => null, 'fraude' => null, 'dano' => null];
-
-try {
-    // Art. 23 — Presunción Laboral
-    $ley27802['presuncion'] = validar_presuncion_laboral(
-        $situacion['tiene_facturacion'] ?? false,
-        $situacion['tiene_pago_bancario'] ?? false,
-        $situacion['tiene_contrato_escrito'] ?? false
-    );
-    
-    // Art. 30 — Responsabilidad Solidaria
-    $ley27802['solidaria'] = validar_responsabilidad_solidaria(
-        $situacion['valida_cuil'] ?? false,
-        $situacion['valida_aportes'] ?? false,
-        $situacion['valida_pago_directo'] ?? false,
-        $situacion['valida_cbu'] ?? false,
-        $situacion['valida_art'] ?? false
-    );
-    
-    // Fraude Laboral
-    $ley27802['fraude'] = detectar_fraude_laboral([
-        'facturacion_desproporcionada' => $situacion['fraude_facturacion_desproporcionada'] ?? false,
-        'intermitencia_sospechosa' => $situacion['fraude_intermitencia_sospechosa'] ?? false,
-        'evasion_sistematica' => $situacion['fraude_evasion_sistematica'] ?? false,
-        'sobre_facturacion' => $situacion['fraude_sobre_facturacion'] ?? false,
-        'estructura_opaca' => $situacion['fraude_estructura_opaca'] ?? false
-    ]);
-    
-    // Daño Complementario
-    $salarioBase = floatval($datosLaborales['salario'] ?? 0);
-    if ($salarioBase > 0) {
-        $indemBase = floatval($exposicion['total'] ?? $salarioBase);
-        $ley27802['dano'] = evaluar_dano_complementario(
-            $indemBase,
-            $salarioBase,
-            $situacion['tipo_extincion'] ?? 'despido',
-            $situacion['fue_violenta'] ?? false,
-            intval($situacion['meses_litigio'] ?? 36)
+if (empty($analisisComplementario)) {
+    try {
+        $analisisComplementario = \App\Support\ComplementaryLegalAnalysisBuilder::build(
+            $datosLaborales,
+            $situacion,
+            $exposicion
         );
+    } catch (Exception $e) {
+        ml_logear("[resultado.php] Error generando análisis complementario: " . $e->getMessage(), 'warning', 'analisis.log');
+        $analisisComplementario = [];
     }
-} catch (Exception $e) {
-    ml_logear("[resultado.php] Error recalculando Ley 27.802: " . $e->getMessage(), 'warning', 'analisis.log');
 }
+
+$ley27802 = $analisisComplementario['ley_27802'] ?? ['presuncion' => null, 'solidaria' => null, 'fraude' => null, 'dano' => null];
 // ─── Lógica adicional para el dashboard premium ──────────────────────────────
 
 // Resumen de documentación disponible
@@ -202,14 +173,14 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
             <div class="premium-header-brand">
                 <a href="https://fariasortiz.com.ar" target="_blank"
                     style="text-decoration: none; display: flex; align-items: center; gap: 1rem;">
-                    <img src="../document/image/logo1.png" alt="Estudio Farias Ortiz"
+                    <img src="<?= htmlspecialchars(ml_logo_src()) ?>" alt="Estudio Farias Ortiz"
                         style="height: 35px; width: auto;">
                 </a>
                 <div style="width: 1px; height: 20px; background-color: rgba(255,255,255,0.2); margin: 0 0.5rem;"></div>
                 <div class="premium-tagline">Evaluador Estratégico Jurídico</div>
             </div>
             <div class="premium-user">
-                <img src="https://ui-avatars.com/api/?name=Usuario&background=3b82f6&color=fff" alt="Perfil">
+                <div aria-hidden="true" style="width:36px;height:36px;border-radius:999px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">U</div>
                 <span>Usuario</span>
                 <i class="bi bi-chevron-down"></i>
             </div>
