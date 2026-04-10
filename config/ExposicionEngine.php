@@ -278,7 +278,7 @@ class ExposicionEngine
             // Conteo de controles presentes (cada uno reduce riesgo)
             $controlesPresentes = 0;
             if (($situacion['principal_valida_cuil'] ?? 'no') === 'si') $controlesPresentes++;
-            if (($situacion['principal_verifica_aaportes'] ?? 'no') === 'si') $controlesPresentes++;
+            if ((($situacion['principal_verifica_aportes'] ?? ($situacion['principal_verifica_aaportes'] ?? 'no'))) === 'si') $controlesPresentes++;
             if (($situacion['principal_paga_directo'] ?? 'no') === 'si') $controlesPresentes++;
             if (($situacion['principal_valida_cbu_trabajador'] ?? 'no') === 'si') $controlesPresentes++;
             if (($situacion['principal_cubre_art'] ?? 'no') === 'si') $controlesPresentes++;

@@ -575,7 +575,7 @@ class WizardMotorLaboral {
             // NEW v2.1+: LEY 27.802 — Art. 30 (Responsabilidad Solidaria)
             cantidad_subcontratistas: parseInt(leer('#cantidad_subcontratistas'), 10) || 1,
             principal_valida_cuil: leerRadio('valida_cuil'),
-            principal_verifica_aaportes: leerRadio('valida_aportes'),
+            principal_verifica_aportes: leerRadio('valida_aportes'),
             principal_paga_directo: leerRadio('valida_pago_directo'),
             principal_valida_cbu_trabajador: leerRadio('valida_cbu'),
             principal_cubre_art: leerRadio('valida_art'),

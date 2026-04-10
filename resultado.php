@@ -368,7 +368,7 @@ $antiguedadTexto = floor($antiguedadMeses / 12) . ' años ' . ($antiguedadMeses 
                         
                         <?php if ($tieneFraude):
                             $fr = $ley27802['fraude'];
-                            $frNivel = $fr['nivel'] ?? ($fr['nivel_riesgo'] ?? 'NINGUNO');
+                            $frNivel = $fr['nivel'] ?? 'NINGUNO';
                             $frScore = intval($fr['indicadores_detectados'] ?? 0);
                             $frRecomendacion = $fr['recomendación'] ?? ($fr['recomendacion'] ?? '');
                             $frColor = match($frNivel) {

@@ -96,7 +96,7 @@ final class AnalysisPayloadNormalizer
             'tiene_contrato_escrito' => self::flag($situacionInput['tiene_contrato_escrito'] ?? 'no'),
             'cantidad_subcontratistas' => self::int($situacionInput['cantidad_subcontratistas'] ?? 1, 1),
             'valida_cuil' => self::flag($situacionInput['valida_cuil'] ?? ($situacionInput['principal_valida_cuil'] ?? 'no')),
-            'valida_aportes' => self::flag($situacionInput['valida_aportes'] ?? ($situacionInput['principal_verifica_aaportes'] ?? 'no')),
+            'valida_aportes' => self::flag($situacionInput['valida_aportes'] ?? ($situacionInput['principal_verifica_aportes'] ?? ($situacionInput['principal_verifica_aaportes'] ?? 'no'))),
             'valida_pago_directo' => self::flag($situacionInput['valida_pago_directo'] ?? ($situacionInput['principal_paga_directo'] ?? 'no')),
             'valida_cbu' => self::flag($situacionInput['valida_cbu'] ?? ($situacionInput['principal_valida_cbu_trabajador'] ?? 'no')),
             'valida_art' => self::flag($situacionInput['valida_art'] ?? ($situacionInput['principal_cubre_art'] ?? 'no')),
@@ -129,6 +129,7 @@ final class AnalysisPayloadNormalizer
         ]);
 
         $situacion['principal_valida_cuil'] = $situacion['valida_cuil'];
+        $situacion['principal_verifica_aportes'] = $situacion['valida_aportes'];
         $situacion['principal_verifica_aaportes'] = $situacion['valida_aportes'];
         $situacion['principal_paga_directo'] = $situacion['valida_pago_directo'];
         $situacion['principal_valida_cbu_trabajador'] = $situacion['valida_cbu'];
