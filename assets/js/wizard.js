@@ -1044,16 +1044,20 @@ class WizardMotorLaboral {
             campoTipoUsuario.value = radioSeleccionado.value;
         }
 
-        const conflictoActual = campoTipoConflicto?.value
-            || tarjetaSeleccionada?.dataset.valor
-            || '';
+        const valorConflictoCampo = campoTipoConflicto ? campoTipoConflicto.value : null;
+        const conflictoActual = valorConflictoCampo && valorConflictoCampo !== ''
+            ? valorConflictoCampo
+            : (tarjetaSeleccionada?.dataset.valor || '');
 
         if (campoTipoConflicto) {
             campoTipoConflicto.value = conflictoActual;
         }
 
         const conflictoAnterior = this.conflictoSeleccionado;
-        const cardAnterior = cards.find(card => card.dataset.valor === conflictoAnterior);
+        const conflictoCambio = conflictoActual !== conflictoAnterior;
+        const cardAnterior = conflictoCambio
+            ? cards.find(card => card.dataset.valor === conflictoAnterior)
+            : null;
         const cardActual = cards.find(card => card.dataset.valor === conflictoActual);
 
         if (cardAnterior && cardAnterior !== cardActual) {
