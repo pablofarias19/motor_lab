@@ -171,13 +171,17 @@ class WizardMotorLaboral {
 
         // Adjuntar listeners a las tarjetas de opción Si/No (radio buttons estilizados)
         this._inicializarOpcionCards();
+        this._inicializarConflictoCards();
+        this._sincronizarPasoPerfil();
 
         this.formulario.addEventListener('input', () => {
+            this._sincronizarPasoPerfil();
             if (this.pasoActual === this.totalPasos) {
                 this._actualizarResumenPrevio();
             }
         });
         this.formulario.addEventListener('change', () => {
+            this._sincronizarPasoPerfil();
             if (this.pasoActual === this.totalPasos) {
                 this._actualizarResumenPrevio();
             }
@@ -262,6 +266,8 @@ class WizardMotorLaboral {
      * Si la validación falla, muestra los errores y no avanza.
      */
     siguiente() {
+        this._sincronizarPasoPerfil();
+
         // Limpiar errores previos del paso actual
         this._limpiarErrores(this.pasoActual);
 
@@ -970,6 +976,27 @@ class WizardMotorLaboral {
         });
     }
 
+    _inicializarConflictoCards() {
+        const conflictoCards = this.formulario.querySelectorAll('.conflicto-card');
+
+        conflictoCards.forEach(card => {
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('aria-pressed', 'false');
+
+            card.addEventListener('click', () => {
+                window.requestAnimationFrame(() => this._sincronizarPasoPerfil(card.dataset.valor || ''));
+            });
+
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    card.click();
+                }
+            });
+        });
+    }
+
     // =========================================================================
     // UTILIDADES PRIVADAS
     // =========================================================================
@@ -992,6 +1019,33 @@ class WizardMotorLaboral {
             this.formulario.appendChild(campo);
         }
         campo.value = valor;
+    }
+
+    _sincronizarPasoPerfil(conflictoForzado = '') {
+        if (!this.formulario) return;
+
+        const campoTipoUsuario = this.formulario.querySelector('#tipo_usuario');
+        const radioSeleccionado = this.formulario.querySelector('input[name="tipo_usuario_radio"]:checked');
+        if (campoTipoUsuario && radioSeleccionado) {
+            campoTipoUsuario.value = radioSeleccionado.value;
+        }
+
+        const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
+        const conflictoActual = conflictoForzado
+            || this.formulario.querySelector('.conflicto-card.selected')?.dataset.valor
+            || this.formulario.querySelector('.conflicto-card[aria-pressed="true"]')?.dataset.valor
+            || campoTipoConflicto?.value
+            || '';
+
+        if (campoTipoConflicto) {
+            campoTipoConflicto.value = conflictoActual;
+        }
+
+        this.formulario.querySelectorAll('.conflicto-card').forEach(card => {
+            const estaSeleccionada = conflictoActual !== '' && card.dataset.valor === conflictoActual;
+            card.classList.toggle('selected', estaSeleccionada);
+            card.setAttribute('aria-pressed', estaSeleccionada ? 'true' : 'false');
+        });
     }
 
     _campoEsVisible(campo) {

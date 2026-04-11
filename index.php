@@ -123,7 +123,53 @@ $provincias = [
                          <span>Sirve tanto para trabajador como para empresa.</span>
                      </div>
                  </div>
-             </div>
+                 <div class="motor-visual-board" aria-label="Mapa visual del análisis laboral">
+                     <div class="motor-visual-scene">
+                         <div class="motor-visual-card">
+                             <img src="assets/img/icons/empresa.svg" alt="Empresa" class="motor-visual-icon">
+                             <strong>Empresa</strong>
+                             <span>Riesgo operativo, auditoría y contratistas.</span>
+                         </div>
+                         <div class="motor-visual-card">
+                             <img src="assets/img/icons/despido.svg" alt="Despido" class="motor-visual-icon">
+                             <strong>Despido</strong>
+                             <span>Indemnización, preaviso y escenarios.</span>
+                         </div>
+                         <div class="motor-visual-card">
+                             <img src="assets/img/icons/accidente.svg" alt="Accidente laboral" class="motor-visual-icon">
+                             <strong>ART / Accidente</strong>
+                             <span>Contingencia, cobertura y exposición civil.</span>
+                         </div>
+                         <div class="motor-visual-card">
+                             <img src="assets/img/icons/arca.svg" alt="ARCA" class="motor-visual-icon">
+                             <strong>ARCA / Inspección</strong>
+                             <span>Registro, fiscalización y documentación.</span>
+                         </div>
+                     </div>
+                     <div class="motor-journey-strip" aria-label="Recorrido del wizard">
+                         <div class="motor-journey-step">
+                             <span>1</span>
+                             <strong>Perfil</strong>
+                         </div>
+                         <div class="motor-journey-step">
+                             <span>2</span>
+                             <strong>Datos</strong>
+                         </div>
+                         <div class="motor-journey-step">
+                             <span>3</span>
+                             <strong>Docs</strong>
+                         </div>
+                         <div class="motor-journey-step">
+                             <span>4</span>
+                             <strong>Situación</strong>
+                         </div>
+                         <div class="motor-journey-step">
+                             <span>5</span>
+                             <strong>Resultado</strong>
+                         </div>
+                     </div>
+                 </div>
+              </div>
 
             <!-- ─────────────────────────────────────────────────
              WIZARD PRINCIPAL
