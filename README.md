@@ -41,7 +41,7 @@ Notas:
 
 ## 🔐 Configuración de entorno
 
-1. Copiar `/home/runner/work/motor_lab/motor_lab/.env.example` a `.env`
+1. Copiar `.env.example` a `.env`
 2. Completar `ML_DB_PASS` solo en tu entorno local o de despliegue
 3. Si usás MySQL remoto de Hostinger, autorizar la IP del servidor antes de conectar
 
