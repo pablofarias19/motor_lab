@@ -102,6 +102,12 @@ class WizardMotorLaboral {
          * @type {boolean}
          */
         this.enviando = false;
+
+        /**
+         * Último conflicto sincronizado para evitar cambios redundantes en el DOM.
+         * @type {string}
+         */
+        this.conflictoSeleccionado = '';
     }
 
     // =========================================================================
@@ -985,7 +991,7 @@ class WizardMotorLaboral {
             card.setAttribute('aria-pressed', 'false');
 
             card.addEventListener('click', () => {
-                window.requestAnimationFrame(() => this._sincronizarPasoPerfil(card.dataset.valor || ''));
+                Promise.resolve().then(() => this._sincronizarPasoPerfil(card.dataset.valor || ''));
             });
 
             card.addEventListener('keydown', (e) => {
@@ -1031,9 +1037,9 @@ class WizardMotorLaboral {
         }
 
         const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
+        const tarjetaSeleccionada = this.formulario.querySelector('.conflicto-card.selected, .conflicto-card[aria-pressed="true"]');
         const conflictoActual = conflictoForzado
-            || this.formulario.querySelector('.conflicto-card.selected')?.dataset.valor
-            || this.formulario.querySelector('.conflicto-card[aria-pressed="true"]')?.dataset.valor
+            || tarjetaSeleccionada?.dataset.valor
             || campoTipoConflicto?.value
             || '';
 
@@ -1041,11 +1047,29 @@ class WizardMotorLaboral {
             campoTipoConflicto.value = conflictoActual;
         }
 
-        this.formulario.querySelectorAll('.conflicto-card').forEach(card => {
-            const estaSeleccionada = conflictoActual !== '' && card.dataset.valor === conflictoActual;
-            card.classList.toggle('selected', estaSeleccionada);
-            card.setAttribute('aria-pressed', estaSeleccionada ? 'true' : 'false');
+        const conflictoAnterior = this.conflictoSeleccionado;
+        const cards = Array.from(this.formulario.querySelectorAll('.conflicto-card'));
+        const cardAnterior = cards.find(card => card.dataset.valor === conflictoAnterior);
+        const cardActual = cards.find(card => card.dataset.valor === conflictoActual);
+
+        if (cardAnterior && cardAnterior !== cardActual) {
+            cardAnterior.classList.remove('selected');
+            cardAnterior.setAttribute('aria-pressed', 'false');
+        }
+
+        if (cardActual) {
+            cardActual.classList.add('selected');
+            cardActual.setAttribute('aria-pressed', 'true');
+        }
+
+        cards.forEach(card => {
+            if (card !== cardActual && card !== cardAnterior && (card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true')) {
+                card.classList.remove('selected');
+                card.setAttribute('aria-pressed', 'false');
+            }
         });
+
+        this.conflictoSeleccionado = conflictoActual;
     }
 
     _campoEsVisible(campo) {
