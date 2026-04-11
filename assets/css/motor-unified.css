@@ -417,11 +417,6 @@ body,
     font-weight: 700;
 }
 
-.motor-visual-card small::after {
-    content: '→';
-    font-size: 0.9rem;
-}
-
 .motor-journey-strip {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));

@@ -1154,14 +1154,17 @@ class WizardMotorLaboral {
     }
 
     _aplicarAccesoRapido({ perfil, conflicto, paso = DEFAULT_QUICK_ACCESS_STEP }) {
-        if (!this.formulario || !perfil || !conflicto) {
+        const perfilSanitizado = String(perfil || '').trim();
+        const conflictoSanitizado = String(conflicto || '').trim();
+
+        if (!this.formulario || !perfilSanitizado || !conflictoSanitizado) {
             return;
         }
 
-        const radioPerfil = this.formulario.querySelector(`input[name="tipo_usuario_radio"][value="${perfil}"]`);
+        const radioPerfil = this.formulario.querySelector(`input[name="tipo_usuario_radio"][value="${perfilSanitizado}"]`);
         const campoTipoUsuario = this.formulario.querySelector('#tipo_usuario');
         const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
-        const cardConflicto = this.formulario.querySelector(`.conflicto-card[data-valor="${conflicto}"]`);
+        const cardConflicto = this.formulario.querySelector(`.conflicto-card[data-valor="${conflictoSanitizado}"]`);
         const wizardContainer = document.querySelector('.wizard-container');
 
         if (radioPerfil) {
@@ -1170,13 +1173,13 @@ class WizardMotorLaboral {
         }
 
         if (campoTipoUsuario) {
-            campoTipoUsuario.value = perfil;
+            campoTipoUsuario.value = perfilSanitizado;
         }
 
         if (cardConflicto) {
             cardConflicto.click();
         } else if (campoTipoConflicto) {
-            campoTipoConflicto.value = conflicto;
+            campoTipoConflicto.value = conflictoSanitizado;
             campoTipoConflicto.dispatchEvent(new Event('change', { bubbles: true }));
             this._sincronizarPasoPerfil();
         }
@@ -1185,13 +1188,13 @@ class WizardMotorLaboral {
             wizardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        const totalPasos = Number.isInteger(this.totalPasos) && this.totalPasos > 0
+        const limitePasos = Number.isInteger(this.totalPasos) && this.totalPasos > 0
             ? this.totalPasos
             : paso;
-        const pasoDestino = Math.min(Math.max(paso, 1), totalPasos);
+        const pasoDestino = Math.min(Math.max(paso, 1), limitePasos);
         this._limpiarErrores(pasoDestino);
         this.mostrarPaso(pasoDestino);
-        this._anunciarEstado(`Acceso rápido activado: ${perfil} - ${conflicto}.`);
+        this._anunciarEstado(`Acceso rápido activado: ${perfilSanitizado} - ${conflictoSanitizado}.`);
     }
 
     // =========================================================================
