@@ -96,7 +96,7 @@ if (!function_exists('ml_load_env_file')) {
             }
 
             $key = trim(substr($line, 0, $separator));
-            if ($key === '' || preg_match('/^[A-Z0-9_]+$/i', $key) !== 1) {
+            if ($key === '' || !preg_match('/^[A-Z0-9_]+$/i', $key)) {
                 continue;
             }
 
