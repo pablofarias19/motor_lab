@@ -135,6 +135,11 @@ define('ML_DB_PORT', intval(ml_env('ML_DB_PORT', 3306)));
 define('ML_SMTP_FROM', ml_env('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar'));
 define('ML_SMTP_FROM_NAME', ml_env('ML_SMTP_FROM_NAME', 'Estudio Farias Ortiz'));
 define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', ML_SMTP_FROM));
+define('ML_WHATSAPP_CONTACT_URL', ml_env('ML_WHATSAPP_CONTACT_URL', 'https://wa.me/5491168480793'));
+define('ML_WHATSAPP_CONTACT_LABEL', ml_env('ML_WHATSAPP_CONTACT_LABEL', '+54 11 6848-0793'));
+define('ML_COMEX_URL', ml_env('ML_COMEX_URL', 'https://www.fariasortiz.com.ar'));
+define('ML_COMEX_BRAND', ml_env('ML_COMEX_BRAND', 'FARÍAS ORTIZ'));
+define('ML_COMEX_LABEL', ml_env('ML_COMEX_LABEL', 'Comercio internacional'));
 
 // ─── Rutas absolutas del módulo ──────────────────────────────────────────────
 // __DIR__ apunta a la carpeta /config — subimos un nivel para la raíz del módulo
@@ -289,37 +294,43 @@ function ml_parent_url(string $path): string
 
 function ml_render_floating_contact_buttons(): string
 {
-    return <<<'HTML'
+    $whatsAppUrl = htmlspecialchars(ML_WHATSAPP_CONTACT_URL, ENT_QUOTES, 'UTF-8');
+    $whatsAppLabel = htmlspecialchars(ML_WHATSAPP_CONTACT_LABEL, ENT_QUOTES, 'UTF-8');
+    $comexUrl = htmlspecialchars(ML_COMEX_URL, ENT_QUOTES, 'UTF-8');
+    $comexBrand = htmlspecialchars(ML_COMEX_BRAND, ENT_QUOTES, 'UTF-8');
+    $comexLabel = htmlspecialchars(ML_COMEX_LABEL, ENT_QUOTES, 'UTF-8');
+
+    return <<<HTML
 <div class="ml-floating-actions" aria-label="Accesos rápidos">
     <a
-        href="https://wa.me/5491168480793"
+        href="{$whatsAppUrl}"
         class="ml-floating-action ml-floating-action--whatsapp"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Contactar por WhatsApp al +54 11 6848-0793"
+        aria-label="Contactar por WhatsApp al {$whatsAppLabel}"
     >
         <span class="ml-floating-action__icon" aria-hidden="true">
             <i class="bi bi-whatsapp"></i>
         </span>
         <span class="ml-floating-action__content">
             <strong>WhatsApp</strong>
-            <small>+54 11 6848-0793</small>
+            <small>{$whatsAppLabel}</small>
         </span>
     </a>
 
     <a
-        href="https://www.fariasortiz.com.ar"
+        href="{$comexUrl}"
         class="ml-floating-action ml-floating-action--web"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Abrir Farías Ortiz, sitio de comercio internacional"
+        aria-label="Abrir {$comexBrand}, sitio de comercio internacional"
     >
         <span class="ml-floating-action__icon" aria-hidden="true">
             <i class="bi bi-globe-americas"></i>
         </span>
         <span class="ml-floating-action__content">
-            <strong>FARÍAS ORTIZ</strong>
-            <small>Comercio internacional</small>
+            <strong>{$comexBrand}</strong>
+            <small>{$comexLabel}</small>
         </span>
     </a>
 </div>
