@@ -991,7 +991,11 @@ class WizardMotorLaboral {
             card.setAttribute('aria-pressed', 'false');
 
             card.addEventListener('click', () => {
-                this._sincronizarPasoPerfil(card.dataset.valor || '');
+                const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
+                if (campoTipoConflicto) {
+                    campoTipoConflicto.value = card.dataset.valor || '';
+                }
+                this._sincronizarPasoPerfil();
             });
 
             card.addEventListener('keydown', (e) => {
@@ -1027,19 +1031,20 @@ class WizardMotorLaboral {
         campo.value = valor;
     }
 
-    _sincronizarPasoPerfil(conflictoForzado = '') {
+    _sincronizarPasoPerfil() {
         if (!this.formulario) return;
 
         const campoTipoUsuario = this.formulario.querySelector('#tipo_usuario');
         const radioSeleccionado = this.formulario.querySelector('input[name="tipo_usuario_radio"]:checked');
+        const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
+        const cards = Array.from(this.formulario.querySelectorAll('.conflicto-card'));
+        const tarjetaSeleccionada = cards.find(card => card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true');
+
         if (campoTipoUsuario && radioSeleccionado) {
             campoTipoUsuario.value = radioSeleccionado.value;
         }
 
-        const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
-        const tarjetaSeleccionada = this.formulario.querySelector('.conflicto-card.selected, .conflicto-card[aria-pressed="true"]');
-        const conflictoActual = conflictoForzado
-            || campoTipoConflicto?.value
+        const conflictoActual = campoTipoConflicto?.value
             || tarjetaSeleccionada?.dataset.valor
             || '';
 
@@ -1048,7 +1053,6 @@ class WizardMotorLaboral {
         }
 
         const conflictoAnterior = this.conflictoSeleccionado;
-        const cards = Array.from(this.formulario.querySelectorAll('.conflicto-card'));
         const cardAnterior = cards.find(card => card.dataset.valor === conflictoAnterior);
         const cardActual = cards.find(card => card.dataset.valor === conflictoActual);
 
@@ -1062,6 +1066,8 @@ class WizardMotorLaboral {
             cardActual.setAttribute('aria-pressed', 'true');
         }
 
+        // Limpieza defensiva por si otro listener o restauración del navegador deja
+        // más de una tarjeta marcada al mismo tiempo.
         cards.forEach(card => {
             if (card !== cardActual && (card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true')) {
                 card.classList.remove('selected');
