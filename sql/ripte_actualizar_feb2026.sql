@@ -6,10 +6,10 @@
 -- Fuente: Estimaciones SRT basadas en datos históricos + inflación actual
 --
 -- Uso:
---   mysql -u root -p motor_laboral < ripte_actualizar_feb2026.sql
+--   mysql -u root -p u580580751_motor_laboral < ripte_actualizar_feb2026.sql
 --
 
-USE motor_laboral;
+USE u580580751_motor_laboral;
 
 -- ═════════════════════════════════════════════════════════════════════════
 -- PASO 1: Actualizar RIPTE vigente (Febrero 2026)

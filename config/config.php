@@ -68,6 +68,62 @@
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 // ─── Helpers de entorno ──────────────────────────────────────────────────────
+if (!function_exists('ml_load_env_file')) {
+    function ml_load_env_file(string $path): void
+    {
+        if (!is_file($path) || !is_readable($path)) {
+            return;
+        }
+
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false) {
+            return;
+        }
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+
+            if (str_starts_with($line, 'export ')) {
+                $line = trim(substr($line, 7));
+            }
+
+            $separator = strpos($line, '=');
+            if ($separator === false) {
+                continue;
+            }
+
+            $key = trim(substr($line, 0, $separator));
+            if ($key === '' || preg_match('/^[A-Z0-9_]+$/i', $key) !== 1) {
+                continue;
+            }
+
+            $value = trim(substr($line, $separator + 1));
+            $quote = $value[0] ?? '';
+            if (($quote === '"' || $quote === "'") && substr($value, -1) === $quote) {
+                $value = substr($value, 1, -1);
+            } else {
+                $inlineComment = strpos($value, ' #');
+                if ($inlineComment !== false) {
+                    $value = rtrim(substr($value, 0, $inlineComment));
+                }
+            }
+
+            if (array_key_exists($key, $_ENV) || array_key_exists($key, $_SERVER) || getenv($key) !== false) {
+                continue;
+            }
+
+            $_ENV[$key] = $value;
+            $_SERVER[$key] = $value;
+            putenv($key . '=' . $value);
+        }
+    }
+}
+
+ml_load_env_file(dirname(__DIR__) . '/.env');
+
 if (!function_exists('ml_env')) {
     function ml_env(string $key, $default = null)
     {
@@ -127,7 +183,7 @@ if (ML_DEBUG) {
 define('ML_DB_HOST', ml_env('ML_DB_HOST', 'localhost'));
 define('ML_DB_USER', ml_env('ML_DB_USER', 'root'));
 define('ML_DB_PASS', ml_env('ML_DB_PASS', ''));
-define('ML_DB_NAME', ml_env('ML_DB_NAME', 'motor_laboral'));
+define('ML_DB_NAME', ml_env('ML_DB_NAME', 'u580580751_motor_laboral'));
 define('ML_DB_CHARSET', ml_env('ML_DB_CHARSET', 'utf8mb4'));
 define('ML_DB_PORT', intval(ml_env('ML_DB_PORT', 3306)));
 
