@@ -1793,6 +1793,8 @@ $provincias = [
         </div>
     </section>
 
+    <?= ml_render_floating_contact_buttons() ?>
+
     <!-- Footer -->
     <footer class="motor-footer">
         <p>

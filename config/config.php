@@ -287,6 +287,45 @@ function ml_parent_url(string $path): string
     return ($parentBaseUrl !== '' ? $parentBaseUrl : '') . '/' . ltrim($path, '/');
 }
 
+function ml_render_floating_contact_buttons(): string
+{
+    return <<<'HTML'
+<div class="ml-floating-actions" aria-label="Accesos rápidos">
+    <a
+        href="https://wa.me/5491168480793"
+        class="ml-floating-action ml-floating-action--whatsapp"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Contactar por WhatsApp al +54 11 6848-0793"
+    >
+        <span class="ml-floating-action__icon" aria-hidden="true">
+            <i class="bi bi-whatsapp"></i>
+        </span>
+        <span class="ml-floating-action__content">
+            <strong>WhatsApp</strong>
+            <small>+54 11 6848-0793</small>
+        </span>
+    </a>
+
+    <a
+        href="https://www.fariasortiz.com.ar"
+        class="ml-floating-action ml-floating-action--web"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Abrir Farias Ortiz, sitio de comercio internacional"
+    >
+        <span class="ml-floating-action__icon" aria-hidden="true">
+            <i class="bi bi-globe-americas"></i>
+        </span>
+        <span class="ml-floating-action__content">
+            <strong>FARIAS ORTIZ</strong>
+            <small>Comercio internacional</small>
+        </span>
+    </a>
+</div>
+HTML;
+}
+
 /**
  * ml_respuesta() — Devuelve una respuesta JSON estandarizada y termina la ejecución.
  *

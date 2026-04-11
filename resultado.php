@@ -994,6 +994,8 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
         </div>
     </main>
 
+    <?= ml_render_floating_contact_buttons() ?>
+
     <div style="display:none">
         <!-- Contenido legado oculto pero disponible para scripts si es necesario -->
         <div id="alertas-container"></div>

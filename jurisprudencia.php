@@ -188,5 +188,6 @@ if ($stmt) {
 
         </div>
     </main>
+    <?= ml_render_floating_contact_buttons() ?>
 </body>
 </html>

@@ -237,5 +237,6 @@ if ($cct_seleccionado) {
 
         </div>
     </main>
+    <?= ml_render_floating_contact_buttons() ?>
 </body>
 </html>
