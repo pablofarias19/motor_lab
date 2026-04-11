@@ -1194,7 +1194,7 @@ class WizardMotorLaboral {
         const pasoDestino = Math.min(Math.max(paso, 1), limitePasos);
         this._limpiarErrores(pasoDestino);
         this.mostrarPaso(pasoDestino);
-        this._anunciarEstado(`Acceso rápido activado: ${perfilSanitizado} - ${conflictoSanitizado}.`);
+        this._anunciarEstado(`Acceso rápido iniciado: ${perfilSanitizado} - ${conflictoSanitizado}.`);
     }
 
     // =========================================================================
