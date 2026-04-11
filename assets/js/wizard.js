@@ -991,7 +991,7 @@ class WizardMotorLaboral {
             card.setAttribute('aria-pressed', 'false');
 
             card.addEventListener('click', () => {
-                Promise.resolve().then(() => this._sincronizarPasoPerfil(card.dataset.valor || ''));
+                this._sincronizarPasoPerfil(card.dataset.valor || '');
             });
 
             card.addEventListener('keydown', (e) => {
@@ -1039,8 +1039,8 @@ class WizardMotorLaboral {
         const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
         const tarjetaSeleccionada = this.formulario.querySelector('.conflicto-card.selected, .conflicto-card[aria-pressed="true"]');
         const conflictoActual = conflictoForzado
-            || tarjetaSeleccionada?.dataset.valor
             || campoTipoConflicto?.value
+            || tarjetaSeleccionada?.dataset.valor
             || '';
 
         if (campoTipoConflicto) {
@@ -1063,7 +1063,7 @@ class WizardMotorLaboral {
         }
 
         cards.forEach(card => {
-            if (card !== cardActual && card !== cardAnterior && (card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true')) {
+            if (card !== cardActual && (card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true')) {
                 card.classList.remove('selected');
                 card.setAttribute('aria-pressed', 'false');
             }
