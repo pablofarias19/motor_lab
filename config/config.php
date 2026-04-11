@@ -101,7 +101,7 @@ if (!function_exists('ml_env_load')) {
             }
 
             $key = trim(substr($line, 0, $separator));
-            if ($key === '' || ctype_digit($key) || !preg_match('/^[A-Za-z0-9_]+$/', $key)) {
+            if ($key === '' || !preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $key)) {
                 continue;
             }
 
