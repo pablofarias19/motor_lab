@@ -3376,14 +3376,32 @@ small.form-ayuda {
     .ml-floating-actions {
         right: 0.9rem;
         bottom: 0.9rem;
-        align-items: stretch;
+        gap: 0.65rem;
+        align-items: flex-end;
     }
 
     .ml-floating-action {
-        min-width: min(18rem, calc(100vw - 1.8rem));
-        width: min(20rem, calc(100vw - 1.8rem));
+        min-width: 0;
+        width: auto;
+        max-width: calc(100vw - 1.8rem);
+        gap: 0.65rem;
+        padding: 0.72rem 0.95rem;
         justify-content: flex-start;
-        border-radius: 1.1rem;
+        border-radius: 999px;
+    }
+
+    .ml-floating-action__icon {
+        width: 2.35rem;
+        height: 2.35rem;
+        font-size: 1.15rem;
+    }
+
+    .ml-floating-action__content strong {
+        font-size: 0.85rem;
+    }
+
+    .ml-floating-action__content small {
+        display: none;
     }
 
     .opcion-cards-group {
