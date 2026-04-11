@@ -213,6 +213,21 @@ $provincias = [
                         <span class="wizard-trust-chip"><i class="bi bi-journal-text"></i> Lectura estratégica</span>
                     </div>
                 </div>
+                <div class="wizard-visual-guide" id="wizard-visual-guide" aria-label="Guía visual del paso actual">
+                    <div class="wizard-guide-header">
+                        <div class="wizard-guide-icon" id="wizard-guide-icon" aria-hidden="true">
+                            <i class="bi bi-compass"></i>
+                        </div>
+                        <div class="wizard-guide-copy">
+                            <span class="wizard-guide-eyebrow" id="wizard-guide-eyebrow">Mapa del paso</span>
+                            <h3 class="wizard-guide-title" id="wizard-guide-title">Definí el punto de partida</h3>
+                            <p class="wizard-guide-description" id="wizard-guide-description">
+                                Elegí perfil y conflicto para que el wizard te muestre una ruta más corta y útil.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="wizard-guide-points" id="wizard-guide-points"></div>
+                </div>
 
                 <!-- ══════════════════════════════════════════
                  PASO 1 — Perfil del usuario

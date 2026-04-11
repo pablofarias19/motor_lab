@@ -252,6 +252,8 @@ class WizardMotorLaboral {
             indicadorTexto.textContent = `Paso ${n} de ${this.totalPasos}: ${this.nombresPasos[n]}`;
         }
 
+        this._actualizarGuiaVisual(n);
+
         // ── Scroll hacia el inicio del wizard (útil en móvil) ────────────────
         const wizardContainer = document.querySelector('.wizard-container');
         if (wizardContainer) {
@@ -575,6 +577,112 @@ class WizardMotorLaboral {
         if (btnEnviar) {
             btnEnviar.classList.toggle('oculto', pasoActivo !== this.totalPasos);
         }
+    }
+
+    _actualizarGuiaVisual(pasoActivo = this.pasoActual) {
+        const icono = document.getElementById('wizard-guide-icon');
+        const eyebrow = document.getElementById('wizard-guide-eyebrow');
+        const titulo = document.getElementById('wizard-guide-title');
+        const descripcion = document.getElementById('wizard-guide-description');
+        const puntos = document.getElementById('wizard-guide-points');
+
+        if (!icono || !eyebrow || !titulo || !descripcion || !puntos) {
+            return;
+        }
+
+        const perfil = this.formulario?.querySelector('#tipo_usuario')?.value || '';
+        const conflicto = this.formulario?.querySelector('#tipo_conflicto')?.value || '';
+        const esEmpleador = perfil === 'empleador';
+        const esAccidente = conflicto === 'accidente_laboral';
+        const esPrevencion = ['responsabilidad_solidaria', 'auditoria_preventiva', 'riesgo_inspeccion'].includes(conflicto);
+
+        const guias = {
+            1: {
+                icon: 'bi-compass',
+                eyebrowText: 'Inicio del análisis',
+                title: 'Elegí la ruta correcta antes de cargar datos',
+                description: esEmpleador
+                    ? 'Marcá si el análisis es por contingencia activa o por prevención para mostrar solo los caminos útiles para la empresa.'
+                    : 'Primero definimos perfil y motivo principal para evitar preguntas innecesarias y bajar la carga del formulario.',
+                points: [
+                    ['bi-person-check', 'Perfil', esEmpleador ? 'Empresa o empleador que necesita medir exposición.' : 'Trabajador o empleado con conflicto activo.'],
+                    ['bi-signpost-split', 'Motivo', esPrevencion ? 'Auditoría, inspección o tercerización crítica.' : 'Despido, diferencias, accidente u otra contingencia.'],
+                    ['bi-filter-circle', 'Filtro', 'Desde acá el wizard adapta textos, campos y prioridades.'],
+                ],
+            },
+            2: {
+                icon: 'bi-briefcase',
+                eyebrowText: 'Base económica',
+                title: esEmpleador ? 'Cargá la base del caso o de la empresa' : 'Cargá la base laboral del reclamo',
+                description: esAccidente
+                    ? 'Este tramo ordena salario, antigüedad y datos del siniestro para medir cobertura ART, incapacidad y riesgo civil.'
+                    : esEmpleador && esPrevencion
+                        ? 'Tomamos referencias del establecimiento o del sector involucrado para estimar exposición sin pedir información de más.'
+                        : 'Con estos datos el motor estima indemnización, multas, intereses y encuadre inicial del conflicto.',
+                points: [
+                    ['bi-cash-stack', 'Monto base', esEmpleador ? 'Usá salario involucrado o referencia salarial del sector.' : 'Ingresá la mejor remuneración bruta para calcular montos.'],
+                    ['bi-calendar-range', 'Antigüedad', esAccidente ? 'También sirve para ubicar el contexto del siniestro.' : 'Antigüedad y provincia ordenan plazos, tasas y escalas.'],
+                    ['bi-journal-richtext', 'Contexto', 'Categoría, convenio y registro ayudan a afinar el análisis.'],
+                ],
+            },
+            3: {
+                icon: 'bi-folder2-open',
+                eyebrowText: 'Soporte probatorio',
+                title: esEmpleador ? 'Mostrá qué respaldo documental conserva la empresa' : 'Mostrá con qué documentación contás hoy',
+                description: esEmpleador
+                    ? 'Acá vemos si la empresa tiene legajo, registración y auditorías para defenderse o corregir rápido.'
+                    : 'No hace falta tener todo: esta pantalla sirve para medir fortaleza probatoria y detectar faltantes relevantes.',
+                points: [
+                    ['bi-receipt', 'Recibos / legajo', esEmpleador ? 'Recibos firmados, contrato y respaldo interno.' : 'Recibos, contrato y constancias que acrediten la relación.'],
+                    ['bi-people', 'Testigos', 'Indicá si hay personas que puedan confirmar la dinámica del caso.'],
+                    ['bi-shield-check', 'Registro', esEmpleador ? 'ARCA, auditorías y checklist preventivo si corresponde.' : 'ARCA y registración impactan directo en el índice IRIL.'],
+                ],
+            },
+            4: {
+                icon: esAccidente ? 'bi-activity' : 'bi-clock-history',
+                eyebrowText: 'Estado actual',
+                title: esAccidente ? 'Ubicá el estado del siniestro y de la ART' : 'Ubicá el conflicto en el tiempo y la urgencia',
+                description: esAccidente
+                    ? 'Este paso ordena intercambio, fechas, incapacidad y trámite administrativo para medir urgencia real.'
+                    : esEmpleador && esPrevencion
+                        ? 'La urgencia define si conviene corregir, negociar o preparar respuesta frente a una inspección o reclamo.'
+                        : 'Acá el motor detecta si el caso está verde, escaló a intimaciones o ya tiene plazos corriendo.',
+                points: [
+                    ['bi-envelope-paper', 'Intercambio', 'Telegramas, intimaciones o requerimientos previos.'],
+                    ['bi-alarm', 'Urgencia', 'Alta, media o baja según plazos y necesidad de acción inmediata.'],
+                    ['bi-diagram-3', esAccidente ? 'ART / comisión médica' : 'Escenario', esAccidente ? 'Rechazo, dictamen y vía administrativa.' : 'Sirve para leer si el conflicto ya escaló o sigue prevenible.'],
+                ],
+            },
+            5: {
+                icon: 'bi-envelope-check',
+                eyebrowText: 'Cierre',
+                title: 'Revisá el resumen y generá el análisis',
+                description: 'El email sigue siendo opcional. Antes de enviar, el wizard te devuelve una síntesis corta de lo cargado para confirmar el recorrido.',
+                points: [
+                    ['bi-list-check', 'Resumen', 'Chequeá perfil, conflicto, base económica y respaldo declarado.'],
+                    ['bi-envelope', 'Email opcional', 'Podés recibir el informe sin frenar el resultado en pantalla.'],
+                    ['bi-graph-up-arrow', 'Salida', 'Generamos IRIL, exposición y escenarios en una sola lectura.'],
+                ],
+            },
+        };
+
+        const guia = guias[pasoActivo] || guias[1];
+
+        icono.innerHTML = `<i class="bi ${guia.icon}"></i>`;
+        eyebrow.textContent = guia.eyebrowText;
+        titulo.textContent = guia.title;
+        descripcion.textContent = guia.description;
+        puntos.innerHTML = guia.points.map(([iconoPunto, tituloPunto, textoPunto]) => `
+            <article class="wizard-guide-point">
+                <div class="wizard-guide-point-icon" aria-hidden="true">
+                    <i class="bi ${iconoPunto}"></i>
+                </div>
+                <div>
+                    <strong>${this._escaparHTML(tituloPunto)}</strong>
+                    <span>${this._escaparHTML(textoPunto)}</span>
+                </div>
+            </article>
+        `).join('');
     }
 
     // =========================================================================
@@ -1082,6 +1190,7 @@ class WizardMotorLaboral {
         }
 
         this.conflictoSeleccionado = conflictoActual;
+        this._actualizarGuiaVisual(this.pasoActual);
     }
 
     _campoEsVisible(campo) {
