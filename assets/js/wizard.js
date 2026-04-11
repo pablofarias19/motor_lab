@@ -107,20 +107,20 @@ class WizardMotorLaboral {
          * Último conflicto sincronizado para evitar cambios redundantes en el DOM.
          * @type {string}
          */
-        this.conflictoSeleccionado = '';
+        this.cachedConflicto = '';
 
         /**
          * Último perfil sincronizado para evitar refrescos redundantes de UI.
          * @type {string}
          */
-        this.perfilSeleccionado = '';
+        this.cachedPerfil = '';
 
         /**
          * Firma compuesta del panel visual (paso|perfil|conflicto) para detectar
          * cuándo realmente hace falta volver a renderizarlo.
          * @type {string}
          */
-        this.guiaVisualFirma = '';
+        this.cachedGuiaVisualFirma = '';
     }
 
     // =========================================================================
@@ -592,7 +592,7 @@ class WizardMotorLaboral {
         }
     }
 
-    _actualizarGuiaVisual(pasoActivo = this.pasoActual, forzar = false) {
+    _actualizarGuiaVisual(pasoActivo = this.pasoActual, actualizacionForzada = false) {
         const icono = document.getElementById('wizard-guide-icon');
         const eyebrow = document.getElementById('wizard-guide-eyebrow');
         const titulo = document.getElementById('wizard-guide-title');
@@ -610,7 +610,7 @@ class WizardMotorLaboral {
         const esPrevencion = ['responsabilidad_solidaria', 'auditoria_preventiva', 'riesgo_inspeccion'].includes(conflicto);
         const firmaActual = `${pasoActivo}|${perfil}|${conflicto}`;
 
-        if (!forzar && this.guiaVisualFirma === firmaActual) {
+        if (!actualizacionForzada && this.cachedGuiaVisualFirma === firmaActual) {
             return;
         }
 
@@ -686,14 +686,16 @@ class WizardMotorLaboral {
 
         const guia = guias[pasoActivo] || guias[1];
 
-        icono.innerHTML = `<i class="bi ${guia.icon}"></i>`;
+        const iconoPrincipalSeguro = this._iconoBootstrapSeguro(guia.icon, 'bi-compass');
+
+        icono.innerHTML = `<i class="bi ${iconoPrincipalSeguro}"></i>`;
         eyebrow.textContent = guia.eyebrowText;
         titulo.textContent = guia.title;
         descripcion.textContent = guia.description;
         puntos.innerHTML = guia.points.map(([iconoPunto, tituloPunto, textoPunto]) => `
             <article class="wizard-guide-point">
                 <div class="wizard-guide-point-icon" aria-hidden="true">
-                    <i class="bi ${iconoPunto}"></i>
+                    <i class="bi ${this._iconoBootstrapSeguro(iconoPunto)}"></i>
                 </div>
                 <div>
                     <strong>${this._escaparHTML(tituloPunto)}</strong>
@@ -701,7 +703,7 @@ class WizardMotorLaboral {
                 </div>
             </article>
         `).join('');
-        this.guiaVisualFirma = firmaActual;
+        this.cachedGuiaVisualFirma = firmaActual;
     }
 
     // =========================================================================
@@ -1172,14 +1174,14 @@ class WizardMotorLaboral {
         }
 
         const perfilActual = campoTipoUsuario?.value || '';
-        const perfilCambio = perfilActual !== this.perfilSeleccionado;
+        const perfilCambio = perfilActual !== this.cachedPerfil;
         const conflictoActual = campoTipoConflicto?.value || tarjetaSeleccionada?.dataset.valor || '';
 
         if (campoTipoConflicto) {
             campoTipoConflicto.value = conflictoActual;
         }
 
-        const conflictoAnterior = this.conflictoSeleccionado;
+        const conflictoAnterior = this.cachedConflicto;
         const conflictoCambio = conflictoActual !== conflictoAnterior;
         const cardAnterior = conflictoCambio
             ? cards.find(card => card.dataset.valor === conflictoAnterior)
@@ -1205,8 +1207,8 @@ class WizardMotorLaboral {
             }
         });
 
-        this.conflictoSeleccionado = conflictoActual;
-        this.perfilSeleccionado = perfilActual;
+        this.cachedConflicto = conflictoActual;
+        this.cachedPerfil = perfilActual;
         this._actualizarGuiaVisual(this.pasoActual, perfilCambio || conflictoCambio);
     }
 
@@ -1305,6 +1307,10 @@ class WizardMotorLaboral {
         if (this.liveRegion) {
             this.liveRegion.textContent = mensaje;
         }
+    }
+
+    _iconoBootstrapSeguro(nombreClase, fallback = 'bi-circle-fill') {
+        return /^bi-[a-z0-9-]+$/i.test(nombreClase || '') ? nombreClase : fallback;
     }
 
     /**

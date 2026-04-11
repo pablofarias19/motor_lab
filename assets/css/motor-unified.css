@@ -223,7 +223,7 @@ body,
 }
 
 .wizard-visual-guide {
-    --wizard-guide-icon-size: 56px;
+    --wizard-guide-main-icon-size: 56px;
     --wizard-guide-point-icon-size: 38px;
     display: grid;
     gap: 1rem;
@@ -241,8 +241,8 @@ body,
 }
 
 .wizard-guide-icon {
-    width: var(--wizard-guide-icon-size);
-    height: var(--wizard-guide-icon-size);
+    width: var(--wizard-guide-main-icon-size);
+    height: var(--wizard-guide-main-icon-size);
     border-radius: 18px;
     display: inline-flex;
     align-items: center;
