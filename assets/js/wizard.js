@@ -686,9 +686,7 @@ class WizardMotorLaboral {
 
         const guia = guias[pasoActivo] || guias[1];
 
-        const iconoPrincipalSeguro = this._escaparHTML(
-            this._iconoBootstrapSeguro(guia.icon, 'bi-compass')
-        );
+        const iconoPrincipalSeguro = this._iconoBootstrapSeguro(guia.icon, 'bi-compass');
 
         icono.innerHTML = `<i class="bi ${iconoPrincipalSeguro}"></i>`;
         eyebrow.textContent = guia.eyebrowText;
@@ -697,7 +695,7 @@ class WizardMotorLaboral {
         puntos.innerHTML = guia.points.map(([iconoPunto, tituloPunto, textoPunto]) => `
             <article class="wizard-guide-point">
                 <div class="wizard-guide-point-icon" aria-hidden="true">
-                    <i class="bi ${this._escaparHTML(this._iconoBootstrapSeguro(iconoPunto))}"></i>
+                    <i class="bi ${this._iconoBootstrapSeguro(iconoPunto)}"></i>
                 </div>
                 <div>
                     <strong>${this._escaparHTML(tituloPunto)}</strong>
@@ -1311,6 +1309,14 @@ class WizardMotorLaboral {
         }
     }
 
+    /**
+     * _iconoBootstrapSeguro(nombreClase, fallback) — Valida nombres de clases
+     * de Bootstrap Icons antes de interpolarlos en el DOM.
+     *
+     * @param {string} nombreClase - Clase candidata (por ejemplo, "bi-compass").
+     * @param {string} fallback - Clase por defecto si la candidata no es válida.
+     * @returns {string} La clase validada o el fallback indicado.
+     */
     _iconoBootstrapSeguro(nombreClase, fallback = 'bi-circle-fill') {
         return /^bi-[a-z0-9]+(?:-[a-z0-9]+)*$/i.test(nombreClase || '') ? nombreClase : fallback;
     }
