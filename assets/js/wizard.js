@@ -1156,15 +1156,25 @@ class WizardMotorLaboral {
     _aplicarAccesoRapido({ perfil, conflicto, paso = DEFAULT_QUICK_ACCESS_STEP }) {
         const perfilSanitizado = String(perfil || '').trim();
         const conflictoSanitizado = String(conflicto || '').trim();
+        const escaparSelector = (valor) => {
+            if (window.CSS && typeof window.CSS.escape === 'function') {
+                return window.CSS.escape(valor);
+            }
+            return valor.replace(/["\\\]]/g, '\\$&');
+        };
 
         if (!this.formulario || !perfilSanitizado || !conflictoSanitizado) {
             return;
         }
 
-        const radioPerfil = this.formulario.querySelector(`input[name="tipo_usuario_radio"][value="${perfilSanitizado}"]`);
+        const radioPerfil = this.formulario.querySelector(
+            `input[name="tipo_usuario_radio"][value="${escaparSelector(perfilSanitizado)}"]`
+        );
         const campoTipoUsuario = this.formulario.querySelector('#tipo_usuario');
         const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
-        const cardConflicto = this.formulario.querySelector(`.conflicto-card[data-valor="${conflictoSanitizado}"]`);
+        const cardConflicto = this.formulario.querySelector(
+            `.conflicto-card[data-valor="${escaparSelector(conflictoSanitizado)}"]`
+        );
         const wizardContainer = document.querySelector('.wizard-container');
 
         if (radioPerfil) {
