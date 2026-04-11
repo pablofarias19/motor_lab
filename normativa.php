@@ -79,9 +79,9 @@ if ($stmt) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Normativa Laboral — Estudio Farias Ortiz</title>
-    <link rel="stylesheet" href="assets/css/motor.css">
-    <link rel="stylesheet" href="assets/css/motor-ui-mejorado.css">
-    <link rel="stylesheet" href="assets/css/motor-unified.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor-ui-mejorado.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor-unified.css')) ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         .page-header { margin-bottom: 2rem; }
@@ -105,17 +105,17 @@ if ($stmt) {
     <header class="motor-header">
         <div class="motor-header-inner">
             <div class="motor-logo">
-                <a href="index.php" class="logo-link">
+                <a href="<?= htmlspecialchars(ml_url('index.php')) ?>" class="logo-link">
                     <img src="<?= htmlspecialchars(ml_logo_src()) ?>" alt="Estudio Farias Ortiz" class="logo-img">
                     <div class="logo-divider"></div>
                     <span class="motor-logo-modulo">Base de Conocimiento</span>
                 </a>
             </div>
             <div class="motor-header-badge motor-nav-pills">
-                <a href="index.php" style="color:white; text-decoration:none;"><i class="bi bi-house"></i> Inicio</a>
-                <a href="cct.php" style="color:white; text-decoration:none;"><i class="bi bi-list-columns-reverse"></i> CCTs</a>
-                <a href="normativa.php" style="color:white; text-decoration:none;"><i class="bi bi-journal-check"></i> Normativa</a>
-                <a href="jurisprudencia.php" style="color:white; text-decoration:none;"><i class="bi bi-bank"></i> Jurisprudencia</a>
+                <a href="<?= htmlspecialchars(ml_url('index.php')) ?>" style="color:white; text-decoration:none;"><i class="bi bi-house"></i> Inicio</a>
+                <a href="<?= htmlspecialchars(ml_url('cct.php')) ?>" style="color:white; text-decoration:none;"><i class="bi bi-list-columns-reverse"></i> CCTs</a>
+                <a href="<?= htmlspecialchars(ml_url('normativa.php')) ?>" style="color:white; text-decoration:none;"><i class="bi bi-journal-check"></i> Normativa</a>
+                <a href="<?= htmlspecialchars(ml_url('jurisprudencia.php')) ?>" style="color:white; text-decoration:none;"><i class="bi bi-bank"></i> Jurisprudencia</a>
             </div>
         </div>
     </header>
@@ -165,7 +165,7 @@ if ($stmt) {
                     </div>
                     <button type="submit" class="btn btn-primary" style="margin-bottom:0;">🔍 Buscar</button>
                     <?php if ($busqueda || $ley_filtro): ?>
-                    <a href="normativa.php" class="btn btn-secondary" style="margin-bottom:0;">✕ Limpiar</a>
+                    <a href="<?= htmlspecialchars(ml_url('normativa.php')) ?>" class="btn btn-secondary" style="margin-bottom:0;">✕ Limpiar</a>
                     <?php endif; ?>
                 </form>
             </div>
@@ -231,7 +231,7 @@ if ($stmt) {
                     <div class="empty-state">
                         <div class="empty-icon">📜</div>
                         <div class="empty-text">No se encontraron artículos para "<?= htmlspecialchars($busqueda) ?>"</div>
-                        <a href="normativa.php" class="btn btn-primary" style="margin-top:1rem;">Ver toda la normativa</a>
+                        <a href="<?= htmlspecialchars(ml_url('normativa.php')) ?>" class="btn btn-primary" style="margin-top:1rem;">Ver toda la normativa</a>
                     </div>
                 </div>
             <?php endif; ?>

@@ -58,9 +58,9 @@ $provincias = [
         content="Análisis estratégico de conflictos laborales. Calculá tu exposición económica y evaluá tus opciones.">
 
     <!-- CSS del módulo -->
-    <link rel="stylesheet" href="assets/css/motor.css">
-    <link rel="stylesheet" href="assets/css/motor-ui-mejorado.css">
-    <link rel="stylesheet" href="assets/css/motor-unified.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor-ui-mejorado.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor-unified.css')) ?>">
 
     <!-- Bootstrap Icons (mismo CDN que el resto del proyecto) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -130,22 +130,22 @@ $provincias = [
                  <div class="motor-visual-board" aria-label="Mapa visual del análisis laboral">
                      <div class="motor-visual-scene">
                          <div class="motor-visual-card">
-                            <img src="assets/img/icons/empresa.svg" alt="" aria-hidden="true" class="motor-visual-icon">
+                            <img src="<?= htmlspecialchars(ml_asset('img/icons/empresa.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                              <strong>Empresa</strong>
                              <span>Riesgo operativo, auditoría y contratistas.</span>
                          </div>
                          <div class="motor-visual-card">
-                            <img src="assets/img/icons/despido.svg" alt="" aria-hidden="true" class="motor-visual-icon">
+                            <img src="<?= htmlspecialchars(ml_asset('img/icons/despido.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                              <strong>Despido</strong>
                              <span>Indemnización, preaviso y escenarios.</span>
                          </div>
                          <div class="motor-visual-card">
-                            <img src="assets/img/icons/accidente.svg" alt="" aria-hidden="true" class="motor-visual-icon">
+                            <img src="<?= htmlspecialchars(ml_asset('img/icons/accidente.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                              <strong>ART / Accidente</strong>
                              <span>Contingencia, cobertura y exposición civil.</span>
                          </div>
                          <div class="motor-visual-card">
-                            <img src="assets/img/icons/arca.svg" alt="" aria-hidden="true" class="motor-visual-icon">
+                            <img src="<?= htmlspecialchars(ml_asset('img/icons/arca.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                              <strong>ARCA / Inspección</strong>
                              <span>Registro, fiscalización y documentación.</span>
                          </div>
@@ -296,7 +296,7 @@ $provincias = [
                                     <div class="conflictos-gallery">
                                         <div class="conflicto-card" data-valor="despido_sin_causa" data-grupo="ambos">
                                             <div class="conflicto-icon color-despido">
-                                                <img src="assets/img/icons/despido.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/despido.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Despido sin causa</strong>
@@ -305,7 +305,7 @@ $provincias = [
                                         </div>
                                         <div class="conflicto-card" data-valor="despido_con_causa" data-grupo="ambos">
                                             <div class="conflicto-icon color-despido">
-                                                <img src="assets/img/icons/despido.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/despido.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Despido con causa</strong>
@@ -324,7 +324,7 @@ $provincias = [
                                     <div class="conflictos-gallery">
                                         <div class="conflicto-card" data-valor="trabajo_no_registrado" data-grupo="ambos">
                                             <div class="conflicto-icon color-negro">
-                                                <img src="assets/img/icons/negro.svg" alt="" aria-hidden="true"
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/negro.svg')) ?>" alt="" aria-hidden="true"
                                                     class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
@@ -334,7 +334,7 @@ $provincias = [
                                         </div>
                                         <div class="conflicto-card" data-valor="diferencias_salariales" data-grupo="ambos">
                                             <div class="conflicto-icon color-salarial">
-                                                <img src="assets/img/icons/salarial.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/salarial.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Diferencias / Deudas</strong>
@@ -353,7 +353,7 @@ $provincias = [
                                     <div class="conflictos-gallery">
                                         <div class="conflicto-card" data-valor="accidente_laboral" data-grupo="ambos">
                                             <div class="conflicto-icon color-accidente">
-                                                <img src="assets/img/icons/accidente.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/accidente.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Accidente / Enfermedad</strong>
@@ -373,7 +373,7 @@ $provincias = [
                                         <div class="conflicto-card" data-valor="responsabilidad_solidaria" data-grupo="empresa"
                                             style="display:none;">
                                             <div class="conflicto-icon color-empresa">
-                                                <img src="assets/img/icons/empresa.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/empresa.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Responsabilidad Solidaria</strong>
@@ -383,7 +383,7 @@ $provincias = [
                                         <div class="conflicto-card" data-valor="auditoria_preventiva" data-grupo="empresa"
                                             style="display:none;">
                                             <div class="conflicto-icon color-empresa">
-                                                <img src="assets/img/icons/empresa.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/empresa.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Auditoría Preventiva</strong>
@@ -393,7 +393,7 @@ $provincias = [
                                         <div class="conflicto-card" data-valor="riesgo_inspeccion" data-grupo="empresa"
                                             style="display:none;">
                                             <div class="conflicto-icon color-arca">
-                                                <img src="assets/img/icons/arca.svg" alt="" aria-hidden="true" class="conflicto-svg">
+                                                <img src="<?= htmlspecialchars(ml_asset('img/icons/arca.svg')) ?>" alt="" aria-hidden="true" class="conflicto-svg">
                                             </div>
                                             <div class="conflicto-info">
                                                 <strong>Inspección ARCA/Ministerio</strong>
@@ -1807,9 +1807,9 @@ $provincias = [
     </footer>
 
     <!-- Script del wizard -->
-    <script src="assets/js/wizard-validation.js"></script>
-    <script src="assets/js/wizard-payload.js"></script>
-    <script src="assets/js/wizard.js"></script>
+    <script src="<?= htmlspecialchars(ml_asset('js/wizard-validation.js')) ?>"></script>
+    <script src="<?= htmlspecialchars(ml_asset('js/wizard-payload.js')) ?>"></script>
+    <script src="<?= htmlspecialchars(ml_asset('js/wizard.js')) ?>"></script>
     <script>
         // NOTA: wizard.js ya inicializa el wizard automáticamente (window.wizardMotor).
         // Solo se agregan aquí los listeners de campos condicionales.

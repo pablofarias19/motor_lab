@@ -195,10 +195,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
     <meta name="robots" content="noindex, nofollow">
 
     <!-- CSS del módulo -->
-    <link rel="stylesheet" href="assets/css/motor.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor.css')) ?>">
     <!-- Nuevo Diseño Premium -->
-    <link rel="stylesheet" href="assets/css/premium_dashboard.css">
-    <link rel="stylesheet" href="assets/css/motor-unified.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/premium_dashboard.css')) ?>">
+    <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor-unified.css')) ?>">
 
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
@@ -1081,9 +1081,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
     </script>
 
     <!-- Script de renderizado de resultados -->
-    <script src="assets/js/resultados.js"></script>
+    <script src="<?= htmlspecialchars(ml_asset('js/resultados.js')) ?>"></script>
     <!-- Scripts de Gráficos Premium -->
-    <script src="assets/js/premium_charts.js"></script>
+    <script src="<?= htmlspecialchars(ml_asset('js/premium_charts.js')) ?>"></script>
 
     <script>
         // UUID disponible globalmente
