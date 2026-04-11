@@ -1147,7 +1147,7 @@ class WizardMotorLaboral {
                 this._aplicarAccesoRapido({
                     perfil: card.dataset.quickProfile || '',
                     conflicto: card.dataset.quickConflict || '',
-                    paso: Number(card.dataset.quickStep || String(DEFAULT_QUICK_ACCESS_STEP)),
+                    paso: Number(card.dataset.quickStep || DEFAULT_QUICK_ACCESS_STEP),
                 });
             });
         });
@@ -1185,7 +1185,10 @@ class WizardMotorLaboral {
             wizardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        const pasoDestino = Math.min(Math.max(paso, 1), this.totalPasos);
+        const totalPasos = Number.isInteger(this.totalPasos) && this.totalPasos > 0
+            ? this.totalPasos
+            : paso;
+        const pasoDestino = Math.min(Math.max(paso, 1), totalPasos);
         this._limpiarErrores(pasoDestino);
         this.mostrarPaso(pasoDestino);
         this._anunciarEstado(`Acceso rápido activado: ${perfil} - ${conflicto}.`);
