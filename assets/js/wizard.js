@@ -191,6 +191,7 @@ class WizardMotorLaboral {
         // Adjuntar listeners a las tarjetas de opción Si/No (radio buttons estilizados)
         this._inicializarOpcionCards();
         this._inicializarConflictoCards();
+        this._inicializarAccesosRapidos();
         this._sincronizarPasoPerfil();
 
         this.formulario.addEventListener('input', () => {
@@ -1134,6 +1135,57 @@ class WizardMotorLaboral {
                 }
             });
         });
+    }
+
+    _inicializarAccesosRapidos() {
+        const quickAccessCards = document.querySelectorAll('.motor-quick-access');
+
+        quickAccessCards.forEach(card => {
+            card.addEventListener('click', () => {
+                this._aplicarAccesoRapido({
+                    perfil: card.dataset.quickProfile || '',
+                    conflicto: card.dataset.quickConflict || '',
+                    paso: Number(card.dataset.quickStep || '2'),
+                });
+            });
+        });
+    }
+
+    _aplicarAccesoRapido({ perfil, conflicto, paso = 2 }) {
+        if (!this.formulario || !perfil || !conflicto) {
+            return;
+        }
+
+        const radioPerfil = this.formulario.querySelector(`input[name="tipo_usuario_radio"][value="${perfil}"]`);
+        const campoTipoUsuario = this.formulario.querySelector('#tipo_usuario');
+        const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
+        const cardConflicto = this.formulario.querySelector(`.conflicto-card[data-valor="${conflicto}"]`);
+        const wizardContainer = document.querySelector('.wizard-container');
+
+        if (radioPerfil) {
+            radioPerfil.checked = true;
+            radioPerfil.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (campoTipoUsuario) {
+            campoTipoUsuario.value = perfil;
+        }
+
+        if (cardConflicto) {
+            cardConflicto.click();
+        } else if (campoTipoConflicto) {
+            campoTipoConflicto.value = conflicto;
+            campoTipoConflicto.dispatchEvent(new Event('change', { bubbles: true }));
+            this._sincronizarPasoPerfil();
+        }
+
+        if (wizardContainer) {
+            wizardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        this._limpiarErrores(1);
+        this.mostrarPaso(Math.min(Math.max(paso, 1), this.totalPasos));
+        this._anunciarEstado(`Acceso rápido activado: ${perfil} - ${conflicto}.`);
     }
 
     // =========================================================================
