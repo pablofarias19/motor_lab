@@ -50,7 +50,7 @@ $provincias = [
 $shareTitle = 'Motor de Riesgo Laboral | Estudio Farias Ortiz';
 $shareDescription = 'Diagnóstico laboral profesional en 5 pasos para medir exposición económica, nivel de riesgo y escenarios de acción.';
 $shareUrl = ml_absolute_url();
-$shareImage = ml_absolute_url('assets/img/social-share-preview.svg');
+$shareImage = ml_absolute_url('assets/img/social-share-preview.png');
 $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudio Farias Ortiz.';
 ?>
 <!DOCTYPE html>
@@ -70,8 +70,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
     <meta property="og:description" content="<?= htmlspecialchars($shareDescription, ENT_QUOTES, 'UTF-8') ?>">
     <meta property="og:url" content="<?= htmlspecialchars($shareUrl, ENT_QUOTES, 'UTF-8') ?>">
     <meta property="og:image" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
-    <meta property="og:image:secure_url" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
-    <meta property="og:image:type" content="image/svg+xml">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:image:alt" content="<?= htmlspecialchars($shareImageAlt, ENT_QUOTES, 'UTF-8') ?>">
