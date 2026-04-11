@@ -406,10 +406,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <!-- Art. 23 — Presunción -->
                         <div style="border: 2px solid <?= $presOpera ? '#dc3545' : '#16a34a' ?>; border-radius: 10px; padding: 1rem; background: <?= $presOpera ? '#fff5f5' : '#f0fdf4' ?>;">
                             <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: <?= $presOpera ? '#dc3545' : '#16a34a' ?>;">
-                                🔍 Art. 23 LCT — Presunción Laboral
+                                <span class="ui-emoji" aria-hidden="true">🔍</span>Art. 23 LCT — Presunción Laboral
                             </h4>
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <span style="font-size: 1.5rem;"><?= $presOpera ? '⚠️' : '✅' ?></span>
+                                <span class="ui-emoji ui-emoji--status" aria-hidden="true"><?= $presOpera ? '⚠️' : '✅' ?></span>
                                 <strong style="font-size: 1rem;"><?= $presOpera ? 'PRESUNCIÓN OPERA' : 'PRESUNCIÓN NO OPERA' ?></strong>
                             </div>
                             <div style="font-size: 0.8rem; color: #555;">
@@ -434,10 +434,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <!-- Art. 30 — Solidaria -->
                         <div style="border: 2px solid <?= $solExento ? '#16a34a' : '#f59e0b' ?>; border-radius: 10px; padding: 1rem; background: <?= $solExento ? '#f0fdf4' : '#fffbeb' ?>;">
                             <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: <?= $solExento ? '#16a34a' : '#f59e0b' ?>;">
-                                ⚖️ Art. 30 LCT — Solidaria
+                                <span class="ui-emoji" aria-hidden="true">⚖️</span>Art. 30 LCT — Solidaria
                             </h4>
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <span style="font-size: 1.5rem;"><?= $solExento ? '🛡️' : '⚠️' ?></span>
+                                <span class="ui-emoji ui-emoji--status" aria-hidden="true"><?= $solExento ? '🛡️' : '⚠️' ?></span>
                                 <strong style="font-size: 1rem;"><?= $solExento ? 'EXENTO' : 'NO EXENTO' ?></strong>
                             </div>
                             <div style="font-size: 0.8rem; color: #555;">
@@ -469,10 +469,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <!-- Fraude Laboral -->
                         <div style="border: 2px solid <?= $frColor ?>; border-radius: 10px; padding: 1rem; background: <?= $frNivel === 'NINGUNO' ? '#f8f9fa' : '#fff5f5' ?>;">
                             <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: <?= $frColor ?>;">
-                                ⚠️ Fraude Laboral
+                                <span class="ui-emoji" aria-hidden="true">⚠️</span>Fraude Laboral
                             </h4>
                             <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
-                                <span style="font-size: 1.5rem;"><?= $frNivel === 'NINGUNO' ? '✅' : '🚨' ?></span>
+                                <span class="ui-emoji ui-emoji--status" aria-hidden="true"><?= $frNivel === 'NINGUNO' ? '✅' : '🚨' ?></span>
                                 <strong style="font-size: 1rem;">Riesgo: <?= $frNivel ?></strong>
                             </div>
                             <div style="font-size: 0.8rem; color: #555;">
@@ -493,7 +493,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <!-- Daño Complementario -->
                         <div style="border: 2px solid #7c3aed; border-radius: 10px; padding: 1rem; background: #faf5ff;">
                             <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: #7c3aed;">
-                                💔 Daño Complementario (Art. 527 CCCN)
+                                <span class="ui-emoji" aria-hidden="true">💔</span>Daño Complementario (Art. 527 CCCN)
                             </h4>
                             <div style="font-size: 0.85rem; color: #555;">
                                 <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
@@ -532,7 +532,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php if (!empty($analisisEmpresa['art_empresa'])):
                             $artEmp = $analisisEmpresa['art_empresa']; ?>
                             <div style="border:1px solid #f59e0b; border-radius:12px; padding:1rem; background:#fffaf0;">
-                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#b45309;">🏥 Contingencia ART empresa</h4>
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#b45309;"><span class="ui-emoji" aria-hidden="true">🏥</span>Contingencia ART empresa</h4>
                                 <div><strong>Nivel:</strong> <?= htmlspecialchars($artEmp['nivel_riesgo'] ?? '-') ?></div>
                                 <div><strong>Responsable principal:</strong> <?= htmlspecialchars($artEmp['responsable_principal'] ?? '-') ?></div>
                                 <div><strong>Exposición estimada:</strong> <?= ml_formato_moneda(floatval($artEmp['exposicion_estimada_empresa'] ?? 0)) ?></div>
@@ -549,7 +549,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php if (!empty($analisisEmpresa['solidaridad'])):
                             $solEmp = $analisisEmpresa['solidaridad']; ?>
                             <div style="border:1px solid #2563eb; border-radius:12px; padding:1rem; background:#f8fbff;">
-                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#1d4ed8;">🤝 Responsabilidad solidaria</h4>
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#1d4ed8;"><span class="ui-emoji" aria-hidden="true">🤝</span>Responsabilidad solidaria</h4>
                                 <div><strong>Riesgo:</strong> <?= htmlspecialchars($solEmp['riesgo_calificacion'] ?? '-') ?></div>
                                 <div><strong>Probabilidad de condena:</strong> <?= htmlspecialchars($solEmp['probabilidad_condena'] ?? '-') ?></div>
                                 <div><strong>Exposición esperada:</strong> <?= ml_formato_moneda(floatval($solEmp['exposicion_esperada'] ?? 0)) ?></div>
@@ -560,7 +560,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php if (!empty($analisisEmpresa['auditoria'])):
                             $auditEmp = $analisisEmpresa['auditoria']; ?>
                             <div style="border:1px solid #7c3aed; border-radius:12px; padding:1rem; background:#faf5ff;">
-                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#6d28d9;">🧾 Auditoría preventiva</h4>
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#6d28d9;"><span class="ui-emoji" aria-hidden="true">🧾</span>Auditoría preventiva</h4>
                                 <div><strong>Regularizar:</strong> <?= ml_formato_moneda(floatval($auditEmp['cre_costo_regularizacion'] ?? 0)) ?></div>
                                 <div><strong>Litigio esperado:</strong> <?= ml_formato_moneda(floatval($auditEmp['cll_costo_litigio_esperado'] ?? 0)) ?></div>
                                 <div><strong>Acción sugerida:</strong> <?= htmlspecialchars($auditEmp['recomendacion_accion'] ?? '-') ?></div>
@@ -571,7 +571,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php if (!empty($analisisEmpresa['inspeccion'])):
                             $inspEmp = $analisisEmpresa['inspeccion']; ?>
                             <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;">
-                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;">🏛️ Inspección ARCA / Ministerio</h4>
+                                <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;"><span class="ui-emoji" aria-hidden="true">🏛️</span>Inspección ARCA / Ministerio</h4>
                                 <div><strong>Capital omitido:</strong> <?= ml_formato_moneda(floatval($inspEmp['capital_omitido'] ?? 0)) ?></div>
                                 <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($inspEmp['intereses'] ?? 0)) ?></div>
                                 <div><strong>Deuda total:</strong> <?= ml_formato_moneda(floatval($inspEmp['deuda_total'] ?? 0)) ?></div>

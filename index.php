@@ -432,7 +432,7 @@ $provincias = [
                             <!-- Salario -->
                             <div class="form-group form-group-with-icon">
                                 <label for="salario">
-                                    <span class="form-label-main">💵 Mejor salario mensual bruto</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">💵</span>Mejor salario mensual bruto</span>
                                     <span class="req">*</span>
                                 </label>
                                 <div class="input-prefix-wrapper">
@@ -443,13 +443,13 @@ $provincias = [
                                 </div>
                                 <small class="form-ayuda">Es el salario más alto que cobraste en los <strong>últimos 12 meses</strong>. Incluye lo que aparece en el recibo.</small>
                                 <div class="form-example" id="ej-salario">
-                                    <strong>📋 Ejemplos:</strong><br>
+                                    <strong><span class="ui-emoji" aria-hidden="true">📋</span>Ejemplos:</strong><br>
                                     ✓ $350.000 (debe ser sin puntos ni comas)<br>
                                     ✓ $85500 (números enteros)<br>
                                     ✗ $350.000,00 (no poner decimales)
                                 </div>
                                 <span class="form-example-toggle" onclick="document.getElementById('ej-salario').classList.toggle('active')">
-                                    📌 Ver ejemplos
+                                    <span class="ui-emoji" aria-hidden="true">📌</span>Ver ejemplos
                                 </span>
                                 <span class="form-error" id="error-salario"></span>
                             </div>
@@ -457,7 +457,7 @@ $provincias = [
                             <!-- Antigüedad -->
                             <div class="form-group form-group-with-icon">
                                 <label for="antiguedad_meses">
-                                    <span class="form-label-main">📅 ¿Cuántos meses trabajaste?</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">📅</span>¿Cuántos meses trabajaste?</span>
                                     <span class="req">*</span>
                                 </label>
                                 <input type="number" id="antiguedad_meses" name="antiguedad_meses" min="0" max="600"
@@ -465,14 +465,14 @@ $provincias = [
                                     data-tooltip="Meses totales de antigüedad">
                                 <small class="form-ayuda">Convertí los años a meses. <strong>Si son 2 años y 3 meses = 27 meses</strong></small>
                                 <div class="form-example" id="ej-antiguedad">
-                                    <strong>🧮 Cómo calcular:</strong><br>
+                                    <strong><span class="ui-emoji" aria-hidden="true">🧮</span>Cómo calcular:</strong><br>
                                     • 1 año = 12 meses<br>
                                     • 2 años = 24 meses<br>
                                     • 2 años 6 meses = 30 meses<br>
                                     • 3 años 3 meses = 39 meses
                                 </div>
                                 <span class="form-example-toggle" onclick="document.getElementById('ej-antiguedad').classList.toggle('active')">
-                                    🧮 Calculadora
+                                    <span class="ui-emoji" aria-hidden="true">🧮</span>Calculadora
                                 </span>
                                 <span class="form-error" id="error-antiguedad_meses"></span>
                             </div>
@@ -480,7 +480,7 @@ $provincias = [
                             <!-- Edad (Solo visible para Accidentes por ahora) -->
                             <div class="form-group form-group-with-icon solo-accidente" style="display:none;">
                                 <label for="edad">
-                                    <span class="form-label-main">🆔 ¿Cuántos años tenías al accidentarte?</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">🆔</span>¿Cuántos años tenías al accidentarte?</span>
                                     <span class="req">*</span>
                                 </label>
                                 <input type="number" id="edad" name="edad" min="16" max="90" placeholder="Ej: 45"
@@ -536,7 +536,7 @@ $provincias = [
                             <!-- Provincia -->
                             <div class="form-group form-group-with-icon">
                                 <label for="provincia">
-                                    <span class="form-label-main">🗺️ ¿En qué provincia trabajabas?</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">🗺️</span>¿En qué provincia trabajabas?</span>
                                     <span class="req">*</span>
                                 </label>
                                 <select id="provincia" name="provincia" required
@@ -553,7 +553,7 @@ $provincias = [
 
                             <!-- Cantidad empleados -->
                             <div class="form-group form-group-with-icon">
-                                <label for="cantidad_empleados">👥 ¿Cuántas personas trabajaban en la empresa?</label>
+                                    <label for="cantidad_empleados"><span class="ui-emoji" aria-hidden="true">👥</span>¿Cuántas personas trabajaban en la empresa?</label>
                                 <select id="cantidad_empleados" name="cantidad_empleados"
                                     data-tooltip="Afecta procedimientos laborales">
                                     <option value="1">1 (Solo yo)</option>
@@ -570,7 +570,7 @@ $provincias = [
                             <!-- Categoría -->
                             <div class="form-group form-group-with-icon">
                                 <label for="categoria">
-                                    <span class="form-label-main">💼 ¿Cuál era tu cargo/función?</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">💼</span>¿Cuál era tu cargo/función?</span>
                                     <span class="opcional-badge">Opcional</span>
                                 </label>
                                 <input type="text" id="categoria" name="categoria"
@@ -578,7 +578,7 @@ $provincias = [
                                     data-tooltip="Tu puesto de trabajo">
                                 <small class="form-ayuda">Ayuda a contextualizarvera caso. Escribí lo que figura en tu contrato o recibos.</small>
                                 <div class="form-example" id="ej-categoria">
-                                    <strong>📝 Ejemplos:</strong><br>
+                                    <strong><span class="ui-emoji" aria-hidden="true">📝</span>Ejemplos:</strong><br>
                                     • Operario calificado<br>
                                     • Vendedor<br>
                                     • Capataz de obra<br>
@@ -586,14 +586,14 @@ $provincias = [
                                     • Empleado administrativo
                                 </div>
                                 <span class="form-example-toggle" onclick="document.getElementById('ej-categoria').classList.toggle('active')">
-                                    📋 Ver ejemplos
+                                    <span class="ui-emoji" aria-hidden="true">📋</span>Ver ejemplos
                                 </span>
                             </div>
 
                             <!-- CCT -->
                             <div class="form-group form-group-with-icon">
                                 <label for="cct">
-                                    <span class="form-label-main">📜 ¿Qué convenio aplica? (Opcional)</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">📜</span>¿Qué convenio aplica? (Opcional)</span>
                                     <span class="opcional-badge">Opcional</span>
                                 </label>
                                 <input type="text" id="cct" name="cct" 
@@ -601,7 +601,7 @@ $provincias = [
                                     data-tooltip="Convenio Colectivo de Trabajo">
                                 <small class="form-ayuda">Si no sabés, <strong>no importa</strong> — dejá vacío. El motor puede funcionar sin esto.</small>
                                 <div class="form-example" id="ej-cct">
-                                    <strong>🔍 Convenios comunes:</strong><br>
+                                    <strong><span class="ui-emoji" aria-hidden="true">🔍</span>Convenios comunes:</strong><br>
                                     • UOCRA (Construcción)<br>
                                     • UOM (Metalurgía)<br>
                                     • Comercio 130/75<br>
@@ -609,7 +609,7 @@ $provincias = [
                                     • Si no sabés, dejá en blanco
                                 </div>
                                 <span class="form-example-toggle" onclick="document.getElementById('ej-cct').classList.toggle('active')">
-                                    🔍 Ver convenios
+                                    <span class="ui-emoji" aria-hidden="true">🔍</span>Ver convenios
                                 </span>
                             </div>
                         </div>
@@ -1218,7 +1218,7 @@ $provincias = [
                             <!-- Día del despido -->
                             <div class="form-group form-group-with-icon" style="margin-top: 1rem;">
                                 <label for="dia_despido">
-                                    <span class="form-label-main">📅 ¿Qué día exacto fue el despido?</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">📅</span>¿Qué día exacto fue el despido?</span>
                                     <span class="opcional-badge">Opcional</span>
                                 </label>
                                 <input type="number" id="dia_despido" name="dia_despido" 
@@ -1229,13 +1229,13 @@ $provincias = [
                                     <br>Sirve para cálculos precisos de Art. 233 LCT.
                                 </small>
                                 <div class="form-example" id="ej-dia-despido">
-                                    <strong>📌 Ejemplos:</strong><br>
+                                    <strong><span class="ui-emoji" aria-hidden="true">📌</span>Ejemplos:</strong><br>
                                     • Te despidieron el 5 de marzo → escribí <strong>5</strong><br>
                                     • Te despidieron el 28 de junio → escribí <strong>28</strong><br>
                                     • No te acordás → dejá <strong>15</strong> (valor por defecto, funciona igual)
                                 </div>
                                 <span class="form-example-toggle" onclick="document.getElementById('ej-dia-despido').classList.toggle('active')">
-                                    📋 Ver ejemplos
+                                    <span class="ui-emoji" aria-hidden="true">📋</span>Ver ejemplos
                                 </span>
                             </div>
 
@@ -1258,7 +1258,7 @@ $provincias = [
                                     </label>
                                 </div>
                                 <div class="aviso-importante">
-                                    <div class="aviso-importante-icono">⚖️</div>
+                                    <div class="aviso-importante-icono"><span class="ui-emoji ui-emoji--solo" aria-hidden="true">⚖️</span></div>
                                     <div class="aviso-importante-content">
                                         <strong>Esto cambió MUCHO con la Ley Bases:</strong>
                                         <p>Antes de julio 2024 → Te debemos multas por vulneración de derechos. Después de julio 2024 → Esas multas están suspendidas (pero hay casos en tribunales que pueden restaurarlas).</p>
@@ -1272,7 +1272,7 @@ $provincias = [
                             <!-- Jurisdicción (tasas de interés) -->
                             <div class="form-group form-group-with-icon" style="margin-top: 1.5rem;">
                                 <label for="jurisdiccion">
-                                    <span class="form-label-main">🗺️ ¿En qué provincia se demandaría?</span>
+                                    <span class="form-label-main"><span class="ui-emoji" aria-hidden="true">🗺️</span>¿En qué provincia se demandaría?</span>
                                     <span class="opcional-badge">Opcional</span>
                                 </label>
                                 <select id="jurisdiccion" name="jurisdiccion"
@@ -1307,7 +1307,7 @@ $provincias = [
                                     <br>Si querés mayor precisión, pegá tus últimos 12 salarios (de ARCA o recibos).
                                 </small>
                                 <div class="form-example" id="ej-salarios">
-                                    <strong>📋 Cómo si querés ser preciso:</strong><br><br>
+                                    <strong><span class="ui-emoji" aria-hidden="true">📋</span>Cómo si querés ser preciso:</strong><br><br>
                                     1. Abrí tu ARCA o descargá 12 recibos<br>
                                     2. Anot cada salario mensual<br>
                                     3. Pegá acá, cada uno en una línea (sin $, sin puntos)<br><br>
@@ -1326,10 +1326,10 @@ $provincias = [
 115000
                                     </code>
                                     <br>
-                                    💡 <strong>Si NO lo haces:</strong> El motor asume que todos los meses cobró lo mismo que en el Paso 2. Funciona igual, solo es menos preciso.
+                                    <span class="ui-emoji" aria-hidden="true">💡</span><strong>Si NO lo haces:</strong> El motor asume que todos los meses cobró lo mismo que en el Paso 2. Funciona igual, solo es menos preciso.
                                 </div>
                                 <span class="form-example-toggle" onclick="document.getElementById('ej-salarios').classList.toggle('active')">
-                                    📋 Mostrar cómo ingresar (si quiero ser exacto)
+                                    <span class="ui-emoji" aria-hidden="true">📋</span>Mostrar cómo ingresar (si quiero ser exacto)
                                 </span>
                             </div>
                         </div>
@@ -1353,7 +1353,7 @@ $provincias = [
 
                             <!-- ─── ART. 23 LCT: Presunción Laboral ─── -->
                             <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;">🔍 <strong>Art. 23 LCT (Ley 27.802)</strong> — ¿Presunción de Relación Laboral?</legend>
+                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">🔍</span><strong>Art. 23 LCT (Ley 27.802)</strong> — ¿Presunción de Relación Laboral?</legend>
                                 <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">La presunción NO OPERA si coexisten los 3 elementos:</p>
                                 
                                 <div class="form-group form-group-si-no">
@@ -1404,7 +1404,7 @@ $provincias = [
 
                             <!-- ─── ART. 30 LCT: Responsabilidad Solidaria ─── -->
                             <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;">⚖️ <strong>Art. 30 LCT (Ley 27.802)</strong> — Controles Exención Solidaria</legend>
+                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">⚖️</span><strong>Art. 30 LCT (Ley 27.802)</strong> — Controles Exención Solidaria</legend>
                                 <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Principal es EXENTO si valida los 5 controles:</p>
                                 
                                 <div class="form-group form-group-si-no">
@@ -1485,7 +1485,7 @@ $provincias = [
 
                             <!-- ─── FRAUDE LABORAL: Indicadores ─── -->
                             <fieldset class="fieldset-ley27802 fieldset-fraude" style="border: 2px solid #e8f4f8; border-left: 4px solid #dc3545; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fff8f8;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #dc3545; padding: 0 10px;">⚠️ <strong>Fraude Laboral</strong> — Indicadores de Riesgo</legend>
+                                <legend style="font-size: 1rem; font-weight: 600; color: #dc3545; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">⚠️</span><strong>Fraude Laboral</strong> — Indicadores de Riesgo</legend>
                                 <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Seleccionar si los siguientes patrones están presentes:</p>
                                 
                                 <div class="form-group form-group-si-no">
@@ -1561,7 +1561,7 @@ $provincias = [
 
                             <!-- ─── DAÑO COMPLEMENTARIO (Art. 527 CCCN) ─── -->
                             <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;">💔 <strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
+                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
                                 <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Para evaluar daños morales, patrimoniales y reputacionales:</p>
                                 
                                 <div class="form-group">
@@ -2016,7 +2016,9 @@ $provincias = [
 
                 actualizarTextoElemento(
                     'label[for="salario"] .form-label-main',
-                    esPrevencion ? '💵 Masa salarial o salario promedio comprometido ($)' : '💵 Mejor salario mensual bruto del trabajador involucrado'
+                    esPrevencion
+                        ? '<span class="ui-emoji" aria-hidden="true">💵</span>Masa salarial o salario promedio comprometido ($)'
+                        : '<span class="ui-emoji" aria-hidden="true">💵</span>Mejor salario mensual bruto del trabajador involucrado'
                 );
                 actualizarAyudaCampo(
                     '#salario',
@@ -2026,26 +2028,26 @@ $provincias = [
                 );
                 actualizarPlaceholder('#salario', esPrevencion ? '$1.200.000' : '$350.000');
 
-                actualizarTextoElemento('label[for="antiguedad_meses"] .form-label-main', '📅 ¿Cuántos meses trabajó el empleado involucrado?');
+                actualizarTextoElemento('label[for="antiguedad_meses"] .form-label-main', '<span class="ui-emoji" aria-hidden="true">📅</span>¿Cuántos meses trabajó el empleado involucrado?');
                 actualizarTextoElemento(
                     '#antiguedad_meses + .form-ayuda',
                     'Solo se solicita cuando la antigüedad impacta el cálculo del caso. Si la pantalla la oculta, el análisis seguirá sin ese dato.'
                 );
-                actualizarTextoElemento('label[for="edad"] .form-label-main', '🆔 ¿Cuántos años tenía el trabajador al momento del siniestro?');
+                actualizarTextoElemento('label[for="edad"] .form-label-main', '<span class="ui-emoji" aria-hidden="true">🆔</span>¿Cuántos años tenía el trabajador al momento del siniestro?');
 
-                actualizarTextoElemento('label[for="provincia"] .form-label-main', '🗺️ ¿En qué provincia ocurre el conflicto o la contingencia?');
+                actualizarTextoElemento('label[for="provincia"] .form-label-main', '<span class="ui-emoji" aria-hidden="true">🗺️</span>¿En qué provincia ocurre el conflicto o la contingencia?');
                 actualizarTextoElemento(
                     '#provincia + .form-ayuda',
                     'Definí la jurisdicción principal del caso o del establecimiento fiscalizado. Afecta criterios legales, tasas e inspecciones.'
                 );
 
-                actualizarTextoElemento('label[for="cantidad_empleados"]', '👥 ¿Cuántas personas trabajan en la empresa o sector analizado?');
+                actualizarTextoElemento('label[for="cantidad_empleados"]', '<span class="ui-emoji" aria-hidden="true">👥</span>¿Cuántas personas trabajan en la empresa o sector analizado?');
                 actualizarTextoElemento(
                     '#cantidad_empleados + .form-ayuda',
                     'Ayuda a medir riesgo multiplicador, escala operativa e impacto potencial de la contingencia sobre la empresa.'
                 );
 
-                actualizarTextoElemento('label[for="categoria"] .form-label-main', '💼 ¿Qué puesto, área o contratista está involucrado?');
+                actualizarTextoElemento('label[for="categoria"] .form-label-main', '<span class="ui-emoji" aria-hidden="true">💼</span>¿Qué puesto, área o contratista está involucrado?');
                 actualizarTextoElemento(
                     '#categoria + .form-ayuda',
                     esPrevencion

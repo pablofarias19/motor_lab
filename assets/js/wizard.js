@@ -1027,7 +1027,7 @@ class WizardMotorLaboral {
         const mensaje = `
             <div style="text-align: left; font-family: Arial, sans-serif;">
                 <h3 style="color: #d9534f; margin-bottom: 15px;">
-                    📢 Cambios por Ley Bases (27.742) — Posterior a 09/07/2024
+                    <span class="ui-emoji" aria-hidden="true">📢</span>Cambios por Ley Bases (27.742) — Posterior a 09/07/2024
                 </h3>
                 
                 <p style="margin-bottom: 10px;">
@@ -1035,11 +1035,11 @@ class WizardMotorLaboral {
                 </p>
                 
                 <p style="margin-bottom: 10px;">
-                    <strong>⚠️ Aún Vigente:</strong> Art. 80 LCT (certificados, 3 salarios) + Art. 132 bis (sanción administrativa por falta de registro)
+                    <strong><span class="ui-emoji" aria-hidden="true">⚠️</span>Aún Vigente:</strong> Art. 80 LCT (certificados, 3 salarios) + Art. 132 bis (sanción administrativa por falta de registro)
                 </p>
                 
                 <p style="margin-bottom: 15px; background: #f8f9fa; padding: 10px; border-radius: 4px;">
-                    <strong>💡 Nota:</strong> El sistema calculará sin multas por defecto. Puede activar "override" para analizar escenarios alternativos.
+                    <strong><span class="ui-emoji" aria-hidden="true">💡</span>Nota:</strong> El sistema calculará sin multas por defecto. Puede activar "override" para analizar escenarios alternativos.
                 </p>
                 
                 <p style="color: #666; font-size: 12px;">

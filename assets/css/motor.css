@@ -89,6 +89,26 @@
     box-sizing: border-box;
 }
 
+.ui-emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.82em;
+    line-height: 1;
+    vertical-align: -0.08em;
+    margin-right: 0.35rem;
+}
+
+.ui-emoji--status {
+    font-size: 1.05rem;
+    margin-right: 0;
+}
+
+.ui-emoji--solo {
+    font-size: 0.95rem;
+    margin-right: 0;
+}
+
 
 /* =============================================================================
  * 02. LAYOUT BASE DEL MÓDULO
