@@ -152,6 +152,13 @@ if (!function_exists('ml_normalize_url_path')) {
     }
 }
 
+if (!function_exists('ml_url_segments')) {
+    function ml_url_segments(string $path): array
+    {
+        return array_values(array_filter(explode('/', trim($path, '/')), 'strlen'));
+    }
+}
+
 if (!function_exists('ml_detect_base_url')) {
     function ml_detect_base_url(): string
     {
@@ -182,11 +189,11 @@ if (!function_exists('ml_detect_base_url')) {
             return $scriptDirUrl;
         }
 
-        $urlSegments = array_values(array_filter(explode('/', trim($scriptDirUrl, '/')), 'strlen'));
-        $relativeSegments = array_values(array_filter(explode('/', $relativeDir), 'strlen'));
-        $segmentsToTrim = min(count($urlSegments), count($relativeSegments));
+        $urlSegments = ml_url_segments($scriptDirUrl);
+        $relativeSegments = ml_url_segments($relativeDir);
+        $remainingSegmentsToTrim = min(count($urlSegments), count($relativeSegments));
 
-        while ($segmentsToTrim-- > 0) {
+        while ($remainingSegmentsToTrim-- > 0) {
             array_pop($urlSegments);
         }
 
@@ -271,7 +278,7 @@ function ml_asset(string $path): string
 
 function ml_parent_url(string $path): string
 {
-    $segments = array_values(array_filter(explode('/', trim(ML_BASE_URL, '/')), 'strlen'));
+    $segments = ml_url_segments(ML_BASE_URL);
     if (!empty($segments)) {
         array_pop($segments);
     }
