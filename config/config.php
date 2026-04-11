@@ -206,11 +206,37 @@ if (!function_exists('ml_detect_base_url')) {
     }
 }
 
+if (!function_exists('ml_detect_app_url')) {
+    function ml_detect_app_url(): string
+    {
+        $configuredAppUrl = trim((string) ml_env('ML_APP_URL', ''));
+        if ($configuredAppUrl !== '') {
+            return rtrim($configuredAppUrl, '/');
+        }
+
+        $forwardedHost = trim((string) ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+        $host = $forwardedHost !== '' ? $forwardedHost : trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($host === '') {
+            return 'http://localhost' . ML_BASE_URL;
+        }
+
+        $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+        if (in_array($forwardedProto, ['http', 'https'], true)) {
+            $scheme = $forwardedProto;
+        } else {
+            $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+            $scheme = ($https !== '' && $https !== 'off') ? 'https' : 'http';
+        }
+
+        return $scheme . '://' . $host . ML_BASE_URL;
+    }
+}
+
 // ─── Aplicación ──────────────────────────────────────────────────────────────
 define('ML_VERSION', '1.0.0');
 define('ML_APP_NAME', 'Motor de Riesgo Laboral');
 define('ML_BASE_URL', ml_detect_base_url());
-define('ML_APP_URL', ml_env('ML_APP_URL', 'http://localhost' . ML_BASE_URL));
+define('ML_APP_URL', ml_detect_app_url());
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 // Token de acceso al panel admin — cambiar antes de producción
