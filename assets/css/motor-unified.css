@@ -223,6 +223,8 @@ body,
 }
 
 .wizard-visual-guide {
+    --wizard-guide-icon-size: 56px;
+    --wizard-guide-point-icon-size: 38px;
     display: grid;
     gap: 1rem;
     padding: 1.15rem 2rem 1.35rem;
@@ -239,8 +241,8 @@ body,
 }
 
 .wizard-guide-icon {
-    width: 56px;
-    height: 56px;
+    width: var(--wizard-guide-icon-size);
+    height: var(--wizard-guide-icon-size);
     border-radius: 18px;
     display: inline-flex;
     align-items: center;
@@ -298,8 +300,8 @@ body,
 }
 
 .wizard-guide-point-icon {
-    width: 38px;
-    height: 38px;
+    width: var(--wizard-guide-point-icon-size);
+    height: var(--wizard-guide-point-icon-size);
     border-radius: 14px;
     display: inline-flex;
     align-items: center;

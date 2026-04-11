@@ -108,7 +108,18 @@ class WizardMotorLaboral {
          * @type {string}
          */
         this.conflictoSeleccionado = '';
+
+        /**
+         * Último perfil sincronizado para evitar refrescos redundantes de UI.
+         * @type {string}
+         */
         this.perfilSeleccionado = '';
+
+        /**
+         * Firma compuesta del panel visual (paso|perfil|conflicto) para detectar
+         * cuándo realmente hace falta volver a renderizarlo.
+         * @type {string}
+         */
         this.guiaVisualFirma = '';
     }
 
@@ -1162,9 +1173,7 @@ class WizardMotorLaboral {
 
         const perfilActual = campoTipoUsuario?.value || '';
         const perfilCambio = perfilActual !== this.perfilSeleccionado;
-        const conflictoActual = campoTipoConflicto?.value
-            ? campoTipoConflicto.value
-            : (tarjetaSeleccionada?.dataset.valor || '');
+        const conflictoActual = campoTipoConflicto?.value || tarjetaSeleccionada?.dataset.valor || '';
 
         if (campoTipoConflicto) {
             campoTipoConflicto.value = conflictoActual;
