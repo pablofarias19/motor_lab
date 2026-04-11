@@ -312,13 +312,13 @@ function ml_render_floating_contact_buttons(): string
         class="ml-floating-action ml-floating-action--web"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Abrir Farias Ortiz, sitio de comercio internacional"
+        aria-label="Abrir Farías Ortiz, sitio de comercio internacional"
     >
         <span class="ml-floating-action__icon" aria-hidden="true">
             <i class="bi bi-globe-americas"></i>
         </span>
         <span class="ml-floating-action__content">
-            <strong>FARIAS ORTIZ</strong>
+            <strong>FARÍAS ORTIZ</strong>
             <small>Comercio internacional</small>
         </span>
     </a>
