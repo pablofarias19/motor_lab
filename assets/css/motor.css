@@ -3266,7 +3266,7 @@ header.motor-header {
     display: flex;
     flex-direction: column;
     gap: 0.85rem;
-    z-index: 1100;
+    z-index: 95;
     align-items: flex-end;
 }
 
@@ -3375,14 +3375,13 @@ small.form-ayuda {
 
     .ml-floating-actions {
         right: 0.9rem;
-        left: 0.9rem;
         bottom: 0.9rem;
         align-items: stretch;
     }
 
     .ml-floating-action {
-        min-width: 0;
-        width: 100%;
+        min-width: min(18rem, calc(100vw - 1.8rem));
+        width: min(20rem, calc(100vw - 1.8rem));
         justify-content: flex-start;
         border-radius: 1.1rem;
     }
