@@ -94,20 +94,24 @@ $provincias = [
 
             <!-- Intro -->
              <div class="motor-intro">
+                 <span class="motor-intro-kicker">Diagnóstico inicial en 5 pasos</span>
                  <h1 class="motor-titulo">
                      <i class="bi bi-graph-up-arrow"></i>
-                     Análisis Estratégico de Riesgo Laboral
+                     Panorama claro de tu conflicto laboral
                 </h1>
                 <p class="motor-subtitulo">
-                    Evaluá la estructura de tu conflicto laboral. Calculamos tu exposición económica,
-                    el índice IRIL y comparamos escenarios estratégicos.
-                    <strong>No estimamos probabilidades. Organizamos decisiones.</strong>
+                    Respondé lo esencial y te devolvemos una vista simple de tu caso:
+                    <strong>exposición económica, nivel IRIL y escenarios posibles</strong>.
                 </p>
+                <div class="motor-intro-highlights" aria-label="Resumen del análisis">
+                    <div class="motor-highlight-pill"><i class="bi bi-cash-coin"></i><span>Exposición económica</span></div>
+                    <div class="motor-highlight-pill"><i class="bi bi-speedometer2"></i><span>Nivel de riesgo</span></div>
+                    <div class="motor-highlight-pill"><i class="bi bi-signpost-split"></i><span>Escenarios de acción</span></div>
+                </div>
                 <!-- Aviso legal visible desde el inicio -->
                  <div class="motor-aviso-legal">
                      <i class="bi bi-info-circle"></i>
-                     <span>Este análisis es <strong>estructural y preventivo:</strong> no constituye asesoramiento legal
-                         definitivo. Se recomienda siempre consulta profesional.</span>
+                     <span>Guía preventiva: no reemplaza asesoramiento legal profesional.</span>
                  </div>
                  <div class="motor-trust-grid" aria-label="Beneficios del sistema">
                      <div class="motor-trust-item">
@@ -269,102 +273,135 @@ $provincias = [
 
                     <!-- Tipo de conflicto -->
                     <div class="form-section">
-                        <h3 class="form-section-titulo"><i class="bi bi-search"></i> Seleccioná el motivo de consulta
+                        <h3 class="form-section-titulo"><i class="bi bi-search"></i> Elegí el motivo principal
                         </h3>
-                        <p class="form-section-desc">Elegí la opción que mejor represente tu situación actual para
-                            personalizar el análisis.</p>
+                        <p class="form-section-desc">Ordenamos las opciones por bloques para que ubiques rápido tu caso.</p>
 
                         <div id="conflicto-role-helper" class="conflicto-role-helper">
                             <strong>Elegí primero tu perfil.</strong>
-                            <span>Cuando selecciones empleado o empresa, te vamos a ordenar las opciones más relevantes y mostrar solo las rutas más útiles para ese caso.</span>
+                            <span>Después te mostramos un mapa simple con las opciones más útiles para trabajador o empresa.</span>
                         </div>
 
                         <div class="form-group">
                             <!-- Campo oculto para el valor del conflicto -->
                             <input type="hidden" name="tipo_conflicto" id="tipo_conflicto" value="">
 
-                            <div class="conflictos-gallery" id="galeria-conflictos">
-                                <!-- Grupo: Despido -->
-                                <div class="conflicto-card" data-valor="despido_sin_causa" data-grupo="ambos">
-                                    <div class="conflicto-icon color-despido">
-                                        <img src="assets/img/icons/despido.svg" alt="Despido" class="conflicto-svg">
+                            <div class="conflicto-groups" id="galeria-conflictos">
+                                <section class="conflicto-grupo" data-seccion="desvinculacion">
+                                    <div class="conflicto-grupo-head">
+                                        <span class="conflicto-grupo-kicker">Salida del vínculo</span>
+                                        <h4>Despidos y desvinculación</h4>
+                                        <p>Cuando el eje del caso es el cese, la causa invocada o la forma de salida.</p>
                                     </div>
-                                    <div class="conflicto-info">
-                                        <strong>Despido sin causa</strong>
-                                        <span>Cese laboral sin motivo justificado.</span>
+                                    <div class="conflictos-gallery">
+                                        <div class="conflicto-card" data-valor="despido_sin_causa" data-grupo="ambos">
+                                            <div class="conflicto-icon color-despido">
+                                                <img src="assets/img/icons/despido.svg" alt="Despido" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Despido sin causa</strong>
+                                                <span>Cese laboral sin motivo justificado.</span>
+                                            </div>
+                                        </div>
+                                        <div class="conflicto-card" data-valor="despido_con_causa" data-grupo="ambos">
+                                            <div class="conflicto-icon color-despido">
+                                                <img src="assets/img/icons/despido.svg" alt="Despido" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Despido con causa</strong>
+                                                <span>Notificación de cese por falta disciplinaria.</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="conflicto-card" data-valor="despido_con_causa" data-grupo="ambos">
-                                    <div class="conflicto-icon color-despido">
-                                        <img src="assets/img/icons/despido.svg" alt="Despido" class="conflicto-svg">
-                                    </div>
-                                    <div class="conflicto-info">
-                                        <strong>Despido con causa</strong>
-                                        <span>Notificación de cese por falta disciplinaria.</span>
-                                    </div>
-                                </div>
-                                <div class="conflicto-card" data-valor="trabajo_no_registrado" data-grupo="ambos">
-                                    <div class="conflicto-icon color-negro">
-                                        <img src="assets/img/icons/negro.svg" alt="Trabajo en negro"
-                                            class="conflicto-svg">
-                                    </div>
-                                    <div class="conflicto-info">
-                                        <strong>Trabajo en negro</strong>
-                                        <span>Relación laboral no registrada o irregular.</span>
-                                    </div>
-                                </div>
+                                </section>
 
-                                <!-- Grupo: Conflictos Activos -->
-                                <div class="conflicto-card" data-valor="diferencias_salariales" data-grupo="ambos">
-                                    <div class="conflicto-icon color-salarial">
-                                        <img src="assets/img/icons/salarial.svg" alt="Salarial" class="conflicto-svg">
+                                <section class="conflicto-grupo" data-seccion="registracion">
+                                    <div class="conflicto-grupo-head">
+                                        <span class="conflicto-grupo-kicker">Dinero y registración</span>
+                                        <h4>Sueldos, categoría o empleo no registrado</h4>
+                                        <p>Para reclamos por deuda salarial, registración deficiente o diferencias.</p>
                                     </div>
-                                    <div class="conflicto-info">
-                                        <strong>Diferencias / Deudas</strong>
-                                        <span>Sueldos impagos, horas extras o mala categoría.</span>
+                                    <div class="conflictos-gallery">
+                                        <div class="conflicto-card" data-valor="trabajo_no_registrado" data-grupo="ambos">
+                                            <div class="conflicto-icon color-negro">
+                                                <img src="assets/img/icons/negro.svg" alt="Trabajo en negro"
+                                                    class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Trabajo en negro</strong>
+                                                <span>Relación laboral no registrada o irregular.</span>
+                                            </div>
+                                        </div>
+                                        <div class="conflicto-card" data-valor="diferencias_salariales" data-grupo="ambos">
+                                            <div class="conflicto-icon color-salarial">
+                                                <img src="assets/img/icons/salarial.svg" alt="Salarial" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Diferencias / Deudas</strong>
+                                                <span>Sueldos impagos, horas extras o mala categoría.</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="conflicto-card" data-valor="accidente_laboral" data-grupo="ambos">
-                                    <div class="conflicto-icon color-accidente">
-                                        <img src="assets/img/icons/accidente.svg" alt="Accidente" class="conflicto-svg">
-                                    </div>
-                                    <div class="conflicto-info">
-                                        <strong>Accidente / Enfermedad</strong>
-                                        <span>Lesiones en el trabajo o licencias médicas.</span>
-                                    </div>
-                                </div>
+                                </section>
 
-                                <!-- Grupo: Empresas -->
-                                <div class="conflicto-card" data-valor="responsabilidad_solidaria" data-grupo="empresa"
-                                    style="display:none;">
-                                    <div class="conflicto-icon color-empresa">
-                                        <img src="assets/img/icons/empresa.svg" alt="Empresa" class="conflicto-svg">
+                                <section class="conflicto-grupo" data-seccion="accidentes">
+                                    <div class="conflicto-grupo-head">
+                                        <span class="conflicto-grupo-kicker">Daño o cobertura</span>
+                                        <h4>Accidente o enfermedad laboral</h4>
+                                        <p>Cuando el foco está en ART, incapacidad, secuelas o exposición civil.</p>
                                     </div>
-                                    <div class="conflicto-info">
-                                        <strong>Responsabilidad Solidaria</strong>
-                                        <span>Riesgos por contratistas o tercerizados.</span>
+                                    <div class="conflictos-gallery">
+                                        <div class="conflicto-card" data-valor="accidente_laboral" data-grupo="ambos">
+                                            <div class="conflicto-icon color-accidente">
+                                                <img src="assets/img/icons/accidente.svg" alt="Accidente" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Accidente / Enfermedad</strong>
+                                                <span>Lesiones en el trabajo o licencias médicas.</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="conflicto-card" data-valor="auditoria_preventiva" data-grupo="empresa"
-                                    style="display:none;">
-                                    <div class="conflicto-icon color-empresa">
-                                        <img src="assets/img/icons/empresa.svg" alt="Empresa" class="conflicto-svg">
+                                </section>
+
+                                <section class="conflicto-grupo" data-seccion="empresa">
+                                    <div class="conflicto-grupo-head">
+                                        <span class="conflicto-grupo-kicker">Prevención empresarial</span>
+                                        <h4>Riesgos de empresa y cumplimiento</h4>
+                                        <p>Solo para empresa: contingencias por estructura, terceros o fiscalización.</p>
                                     </div>
-                                    <div class="conflicto-info">
-                                        <strong>Auditoría Preventiva</strong>
-                                        <span>Diagnóstico de cumplimiento and riesgos.</span>
+                                    <div class="conflictos-gallery">
+                                        <div class="conflicto-card" data-valor="responsabilidad_solidaria" data-grupo="empresa"
+                                            style="display:none;">
+                                            <div class="conflicto-icon color-empresa">
+                                                <img src="assets/img/icons/empresa.svg" alt="Empresa" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Responsabilidad Solidaria</strong>
+                                                <span>Riesgos por contratistas o tercerizados.</span>
+                                            </div>
+                                        </div>
+                                        <div class="conflicto-card" data-valor="auditoria_preventiva" data-grupo="empresa"
+                                            style="display:none;">
+                                            <div class="conflicto-icon color-empresa">
+                                                <img src="assets/img/icons/empresa.svg" alt="Empresa" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Auditoría Preventiva</strong>
+                                                <span>Diagnóstico de cumplimiento y riesgos.</span>
+                                            </div>
+                                        </div>
+                                        <div class="conflicto-card" data-valor="riesgo_inspeccion" data-grupo="empresa"
+                                            style="display:none;">
+                                            <div class="conflicto-icon color-arca">
+                                                <img src="assets/img/icons/arca.svg" alt="ARCA" class="conflicto-svg">
+                                            </div>
+                                            <div class="conflicto-info">
+                                                <strong>Inspección ARCA/Ministerio</strong>
+                                                <span>Acompañamiento ante controles oficiales.</span>
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="conflicto-card" data-valor="riesgo_inspeccion" data-grupo="empresa"
-                                    style="display:none;">
-                                    <div class="conflicto-icon color-arca">
-                                        <img src="assets/img/icons/arca.svg" alt="ARCA" class="conflicto-svg">
-                                    </div>
-                                    <div class="conflicto-info">
-                                        <strong>Inspección ARCA/Ministerio</strong>
-                                        <span>Acompañamiento ante controles oficiales.</span>
-                                    </div>
-                                </div>
+                                </section>
                             </div>
                             <span class="form-error" id="error-tipo_conflicto"></span>
                         </div>
@@ -1784,20 +1821,28 @@ $provincias = [
 
                 if (perfil === 'empleador') {
                     conflictoRoleHelper.innerHTML = `
-                        <strong>Ruta sugerida para empresa:</strong>
-                        <span><strong>1.</strong> Accidente / ART empresa &nbsp; <strong>2.</strong> Responsabilidad solidaria por contratistas &nbsp; <strong>3.</strong> Auditoría preventiva &nbsp; <strong>4.</strong> Riesgo de inspección.</span>
+                        <strong>Vista empresa:</strong>
+                        <span>Te mostramos primero contingencias operativas, accidentes y bloques preventivos para decidir rápido dónde está la mayor exposición.</span>
                     `;
                 } else if (perfil === 'empleado') {
                     conflictoRoleHelper.innerHTML = `
-                        <strong>Ruta sugerida para trabajador:</strong>
-                        <span>Elegí el motivo principal del reclamo y te mostraremos solo los datos necesarios para ese caso.</span>
+                        <strong>Vista trabajador:</strong>
+                        <span>Elegí el bloque que más se parece a tu reclamo y después seleccioná la opción puntual.</span>
                     `;
                 } else {
                     conflictoRoleHelper.innerHTML = `
                         <strong>Elegí primero tu perfil.</strong>
-                        <span>Cuando selecciones empleado o empresa, te vamos a ordenar las opciones más relevantes y mostrar solo las rutas más útiles para ese caso.</span>
+                        <span>Después te mostramos un mapa simple con las opciones más útiles para trabajador o empresa.</span>
                     `;
                 }
+            }
+
+            function actualizarVisibilidadGruposConflicto() {
+                document.querySelectorAll('.conflicto-grupo').forEach(grupo => {
+                    const visibles = Array.from(grupo.querySelectorAll('.conflicto-card'))
+                        .some(card => card.style.display !== 'none');
+                    grupo.style.display = visibles ? 'grid' : 'none';
+                });
             }
 
             function actualizarTarjetasConflicto(perfil) {
@@ -2019,6 +2064,7 @@ $provincias = [
 
             actualizarAyudaConflictos('');
             actualizarTarjetasConflicto('');
+            actualizarVisibilidadGruposConflicto();
             actualizarCopyContextual('', '');
 
             // Mostrar/ocultar campo de fecha del último telegrama según intercambio
@@ -2080,6 +2126,7 @@ $provincias = [
                             }
                         }
                     });
+                    actualizarVisibilidadGruposConflicto();
 
                     // 2. Ocultar secciones específicas del paso 2 y 4
                     const soloEmpleador = document.querySelectorAll('.solo-empleador');

@@ -660,11 +660,58 @@ input[type="number"].form-control::-webkit-outer-spin-button {
     font-size: 0.92rem;
 }
 
+.conflicto-groups {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.conflicto-grupo {
+    display: grid;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 20px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 249, 253, 0.95));
+    border: 1px solid rgba(42, 100, 182, 0.10);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.conflicto-grupo-head {
+    display: grid;
+    gap: 0.3rem;
+}
+
+.conflicto-grupo-kicker {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    padding: 0.22rem 0.65rem;
+    border-radius: 999px;
+    background: rgba(42, 100, 182, 0.08);
+    color: var(--primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.conflicto-grupo-head h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--primary-dark);
+}
+
+.conflicto-grupo-head p {
+    margin: 0;
+    font-size: 0.84rem;
+    line-height: 1.45;
+    color: var(--text-muted);
+}
+
 .conflictos-gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 1rem;
-    margin-top: 1rem;
 }
 
 .conflicto-card {
@@ -2540,6 +2587,15 @@ small.form-ayuda {
         font-size: 1.35rem;
     }
 
+    .motor-intro-highlights {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .motor-highlight-pill {
+        justify-content: center;
+    }
+
     .motor-main {
         padding: 1.25rem 0.75rem 3rem;
     }
@@ -2557,6 +2613,10 @@ small.form-ayuda {
     .btn-wizard.btn-procesar {
         width: 100%;
         justify-content: center;
+    }
+
+    .conflicto-grupo {
+        padding: 0.9rem;
     }
 }
 
@@ -2610,6 +2670,21 @@ header.motor-header {
     padding: 0 1rem;
 }
 
+.motor-intro-kicker {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.32rem 0.8rem;
+    margin-bottom: 0.85rem;
+    border-radius: 999px;
+    background: rgba(42, 100, 182, 0.08);
+    color: var(--primary);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
 .motor-titulo {
     font-size: 2rem;
     font-weight: 800;
@@ -2633,6 +2708,32 @@ header.motor-header {
     max-width: 620px;
     margin: 0 auto 1.5rem;
     line-height: 1.65;
+}
+
+.motor-intro-highlights {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.7rem;
+    margin-bottom: 1rem;
+}
+
+.motor-highlight-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(42, 100, 182, 0.12);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+    color: var(--primary-dark);
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.motor-highlight-pill i {
+    color: var(--primary);
 }
 
 .motor-intro .motor-aviso-legal {
