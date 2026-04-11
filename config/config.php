@@ -281,6 +281,35 @@ function ml_asset(string $path): string
     return ml_url('assets/' . ltrim($path, '/'));
 }
 
+function ml_absolute_url(string $path = ''): string
+{
+    $normalizedPath = trim($path);
+    if ($normalizedPath !== '' && preg_match('#^https?://#i', $normalizedPath)) {
+        return $normalizedPath;
+    }
+
+    $appUrl = trim((string) ML_APP_URL);
+    $parts = parse_url($appUrl);
+    if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
+        return $normalizedPath !== '' ? ml_url($normalizedPath) : $appUrl;
+    }
+
+    $origin = $parts['scheme'] . '://' . $parts['host'];
+    if (isset($parts['port'])) {
+        $origin .= ':' . $parts['port'];
+    }
+
+    if ($normalizedPath === '') {
+        $relativePath = ml_url();
+    } elseif (str_starts_with($normalizedPath, '/')) {
+        $relativePath = $normalizedPath;
+    } else {
+        $relativePath = ml_url($normalizedPath);
+    }
+
+    return $origin . ($relativePath !== '' ? $relativePath : '/');
+}
+
 function ml_parent_url(string $path): string
 {
     $segments = ml_url_segments(ML_BASE_URL);

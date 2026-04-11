@@ -46,6 +46,12 @@ $provincias = [
     'Tucumán',
     'Internacional'
 ];
+
+$shareTitle = 'Motor de Riesgo Laboral | Estudio Farias Ortiz';
+$shareDescription = 'Diagnóstico laboral profesional en 5 pasos para medir exposición económica, nivel de riesgo y escenarios de acción.';
+$shareUrl = ml_absolute_url();
+$shareImage = ml_absolute_url('assets/img/social-share-preview.svg');
+$shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudio Farias Ortiz.';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -53,9 +59,27 @@ $provincias = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Motor de Riesgo Laboral — Estudio Farias Ortiz</title>
-    <meta name="description"
-        content="Análisis estratégico de conflictos laborales. Calculá tu exposición económica y evaluá tus opciones.">
+    <title><?= htmlspecialchars($shareTitle, ENT_QUOTES, 'UTF-8') ?></title>
+    <meta name="description" content="<?= htmlspecialchars($shareDescription, ENT_QUOTES, 'UTF-8') ?>">
+    <link rel="canonical" href="<?= htmlspecialchars($shareUrl, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="theme-color" content="#0B1628">
+    <meta property="og:locale" content="es_AR">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Estudio Farias Ortiz">
+    <meta property="og:title" content="<?= htmlspecialchars($shareTitle, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:description" content="<?= htmlspecialchars($shareDescription, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:url" content="<?= htmlspecialchars($shareUrl, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image:secure_url" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
+    <meta property="og:image:type" content="image/svg+xml">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="<?= htmlspecialchars($shareImageAlt, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="<?= htmlspecialchars($shareTitle, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:description" content="<?= htmlspecialchars($shareDescription, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:image" content="<?= htmlspecialchars($shareImage, ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="twitter:image:alt" content="<?= htmlspecialchars($shareImageAlt, ENT_QUOTES, 'UTF-8') ?>">
 
     <!-- CSS del módulo -->
     <link rel="stylesheet" href="<?= htmlspecialchars(ml_asset('css/motor.css')) ?>">

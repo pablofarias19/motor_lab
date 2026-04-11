@@ -1,0 +1,63 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Motor de Riesgo Laboral</title>
+  <desc id="desc">Vista previa profesional del sistema Motor de Riesgo Laboral de Estudio Farias Ortiz.</desc>
+  <defs>
+    <linearGradient id="bg" x1="88" y1="54" x2="1089" y2="586" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0B1628"/>
+      <stop offset="1" stop-color="#132A4F"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="204" y1="164" x2="776" y2="517" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1DB3A6"/>
+      <stop offset="1" stop-color="#5CE0D1"/>
+    </linearGradient>
+    <linearGradient id="panel" x1="780" y1="120" x2="1073" y2="533" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#173866"/>
+      <stop offset="1" stop-color="#102746"/>
+    </linearGradient>
+    <filter id="shadow" x="74" y="40" width="1052" height="550" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="12"/>
+      <feGaussianBlur stdDeviation="18"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.0156863 0 0 0 0 0.0627451 0 0 0 0 0.137255 0 0 0 0.26 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1_2"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1_2" result="shape"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" rx="28" fill="#09101E"/>
+  <g filter="url(#shadow)">
+    <rect x="110" y="76" width="980" height="478" rx="30" fill="url(#bg)"/>
+  </g>
+  <circle cx="950" cy="155" r="128" fill="#163258" fill-opacity="0.54"/>
+  <circle cx="1016" cy="496" r="92" fill="#1A886B" fill-opacity="0.18"/>
+  <rect x="160" y="126" width="174" height="38" rx="19" fill="#102847"/>
+  <text x="188" y="151" fill="#5CE0D1" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">Estudio Farias Ortiz</text>
+  <text x="160" y="244" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700">Motor de Riesgo</text>
+  <text x="160" y="314" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="62" font-weight="700">Laboral</text>
+  <text x="160" y="370" fill="#C9D5EA" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="400">Diagnóstico estratégico en 5 pasos para evaluar exposición,</text>
+  <text x="160" y="407" fill="#C9D5EA" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="400">nivel de riesgo y escenarios de acción para empresas y trabajadores.</text>
+  <rect x="160" y="454" width="436" height="56" rx="18" fill="url(#accent)"/>
+  <text x="194" y="490" fill="#0B1628" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700">Análisis profesional • Respuesta inmediata</text>
+  <rect x="734" y="120" width="292" height="390" rx="28" fill="url(#panel)"/>
+  <rect x="766" y="156" width="228" height="64" rx="20" fill="#0F223E"/>
+  <circle cx="812" cy="188" r="18" fill="#5CE0D1"/>
+  <text x="846" y="196" fill="white" font-family="Arial, Helvetica, sans-serif" font-size="26" font-weight="700">Mapa del caso</text>
+  <rect x="766" y="248" width="228" height="90" rx="22" fill="#102847"/>
+  <rect x="786" y="268" width="76" height="12" rx="6" fill="#5CE0D1"/>
+  <rect x="786" y="292" width="159" height="10" rx="5" fill="#90A4C0"/>
+  <rect x="786" y="312" width="138" height="10" rx="5" fill="#90A4C0"/>
+  <rect x="766" y="358" width="228" height="122" rx="22" fill="#0F223E"/>
+  <text x="792" y="391" fill="#5CE0D1" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700">Resultado ejecutivo</text>
+  <rect x="792" y="410" width="176" height="12" rx="6" fill="#C9D5EA"/>
+  <rect x="792" y="434" width="148" height="12" rx="6" fill="#C9D5EA"/>
+  <rect x="792" y="458" width="114" height="12" rx="6" fill="#C9D5EA"/>
+  <rect x="240" y="142" width="410" height="12" rx="6" fill="#173866"/>
+  <g>
+    <rect x="160" y="530" width="82" height="8" rx="4" fill="#5CE0D1"/>
+    <rect x="258" y="530" width="82" height="8" rx="4" fill="#5CE0D1" fill-opacity="0.76"/>
+    <rect x="356" y="530" width="82" height="8" rx="4" fill="#5CE0D1" fill-opacity="0.56"/>
+    <rect x="454" y="530" width="82" height="8" rx="4" fill="#5CE0D1" fill-opacity="0.38"/>
+    <rect x="552" y="530" width="82" height="8" rx="4" fill="#5CE0D1" fill-opacity="0.22"/>
+  </g>
+</svg>
