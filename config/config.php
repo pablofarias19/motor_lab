@@ -206,11 +206,37 @@ if (!function_exists('ml_detect_base_url')) {
     }
 }
 
+if (!function_exists('ml_detect_app_url')) {
+    function ml_detect_app_url(): string
+    {
+        $configuredAppUrl = trim((string) ml_env('ML_APP_URL', ''));
+        if ($configuredAppUrl !== '') {
+            return rtrim($configuredAppUrl, '/');
+        }
+
+        $forwardedHost = trim((string) ($_SERVER['HTTP_X_FORWARDED_HOST'] ?? ''));
+        $host = $forwardedHost !== '' ? $forwardedHost : trim((string) ($_SERVER['HTTP_HOST'] ?? ''));
+        if ($host === '') {
+            return 'http://localhost' . ML_BASE_URL;
+        }
+
+        $forwardedProto = strtolower(trim((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')));
+        if (in_array($forwardedProto, ['http', 'https'], true)) {
+            $scheme = $forwardedProto;
+        } else {
+            $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+            $scheme = ($https !== '' && $https !== 'off') ? 'https' : 'http';
+        }
+
+        return $scheme . '://' . $host . ML_BASE_URL;
+    }
+}
+
 // ─── Aplicación ──────────────────────────────────────────────────────────────
 define('ML_VERSION', '1.0.0');
 define('ML_APP_NAME', 'Motor de Riesgo Laboral');
 define('ML_BASE_URL', ml_detect_base_url());
-define('ML_APP_URL', ml_env('ML_APP_URL', 'http://localhost' . ML_BASE_URL));
+define('ML_APP_URL', ml_detect_app_url());
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 // Token de acceso al panel admin — cambiar antes de producción
@@ -279,6 +305,35 @@ function ml_url(string $path = ''): string
 function ml_asset(string $path): string
 {
     return ml_url('assets/' . ltrim($path, '/'));
+}
+
+function ml_absolute_url(string $path = ''): string
+{
+    $normalizedPath = trim($path);
+    if ($normalizedPath !== '' && preg_match('#^https?://#i', $normalizedPath)) {
+        return $normalizedPath;
+    }
+
+    $appUrl = trim((string) ML_APP_URL);
+    $parts = parse_url($appUrl);
+    if ($parts === false || !isset($parts['scheme'], $parts['host'])) {
+        return $normalizedPath !== '' ? ml_url($normalizedPath) : $appUrl;
+    }
+
+    $origin = $parts['scheme'] . '://' . $parts['host'];
+    if (isset($parts['port'])) {
+        $origin .= ':' . $parts['port'];
+    }
+
+    if ($normalizedPath === '') {
+        $relativePath = ml_url();
+    } elseif (str_starts_with($normalizedPath, '/')) {
+        $relativePath = $normalizedPath;
+    } else {
+        $relativePath = ml_url($normalizedPath);
+    }
+
+    return $origin . ($relativePath !== '' ? $relativePath : '/');
 }
 
 function ml_parent_url(string $path): string
