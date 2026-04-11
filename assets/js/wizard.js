@@ -27,6 +27,8 @@
 
 'use strict';
 
+const DEFAULT_QUICK_ACCESS_STEP = 2;
+
 // =============================================================================
 // CLASE PRINCIPAL
 // =============================================================================
@@ -191,6 +193,7 @@ class WizardMotorLaboral {
         // Adjuntar listeners a las tarjetas de opción Si/No (radio buttons estilizados)
         this._inicializarOpcionCards();
         this._inicializarConflictoCards();
+        this._inicializarAccesosRapidos();
         this._sincronizarPasoPerfil();
 
         this.formulario.addEventListener('input', () => {
@@ -1134,6 +1137,74 @@ class WizardMotorLaboral {
                 }
             });
         });
+    }
+
+    _inicializarAccesosRapidos() {
+        const quickAccessCards = document.querySelectorAll('.motor-quick-access');
+
+        quickAccessCards.forEach(card => {
+            card.addEventListener('click', () => {
+                this._aplicarAccesoRapido({
+                    perfil: card.dataset.quickProfile || '',
+                    conflicto: card.dataset.quickConflict || '',
+                    paso: Number(card.dataset.quickStep || DEFAULT_QUICK_ACCESS_STEP),
+                });
+            });
+        });
+    }
+
+    _aplicarAccesoRapido({ perfil, conflicto, paso = DEFAULT_QUICK_ACCESS_STEP }) {
+        const perfilSanitizado = String(perfil || '').trim();
+        const conflictoSanitizado = String(conflicto || '').trim();
+        const escaparSelector = (valor) => {
+            if (window.CSS && typeof window.CSS.escape === 'function') {
+                return window.CSS.escape(valor);
+            }
+            return valor.replace(/["\\\]]/g, '\\$&');
+        };
+
+        if (!this.formulario || !perfilSanitizado || !conflictoSanitizado) {
+            return;
+        }
+
+        const radioPerfil = this.formulario.querySelector(
+            `input[name="tipo_usuario_radio"][value="${escaparSelector(perfilSanitizado)}"]`
+        );
+        const campoTipoUsuario = this.formulario.querySelector('#tipo_usuario');
+        const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
+        const cardConflicto = this.formulario.querySelector(
+            `.conflicto-card[data-valor="${escaparSelector(conflictoSanitizado)}"]`
+        );
+        const wizardContainer = document.querySelector('.wizard-container');
+
+        if (radioPerfil) {
+            radioPerfil.checked = true;
+            radioPerfil.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+
+        if (campoTipoUsuario) {
+            campoTipoUsuario.value = perfilSanitizado;
+        }
+
+        if (cardConflicto) {
+            cardConflicto.click();
+        } else if (campoTipoConflicto) {
+            campoTipoConflicto.value = conflictoSanitizado;
+            campoTipoConflicto.dispatchEvent(new Event('change', { bubbles: true }));
+            this._sincronizarPasoPerfil();
+        }
+
+        if (wizardContainer) {
+            wizardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        const limitePasos = Number.isInteger(this.totalPasos) && this.totalPasos > 0
+            ? this.totalPasos
+            : paso;
+        const pasoDestino = Math.min(Math.max(paso, 1), limitePasos);
+        this._limpiarErrores(pasoDestino);
+        this.mostrarPaso(pasoDestino);
+        this._anunciarEstado(`Acceso rápido iniciado: ${perfilSanitizado} - ${conflictoSanitizado}.`);
     }
 
     // =========================================================================

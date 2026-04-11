@@ -128,28 +128,48 @@ $provincias = [
                      </div>
                  </div>
                  <div class="motor-visual-board" aria-label="Mapa visual del análisis laboral">
-                     <div class="motor-visual-scene">
-                         <div class="motor-visual-card">
-                            <img src="<?= htmlspecialchars(ml_asset('img/icons/empresa.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
-                             <strong>Empresa</strong>
-                             <span>Riesgo operativo, auditoría y contratistas.</span>
-                         </div>
-                         <div class="motor-visual-card">
-                            <img src="<?= htmlspecialchars(ml_asset('img/icons/despido.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
-                             <strong>Despido</strong>
-                             <span>Indemnización, preaviso y escenarios.</span>
-                         </div>
-                         <div class="motor-visual-card">
-                            <img src="<?= htmlspecialchars(ml_asset('img/icons/accidente.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
-                             <strong>ART / Accidente</strong>
-                             <span>Contingencia, cobertura y exposición civil.</span>
-                         </div>
-                         <div class="motor-visual-card">
-                            <img src="<?= htmlspecialchars(ml_asset('img/icons/arca.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
-                             <strong>ARCA / Inspección</strong>
-                             <span>Registro, fiscalización y documentación.</span>
-                         </div>
-                     </div>
+                        <div class="motor-visual-scene">
+                            <button type="button" class="motor-visual-card motor-quick-access"
+                                data-quick-profile="empleador"
+                                data-quick-conflict="auditoria_preventiva"
+                                data-quick-step="2"
+                                aria-label="Acceso rápido a empresa y auditoría preventiva">
+                                <img src="<?= htmlspecialchars(ml_asset('img/icons/empresa.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
+                                <strong>Empresa</strong>
+                                <span>Riesgo operativo, auditoría y contratistas.</span>
+                                <small>Acceso rápido · auditoría preventiva</small>
+                            </button>
+                            <button type="button" class="motor-visual-card motor-quick-access"
+                                data-quick-profile="empleado"
+                                data-quick-conflict="despido_sin_causa"
+                                data-quick-step="2"
+                                aria-label="Acceso rápido a empleado y despido">
+                                <img src="<?= htmlspecialchars(ml_asset('img/icons/despido.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
+                                <strong>Despido</strong>
+                                <span>Indemnización, preaviso y escenarios.</span>
+                                <small>Acceso rápido · empleado · despido</small>
+                            </button>
+                            <button type="button" class="motor-visual-card motor-quick-access"
+                                data-quick-profile="empleado"
+                                data-quick-conflict="accidente_laboral"
+                                data-quick-step="2"
+                                aria-label="Acceso rápido a empleado y accidente ART">
+                                <img src="<?= htmlspecialchars(ml_asset('img/icons/accidente.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
+                                <strong>ART / Accidente</strong>
+                                <span>Contingencia, cobertura y exposición civil.</span>
+                                <small>Acceso rápido · empleado · ART</small>
+                            </button>
+                            <button type="button" class="motor-visual-card motor-quick-access"
+                                data-quick-profile="empleador"
+                                data-quick-conflict="riesgo_inspeccion"
+                                data-quick-step="2"
+                                aria-label="Acceso rápido a empresa e inspección ARCA">
+                                <img src="<?= htmlspecialchars(ml_asset('img/icons/arca.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
+                                <strong>ARCA / Inspección</strong>
+                                <span>Registro, fiscalización y documentación.</span>
+                                <small>Acceso rápido · empresa · inspección</small>
+                            </button>
+                        </div>
                      <div class="motor-journey-strip" aria-label="Recorrido del wizard">
                          <div class="motor-journey-step">
                              <span>1</span>
