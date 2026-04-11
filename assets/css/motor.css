@@ -3259,6 +3259,80 @@ header.motor-header {
     opacity: 0.8;
 }
 
+.ml-floating-actions {
+    position: fixed;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    z-index: 95;
+    align-items: flex-end;
+}
+
+.ml-floating-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 244px;
+    padding: 0.9rem 1.1rem;
+    border-radius: 999px;
+    color: #ffffff;
+    text-decoration: none;
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.26);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    backdrop-filter: blur(12px);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.ml-floating-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 22px 42px rgba(15, 23, 42, 0.3);
+    filter: brightness(1.03);
+    text-decoration: none;
+}
+
+.ml-floating-action__icon {
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.18);
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.ml-floating-action__content {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+.ml-floating-action__content strong,
+.ml-floating-action__content small {
+    color: inherit;
+}
+
+.ml-floating-action__content strong {
+    font-size: 0.92rem;
+    letter-spacing: 0.04em;
+}
+
+.ml-floating-action__content small {
+    font-size: 0.78rem;
+    opacity: 0.92;
+}
+
+.ml-floating-action--whatsapp {
+    background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+}
+
+.ml-floating-action--web {
+    background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+}
+
 /* ── Auxiliares ─────────────────────────────────────────────────────────────────────────────────────────── */
 .opcional {
     font-size: 0.75rem;
@@ -3297,6 +3371,19 @@ small.form-ayuda {
 
     .motor-subtitulo {
         font-size: 0.93rem;
+    }
+
+    .ml-floating-actions {
+        right: 0.9rem;
+        bottom: 0.9rem;
+        align-items: stretch;
+    }
+
+    .ml-floating-action {
+        min-width: min(18rem, calc(100vw - 1.8rem));
+        width: min(20rem, calc(100vw - 1.8rem));
+        justify-content: flex-start;
+        border-radius: 1.1rem;
     }
 
     .opcion-cards-group {
