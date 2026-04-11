@@ -27,6 +27,8 @@
 
 'use strict';
 
+const DEFAULT_QUICK_ACCESS_STEP = 2;
+
 // =============================================================================
 // CLASE PRINCIPAL
 // =============================================================================
@@ -1145,13 +1147,13 @@ class WizardMotorLaboral {
                 this._aplicarAccesoRapido({
                     perfil: card.dataset.quickProfile || '',
                     conflicto: card.dataset.quickConflict || '',
-                    paso: Number(card.dataset.quickStep || '2'),
+                    paso: Number(card.dataset.quickStep || String(DEFAULT_QUICK_ACCESS_STEP)),
                 });
             });
         });
     }
 
-    _aplicarAccesoRapido({ perfil, conflicto, paso = 2 }) {
+    _aplicarAccesoRapido({ perfil, conflicto, paso = DEFAULT_QUICK_ACCESS_STEP }) {
         if (!this.formulario || !perfil || !conflicto) {
             return;
         }
@@ -1183,8 +1185,9 @@ class WizardMotorLaboral {
             wizardContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        this._limpiarErrores(1);
-        this.mostrarPaso(Math.min(Math.max(paso, 1), this.totalPasos));
+        const pasoDestino = Math.min(Math.max(paso, 1), this.totalPasos);
+        this._limpiarErrores(pasoDestino);
+        this.mostrarPaso(pasoDestino);
         this._anunciarEstado(`Acceso rápido activado: ${perfil} - ${conflicto}.`);
     }
 

@@ -137,7 +137,7 @@ $provincias = [
                                 <img src="<?= htmlspecialchars(ml_asset('img/icons/empresa.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                                 <strong>Empresa</strong>
                                 <span>Riesgo operativo, auditoría y contratistas.</span>
-                                <small>Acceso rápido a auditoría preventiva</small>
+                                <small>Acceso rápido · auditoría preventiva</small>
                             </button>
                             <button type="button" class="motor-visual-card motor-quick-access"
                                 data-quick-profile="empleado"
@@ -147,7 +147,7 @@ $provincias = [
                                 <img src="<?= htmlspecialchars(ml_asset('img/icons/despido.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                                 <strong>Despido</strong>
                                 <span>Indemnización, preaviso y escenarios.</span>
-                                <small>Acceso rápido a empleado + despido</small>
+                                <small>Acceso rápido · empleado · despido</small>
                             </button>
                             <button type="button" class="motor-visual-card motor-quick-access"
                                 data-quick-profile="empleado"
@@ -157,7 +157,7 @@ $provincias = [
                                 <img src="<?= htmlspecialchars(ml_asset('img/icons/accidente.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                                 <strong>ART / Accidente</strong>
                                 <span>Contingencia, cobertura y exposición civil.</span>
-                                <small>Acceso rápido a empleado + ART</small>
+                                <small>Acceso rápido · empleado · ART</small>
                             </button>
                             <button type="button" class="motor-visual-card motor-quick-access"
                                 data-quick-profile="empleador"
@@ -167,7 +167,7 @@ $provincias = [
                                 <img src="<?= htmlspecialchars(ml_asset('img/icons/arca.svg')) ?>" alt="" aria-hidden="true" class="motor-visual-icon">
                                 <strong>ARCA / Inspección</strong>
                                 <span>Registro, fiscalización y documentación.</span>
-                                <small>Acceso rápido a empresa + inspección</small>
+                                <small>Acceso rápido · empresa · inspección</small>
                             </button>
                         </div>
                      <div class="motor-journey-strip" aria-label="Recorrido del wizard">
