@@ -68,8 +68,8 @@
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 // ─── Helpers de entorno ──────────────────────────────────────────────────────
-if (!function_exists('ml_load_env_file')) {
-    function ml_load_env_file(string $path): void
+if (!function_exists('ml_env_load')) {
+    function ml_env_load(string $path): void
     {
         if (!is_file($path) || !is_readable($path)) {
             return;
@@ -96,7 +96,7 @@ if (!function_exists('ml_load_env_file')) {
             }
 
             $key = trim(substr($line, 0, $separator));
-            if ($key === '' || !preg_match('/^[A-Z0-9_]+$/i', $key)) {
+            if ($key === '' || !preg_match('/^[A-Za-z0-9_]+$/', $key)) {
                 continue;
             }
 
@@ -122,7 +122,7 @@ if (!function_exists('ml_load_env_file')) {
     }
 }
 
-ml_load_env_file(dirname(__DIR__) . '/.env');
+ml_env_load(dirname(__DIR__) . '/.env');
 
 if (!function_exists('ml_env')) {
     function ml_env(string $key, $default = null)
