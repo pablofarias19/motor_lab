@@ -108,6 +108,8 @@ class WizardMotorLaboral {
          * @type {string}
          */
         this.conflictoSeleccionado = '';
+        this.perfilSeleccionado = '';
+        this.guiaVisualFirma = '';
     }
 
     // =========================================================================
@@ -579,7 +581,7 @@ class WizardMotorLaboral {
         }
     }
 
-    _actualizarGuiaVisual(pasoActivo = this.pasoActual) {
+    _actualizarGuiaVisual(pasoActivo = this.pasoActual, forzar = false) {
         const icono = document.getElementById('wizard-guide-icon');
         const eyebrow = document.getElementById('wizard-guide-eyebrow');
         const titulo = document.getElementById('wizard-guide-title');
@@ -595,6 +597,11 @@ class WizardMotorLaboral {
         const esEmpleador = perfil === 'empleador';
         const esAccidente = conflicto === 'accidente_laboral';
         const esPrevencion = ['responsabilidad_solidaria', 'auditoria_preventiva', 'riesgo_inspeccion'].includes(conflicto);
+        const firmaActual = `${pasoActivo}|${perfil}|${conflicto}`;
+
+        if (!forzar && this.guiaVisualFirma === firmaActual) {
+            return;
+        }
 
         const guias = {
             1: {
@@ -683,6 +690,7 @@ class WizardMotorLaboral {
                 </div>
             </article>
         `).join('');
+        this.guiaVisualFirma = firmaActual;
     }
 
     // =========================================================================
@@ -1152,9 +1160,10 @@ class WizardMotorLaboral {
             campoTipoUsuario.value = radioSeleccionado.value;
         }
 
-        const valorConflictoCampo = campoTipoConflicto ? campoTipoConflicto.value : null;
-        const conflictoActual = valorConflictoCampo && valorConflictoCampo !== ''
-            ? valorConflictoCampo
+        const perfilActual = campoTipoUsuario?.value || '';
+        const perfilCambio = perfilActual !== this.perfilSeleccionado;
+        const conflictoActual = campoTipoConflicto?.value
+            ? campoTipoConflicto.value
             : (tarjetaSeleccionada?.dataset.valor || '');
 
         if (campoTipoConflicto) {
@@ -1178,19 +1187,18 @@ class WizardMotorLaboral {
             cardActual.setAttribute('aria-pressed', 'true');
         }
 
-        if (conflictoCambio) {
-            // Limpieza defensiva por si otro listener o restauración del navegador
-            // deja más de una tarjeta marcada al mismo tiempo.
-            cards.forEach(card => {
-                if (card !== cardActual && card.classList.contains('selected')) {
-                    card.classList.remove('selected');
-                    card.setAttribute('aria-pressed', 'false');
-                }
-            });
-        }
+        // Limpieza defensiva por si otro listener o restauración del navegador
+        // deja más de una tarjeta marcada al mismo tiempo.
+        cards.forEach(card => {
+            if (card !== cardActual && card.classList.contains('selected')) {
+                card.classList.remove('selected');
+                card.setAttribute('aria-pressed', 'false');
+            }
+        });
 
         this.conflictoSeleccionado = conflictoActual;
-        this._actualizarGuiaVisual(this.pasoActual);
+        this.perfilSeleccionado = perfilActual;
+        this._actualizarGuiaVisual(this.pasoActual, perfilCambio || conflictoCambio);
     }
 
     _campoEsVisible(campo) {
