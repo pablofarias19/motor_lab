@@ -71,7 +71,12 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 if (!function_exists('ml_env_load')) {
     function ml_env_load(string $path): void
     {
-        if (!is_file($path) || !is_readable($path)) {
+        if (!is_file($path)) {
+            return;
+        }
+
+        if (!is_readable($path)) {
+            error_log('Motor Laboral: no se pudo leer el archivo de entorno ' . $path);
             return;
         }
 
@@ -96,7 +101,7 @@ if (!function_exists('ml_env_load')) {
             }
 
             $key = trim(substr($line, 0, $separator));
-            if ($key === '' || !preg_match('/^[A-Za-z0-9_]+$/', $key)) {
+            if ($key === '' || ctype_digit($key) || !preg_match('/^[A-Za-z0-9_]+$/', $key)) {
                 continue;
             }
 
