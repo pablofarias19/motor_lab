@@ -576,7 +576,7 @@ $provincias = [
                                 <input type="text" id="categoria" name="categoria"
                                     placeholder="Ej: Operario, Vendedor, Capataz, Encargado"
                                     data-tooltip="Tu puesto de trabajo">
-                                <small class="form-ayuda">Ayuda a contextualizarvera caso. Escribí lo que figura en tu contrato o recibos.</small>
+                                <small class="form-ayuda">Ayuda a contextualizar tu caso. Escribí lo que figura en tu contrato o recibos.</small>
                                 <div class="form-example" id="ej-categoria">
                                     <strong><span class="ui-emoji" aria-hidden="true">📝</span>Ejemplos:</strong><br>
                                     • Operario calificado<br>
@@ -1309,7 +1309,7 @@ $provincias = [
                                 <div class="form-example" id="ej-salarios">
                                     <strong><span class="ui-emoji" aria-hidden="true">📋</span>Cómo si querés ser preciso:</strong><br><br>
                                     1. Abrí tu ARCA o descargá 12 recibos<br>
-                                    2. Anot cada salario mensual<br>
+                                    2. Anotá cada salario mensual<br>
                                     3. Pegá acá, cada uno en una línea (sin $, sin puntos)<br><br>
                                     <code style="background:#f0f0f0; padding:0.8rem; display:block; border-radius:4px; font-size:0.8rem; font-family:monospace;">
 100000<br>
