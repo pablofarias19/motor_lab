@@ -1,0 +1,1 @@
+[2026-04-11 20:17:40] [info] {"evento":"api.procesar_analisis","estado":"error","http_code":500,"metodo":"POST","duracion_ms":2.17,"request_id":"e0519f7a","tipo_usuario":"empleado","tipo_conflicto":"despido_sin_causa","error_class":"mysqli_sql_exception"}
