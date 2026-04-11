@@ -319,6 +319,10 @@ class WizardMotorLaboral {
         campos.forEach(({ selector, mensaje }) => {
             const campo = this.formulario.querySelector(selector);
             if (!campo) return;
+            if (!this._campoEsVisible(campo) || campo.disabled) {
+                this._limpiarErrorCampo(campo);
+                return;
+            }
 
             const valor = campo.value.trim();
             const esVacio = !valor || valor === '' || valor === '0';
@@ -353,6 +357,9 @@ class WizardMotorLaboral {
      */
     _validarPasoLaborales() {
         return window.WizardValidation.validateStepLaborales(this.formulario, {
+            tipoUsuario: this.formulario.querySelector('#tipo_usuario')?.value || '',
+            tipoConflicto: this.formulario.querySelector('#tipo_conflicto')?.value || '',
+            esVisible: (campo) => this._campoEsVisible(campo),
             mostrarError: (campo, mensaje) => this._mostrarError(campo, mensaje),
             limpiarErrorCampo: (campo) => this._limpiarErrorCampo(campo),
             actualizarCampoOculto: (nombre, valor) => this._actualizarCampoOculto(nombre, valor),
@@ -985,6 +992,18 @@ class WizardMotorLaboral {
             this.formulario.appendChild(campo);
         }
         campo.value = valor;
+    }
+
+    _campoEsVisible(campo) {
+        if (!campo) return false;
+
+        const estilos = window.getComputedStyle(campo);
+        if (estilos.display === 'none' || estilos.visibility === 'hidden') {
+            return false;
+        }
+
+        // Los elementos fixed pueden no tener offsetParent aunque sigan visibles.
+        return campo.offsetParent !== null || estilos.position === 'fixed';
     }
 
     _actualizarResumenPrevio() {
