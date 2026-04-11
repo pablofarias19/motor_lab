@@ -136,12 +136,6 @@ define('ML_SMTP_FROM', ml_env('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar'));
 define('ML_SMTP_FROM_NAME', ml_env('ML_SMTP_FROM_NAME', 'Estudio Farias Ortiz'));
 define('ML_EMAIL_ADMIN', ml_env('ML_EMAIL_ADMIN', ML_SMTP_FROM));
 
-// ─── Aplicación ──────────────────────────────────────────────────────────────
-define('ML_VERSION', '1.0.0');
-define('ML_APP_NAME', 'Motor de Riesgo Laboral');
-define('ML_BASE_URL', rtrim((string) ml_env('ML_BASE_URL', '/motor_laboral'), '/'));
-define('ML_APP_URL', ml_env('ML_APP_URL', 'http://localhost' . ML_BASE_URL));
-
 // ─── Rutas absolutas del módulo ──────────────────────────────────────────────
 // __DIR__ apunta a la carpeta /config — subimos un nivel para la raíz del módulo
 define('ML_ROOT', dirname(__DIR__));
@@ -149,6 +143,69 @@ define('ML_LOG_PATH', ML_ROOT . '/logs');
 
 // Ruta a FPDF (se reutiliza la librería del sistema /document sin copiarla)
 define('ML_FPDF_PATH', dirname(ML_ROOT) . '/document/fpdf.php');
+
+if (!function_exists('ml_normalize_url_path')) {
+    function ml_normalize_url_path(string $path): string
+    {
+        $normalized = '/' . trim(str_replace('\\', '/', $path), '/');
+        return $normalized === '/' ? '' : $normalized;
+    }
+}
+
+if (!function_exists('ml_url_segments')) {
+    function ml_url_segments(string $path): array
+    {
+        return array_values(array_filter(explode('/', trim($path, '/')), 'strlen'));
+    }
+}
+
+if (!function_exists('ml_detect_base_url')) {
+    function ml_detect_base_url(): string
+    {
+        $configuredBaseUrl = trim((string) ml_env('ML_BASE_URL', ''));
+        if ($configuredBaseUrl !== '') {
+            return ml_normalize_url_path($configuredBaseUrl);
+        }
+
+        $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+        $scriptFilename = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_FILENAME'] ?? ''));
+        if ($scriptName === '' || $scriptFilename === '') {
+            return '';
+        }
+
+        $scriptDirUrl = ml_normalize_url_path(dirname($scriptName));
+        $scriptDirFs = str_replace('\\', '/', dirname($scriptFilename));
+        $moduleRootFs = str_replace('\\', '/', ML_ROOT);
+
+        if (strpos($scriptDirFs, $moduleRootFs) !== 0) {
+            return $scriptDirUrl;
+        }
+
+        $moduleRootLength = strlen($moduleRootFs);
+        $relativeDir = strlen($scriptDirFs) > $moduleRootLength
+            ? trim((string) substr($scriptDirFs, $moduleRootLength), '/')
+            : '';
+        if ($relativeDir === '') {
+            return $scriptDirUrl;
+        }
+
+        $urlSegments = ml_url_segments($scriptDirUrl);
+        $relativeSegments = ml_url_segments($relativeDir);
+        $remainingSegmentsToTrim = min(count($urlSegments), count($relativeSegments));
+
+        while ($remainingSegmentsToTrim-- > 0) {
+            array_pop($urlSegments);
+        }
+
+        return empty($urlSegments) ? '' : '/' . implode('/', $urlSegments);
+    }
+}
+
+// ─── Aplicación ──────────────────────────────────────────────────────────────
+define('ML_VERSION', '1.0.0');
+define('ML_APP_NAME', 'Motor de Riesgo Laboral');
+define('ML_BASE_URL', ml_detect_base_url());
+define('ML_APP_URL', ml_env('ML_APP_URL', 'http://localhost' . ML_BASE_URL));
 
 // ─── Admin ───────────────────────────────────────────────────────────────────
 // Token de acceso al panel admin — cambiar antes de producción
@@ -198,10 +255,36 @@ function ml_logo_src(): string
 {
     $remotePath = dirname(ML_ROOT) . '/document/image/logo1.png';
     if (file_exists($remotePath)) {
-        return '../document/image/logo1.png';
+        return ml_parent_url('document/image/logo1.png');
     }
 
-    return 'assets/img/logo-placeholder.svg';
+    return ml_asset('img/logo-placeholder.svg');
+}
+
+function ml_url(string $path = ''): string
+{
+    $normalizedPath = ltrim($path, '/');
+    if ($normalizedPath === '') {
+        return ML_BASE_URL !== '' ? ML_BASE_URL : '/';
+    }
+
+    return (ML_BASE_URL !== '' ? ML_BASE_URL : '') . '/' . $normalizedPath;
+}
+
+function ml_asset(string $path): string
+{
+    return ml_url('assets/' . ltrim($path, '/'));
+}
+
+function ml_parent_url(string $path): string
+{
+    $segments = ml_url_segments(ML_BASE_URL);
+    if (!empty($segments)) {
+        array_pop($segments);
+    }
+
+    $parentBaseUrl = empty($segments) ? '' : '/' . implode('/', $segments);
+    return ($parentBaseUrl !== '' ? $parentBaseUrl : '') . '/' . ltrim($path, '/');
 }
 
 /**
