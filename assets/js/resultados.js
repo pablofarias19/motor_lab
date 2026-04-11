@@ -424,7 +424,7 @@ function renderAlertasActivas(alertas) {
     if (!alertas || alertas.length === 0) {
         contenedor.innerHTML = `
             <div class="alertas-vacio" role="status">
-                <span style="font-size:1.5rem;">✅</span><br>
+                <span class="ui-emoji ui-emoji--status" aria-hidden="true">✅</span><br>
                 No se detectaron alertas urgentes en este análisis.
             </div>
         `;
@@ -448,7 +448,7 @@ function renderAlertasActivas(alertas) {
         let textoFecha = '';
         if (alerta.fecha_vencimiento) {
             const fecha = _formatearFecha(alerta.fecha_vencimiento);
-            textoFecha = `<p class="alerta-vencimiento">📅 Vencimiento: ${fecha}</p>`;
+            textoFecha = `<p class="alerta-vencimiento"><span class="ui-emoji" aria-hidden="true">📅</span>Vencimiento: ${fecha}</p>`;
         }
 
         return `
@@ -710,7 +710,7 @@ function _renderEscenarioCards(escenarios, recomendado) {
 
         // Nota al pie
         const notaHTML = esc.nota
-            ? `<div class="escenario-nota">📌 ${_escaparHTML(esc.nota)}</div>`
+            ? `<div class="escenario-nota"><span class="ui-emoji" aria-hidden="true">📌</span>${_escaparHTML(esc.nota)}</div>`
             : '';
 
         // Métricas
@@ -871,7 +871,7 @@ function _renderTablaExposicion(exposicion) {
             </tfoot>
         </table>
         <p class="exposicion-nota-legal">
-            ⚖️ ${_escaparHTML(exposicion.nota_legal || 'Estimación estructural bajo LCT. No garantiza resultado.')}
+            <span class="ui-emoji" aria-hidden="true">⚖️</span>${_escaparHTML(exposicion.nota_legal || 'Estimación estructural bajo LCT. No garantiza resultado.')}
         </p>
     `;
 
@@ -993,7 +993,7 @@ function _mostrarErrorCritico(mensaje) {
         color: #721c24;
     `;
     div.innerHTML = `
-        <div style="font-size:2.5rem;margin-bottom:0.75rem;">⚠️</div>
+        <div style="margin-bottom:0.75rem;"><span class="ui-emoji ui-emoji--status" aria-hidden="true">⚠️</span></div>
         <h2 style="margin:0 0 0.5rem;font-size:1.2rem;">Error al cargar el análisis</h2>
         <p style="margin:0;font-size:0.9rem;">${_escaparHTML(mensaje)}</p>
         <a href="index.php" style="display:inline-block;margin-top:1.25rem;padding:0.5rem 1.25rem;
