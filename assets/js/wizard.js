@@ -1038,7 +1038,7 @@ class WizardMotorLaboral {
         const radioSeleccionado = this.formulario.querySelector('input[name="tipo_usuario_radio"]:checked');
         const campoTipoConflicto = this.formulario.querySelector('#tipo_conflicto');
         const cards = Array.from(this.formulario.querySelectorAll('.conflicto-card'));
-        const tarjetaSeleccionada = cards.find(card => card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true');
+        const tarjetaSeleccionada = cards.find(card => card.classList.contains('selected'));
 
         if (campoTipoUsuario && radioSeleccionado) {
             campoTipoUsuario.value = radioSeleccionado.value;
@@ -1070,14 +1070,16 @@ class WizardMotorLaboral {
             cardActual.setAttribute('aria-pressed', 'true');
         }
 
-        // Limpieza defensiva por si otro listener o restauración del navegador deja
-        // más de una tarjeta marcada al mismo tiempo.
-        cards.forEach(card => {
-            if (card !== cardActual && (card.classList.contains('selected') || card.getAttribute('aria-pressed') === 'true')) {
-                card.classList.remove('selected');
-                card.setAttribute('aria-pressed', 'false');
-            }
-        });
+        if (conflictoCambio) {
+            // Limpieza defensiva por si otro listener o restauración del navegador
+            // deja más de una tarjeta marcada al mismo tiempo.
+            cards.forEach(card => {
+                if (card !== cardActual && card.classList.contains('selected')) {
+                    card.classList.remove('selected');
+                    card.setAttribute('aria-pressed', 'false');
+                }
+            });
+        }
 
         this.conflictoSeleccionado = conflictoActual;
     }
