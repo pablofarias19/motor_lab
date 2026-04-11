@@ -174,7 +174,10 @@ if (!function_exists('ml_detect_base_url')) {
             return $scriptDirUrl;
         }
 
-        $relativeDir = trim(substr($scriptDirFs, strlen($moduleRootFs)), '/');
+        $moduleRootLength = strlen($moduleRootFs);
+        $relativeDir = strlen($scriptDirFs) > $moduleRootLength
+            ? trim((string) substr($scriptDirFs, $moduleRootLength), '/')
+            : '';
         if ($relativeDir === '') {
             return $scriptDirUrl;
         }
@@ -245,7 +248,7 @@ function ml_logo_src(): string
 {
     $remotePath = dirname(ML_ROOT) . '/document/image/logo1.png';
     if (file_exists($remotePath)) {
-        return '/document/image/logo1.png';
+        return ml_parent_url('document/image/logo1.png');
     }
 
     return ml_asset('img/logo-placeholder.svg');
@@ -264,6 +267,17 @@ function ml_url(string $path = ''): string
 function ml_asset(string $path): string
 {
     return ml_url('assets/' . ltrim($path, '/'));
+}
+
+function ml_parent_url(string $path): string
+{
+    $segments = array_values(array_filter(explode('/', trim(ML_BASE_URL, '/')), 'strlen'));
+    if (!empty($segments)) {
+        array_pop($segments);
+    }
+
+    $parentBaseUrl = empty($segments) ? '' : '/' . implode('/', $segments);
+    return ($parentBaseUrl !== '' ? $parentBaseUrl : '') . '/' . ltrim($path, '/');
 }
 
 /**
