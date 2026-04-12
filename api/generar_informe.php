@@ -143,6 +143,25 @@ $irilScore = $irilPayload['score'] > 0 ? $irilPayload['score'] : floatval($anali
 $nivelIril = is_array($irilPayload['nivel']) ? $irilPayload['nivel'] : ml_nivel_iril($irilScore);
 $escenarios = $escenariosData['escenarios'];
 $escRecomendado = $escenariosData['recomendado'];
+$tipoUsuarioAnalisis = strtolower((string) ($analisis['tipo_usuario'] ?? ''));
+$analisisComplementario = is_array($exposicion['analisis_complementario'] ?? null)
+    ? $exposicion['analisis_complementario']
+    : [];
+$danoComplementario = is_array($analisisComplementario['ley_27802']['dano'] ?? null)
+    ? $analisisComplementario['ley_27802']['dano']
+    : [];
+
+$explicarLecturaEconomicaEscenario = static function (string $codigo, string $tipoUsuario): string {
+    return match ($codigo) {
+        'D' => $tipoUsuario === 'empleador'
+            ? 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No es ganancia inmediata, sino costo futuro evitado.'
+            : 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo usa como referencia de ahorro o contingencia evitada para quien regulariza.',
+        'A', 'B', 'C' => $tipoUsuario === 'empleador'
+            ? 'Aquí el beneficio se interpreta como reducción o contención de exposición económica para la parte empleadora, no como ingreso nuevo.'
+            : 'Aquí el beneficio se interpreta como recupero potencial para la parte reclamante, no como monto garantizado.',
+        default => 'La lectura económica es orientativa y depende de la parte analizada, la prueba y la estrategia elegida.'
+    };
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CLASE PDF PERSONALIZADA — extiende FPDF con header y footer del estudio
@@ -357,6 +376,43 @@ try {
         }
     }
 
+    if (!empty($danoComplementario)) {
+        $pdf->seccion('Análisis legal complementario');
+        $pdf->SetFont('Arial', 'I', 8);
+        $pdf->MultiCell(0, 4, pdf_latin1('El daño complementario muestra un extra potencial sobre la indemnización base por extinción. Se desglosa para distinguir afectación personal, impacto económico indirecto y proyección reputacional.'), 0, 'J');
+        $pdf->Ln(2);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(60, 6, pdf_latin1('Rubro'), 1, 0, 'C');
+        $pdf->Cell(40, 6, pdf_latin1('Monto'), 1, 0, 'C');
+        $pdf->Cell(0, 6, pdf_latin1('Lectura'), 1, 1, 'C');
+        $pdf->SetFont('Arial', '', 8);
+
+        $dnDesglosePdf = $danoComplementario['desglose'] ?? [];
+        $pdf->Cell(60, 6, pdf_latin1('Daño moral'), 1, 0);
+        $pdf->Cell(40, 6, ml_formato_moneda($danoComplementario['daño_moral'] ?? 0), 1, 0, 'R');
+        $pdf->Cell(0, 6, pdf_latin1('Porcentaje sobre indemnización base: ' . ($dnDesglosePdf['daño_moral']['porcentaje_indemnizacion'] ?? '-')), 1, 1);
+
+        $pdf->Cell(60, 6, pdf_latin1('Daño patrimonial'), 1, 0);
+        $pdf->Cell(40, 6, ml_formato_moneda($danoComplementario['daño_patrimonial'] ?? 0), 1, 0, 'R');
+        $pdf->Cell(0, 6, pdf_latin1('Lucro cesante + costos por ' . intval($dnDesglosePdf['daño_patrimonial']['meses_litigio'] ?? 0) . ' meses estimados'), 1, 1);
+
+        $pdf->Cell(60, 6, pdf_latin1('Daño reputacional'), 1, 0);
+        $pdf->Cell(40, 6, ml_formato_moneda($danoComplementario['daño_reputacional'] ?? 0), 1, 0, 'R');
+        $pdf->Cell(0, 6, pdf_latin1('Porcentaje del salario promedio: ' . ($dnDesglosePdf['daño_reputacional']['porcentaje_salario'] ?? '-')), 1, 1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(60, 6, pdf_latin1('Total complementario'), 1, 0);
+        $pdf->Cell(40, 6, ml_formato_moneda($danoComplementario['total_daño_complementario'] ?? 0), 1, 0, 'R');
+        $pdf->Cell(0, 6, pdf_latin1('Adicional a la indemnización base por extinción'), 1, 1);
+        $pdf->SetFont('Arial', '', 8);
+
+        if (!empty($danoComplementario['nota'])) {
+            $pdf->Ln(1);
+            $pdf->MultiCell(0, 4, pdf_latin1('Nota: ' . $danoComplementario['nota']), 0, 'J');
+        }
+    }
+
     // ── Sección ART específica (solo accidente_laboral con ART) ────────────────
     $esArtPDF = ($analisis['tipo_conflicto'] === 'accidente_laboral')
         && (($situacion['tiene_art'] ?? 'no') === 'si');
@@ -439,7 +495,7 @@ try {
         $pdf->seccion('Escenarios Estratégicos Comparativos');
 
         $pdf->SetFont('Arial', 'I', 8);
-        $pdf->MultiCell(0, 4, pdf_latin1('El sistema presenta escenarios estructurales comparativos. No recomienda resultado. La decisión corresponde al profesional y al cliente.'), 0, 'J');
+        $pdf->MultiCell(0, 4, pdf_latin1('El sistema presenta escenarios estructurales comparativos: no son etapas obligatorias del caso, sino estrategias tipo para comparar recupero, ahorro, costo, duración y riesgo. La decisión final corresponde al profesional y al cliente.'), 0, 'J');
         $pdf->Ln(3);
 
         // Tabla comparativa rápida
@@ -454,7 +510,7 @@ try {
         $pdf->Cell(0,  6, pdf_latin1('Interv.'), 1, 1, 'C', true);
         $pdf->SetTextColor(0, 0, 0);
 
-        $letras = ['A', 'B', 'C', 'D'];
+        $letras = array_keys($escenarios);
         foreach ($letras as $letra) {
             if (!isset($escenarios[$letra])) continue;
             $esc = $escenarios[$letra];
@@ -478,6 +534,10 @@ try {
             $pdf->Cell(0,  6, pdf_latin1(ucfirst($esc['nivel_intervencion'] ?? '')), 1, 1, 'C', $fill);
         }
 
+        $pdf->Ln(2);
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->MultiCell(0, 4, pdf_latin1('Lectura útil: "beneficio" puede significar recupero potencial para la parte reclamante o ahorro/exposición evitada para la parte empleadora, según el escenario y el perfil analizado. Conviene leerlo junto con el costo y el balance neto de cada alternativa.'), 0, 'J');
+
         if ($escRecomendado) {
             $pdf->Ln(2);
             $pdf->SetFont('Arial', 'I', 8);
@@ -500,6 +560,19 @@ try {
 
             $pdf->SetFont('Arial', '', 9);
             $pdf->MultiCell(0, 5, pdf_latin1($esc['descripcion'] ?? ''), 0, 'J');
+            $pdf->Ln(2);
+            $pdf->SetFont('Arial', '', 8);
+            $beneficioLabelPdf = ($letra === 'D' && $tipoUsuarioAnalisis === 'empleador')
+                ? 'Beneficio (ahorro potencial)'
+                : 'Beneficio';
+            $pdf->MultiCell(0, 4, pdf_latin1(
+                $beneficioLabelPdf . ': ' . ml_formato_moneda($esc['beneficio_estimado'] ?? 0)
+                . ' | Costo: ' . ml_formato_moneda($esc['costo_estimado'] ?? 0)
+                . ' | Balance neto: ' . ml_formato_moneda($esc['vbp'] ?? 0)
+                . ' | Índice estratégico: ' . number_format(floatval($esc['indice_estrategico'] ?? 0), 1) . '/100'
+            ), 0, 'J');
+            $pdf->Ln(1);
+            $pdf->MultiCell(0, 4, pdf_latin1('Lectura económica: ' . $explicarLecturaEconomicaEscenario($letra, $tipoUsuarioAnalisis)), 0, 'J');
             $pdf->Ln(2);
 
             // Ventajas

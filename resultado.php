@@ -71,6 +71,19 @@ $tablaComparativa = $escenariosPayload['tabla_comparativa'];
 $alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 
 $tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
+$tipoUsuarioAnalisis = strtolower((string) ($analisis['tipo_usuario'] ?? ''));
+
+$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario): string {
+    return match ($codigo) {
+        'D' => $tipoUsuario === 'empleador'
+            ? 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.'
+            : 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.',
+        'A', 'B', 'C' => $tipoUsuario === 'empleador'
+            ? 'Aquí el beneficio debe interpretarse como reducción o contención de exposición económica para la parte empleadora, no como ingreso nuevo. El costo refleja la inversión necesaria para cerrar, negociar o sostener la estrategia.'
+            : 'Aquí el beneficio debe interpretarse como recupero potencial para la parte reclamante, no como monto garantizado. El costo refleja honorarios, gestión y fricción esperable de la vía elegida.',
+        default => 'El beneficio debe leerse como una referencia económica orientativa del escenario, siempre sujeta a prueba, negociación y decisión profesional.'
+    };
+};
 
 // ─── Registrar que el usuario vio el informe ──────────────────────────────────
 if (!$usaRespaldoSesion && isset($db)) {
@@ -496,12 +509,19 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php if ($tieneDano):
                             $dn = $ley27802['dano'];
                             $dnTotal = floatval($dn['total_daño_complementario'] ?? 0);
+                            $dnDesglose = $dn['desglose'] ?? [];
+                            $dnMoralMeta = $dnDesglose['daño_moral'] ?? [];
+                            $dnPatMeta = $dnDesglose['daño_patrimonial'] ?? [];
+                            $dnRepMeta = $dnDesglose['daño_reputacional'] ?? [];
                         ?>
                         <!-- Daño Complementario -->
                         <div style="border: 2px solid #7c3aed; border-radius: 10px; padding: 1rem; background: #faf5ff;">
                             <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: #7c3aed;">
                                 <span class="ui-emoji" aria-hidden="true">💔</span>Daño Complementario (Art. 527 CCCN)
                             </h4>
+                            <p style="margin: 0 0 0.75rem; font-size: 0.78rem; line-height: 1.45; color: #5b21b6;">
+                                Este cuadro refleja un <strong>extra potencial</strong> sobre la indemnización base por extinción y se desglosa en tres rubros para que el total no quede aislado ni sin contexto. Sirve para entender de dónde sale el monto complementario y qué parte responde a afectación personal, cuál a impacto económico indirecto y cuál a proyección reputacional.
+                            </p>
                             <div style="font-size: 0.85rem; color: #555;">
                                 <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
                                     <span>Moral:</span>
@@ -519,6 +539,15 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                     <strong>TOTAL:</strong>
                                     <strong style="color: #7c3aed;"><?= ml_formato_moneda($dnTotal) ?></strong>
                                 </div>
+                            </div>
+                            <div style="margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px dashed #c4b5fd; display:grid; gap:0.45rem; font-size:0.77rem; color:#4b5563;">
+                                <div><strong>Cómo se compone:</strong></div>
+                                <div>• Moral: porcentaje orientativo sobre la indemnización base (aquí <?= htmlspecialchars($dnMoralMeta['porcentaje_indemnizacion'] ?? '—') ?>).</div>
+                                <div>• Patrimonial: lucro cesante estimado para <?= intval($dnPatMeta['meses_litigio'] ?? 0) ?> meses + costos de litigio.</div>
+                                <div>• Reputacional: porcentaje orientativo del salario promedio (aquí <?= htmlspecialchars($dnRepMeta['porcentaje_salario'] ?? '—') ?>).</div>
+                                <?php if (!empty($dn['nota'])): ?>
+                                <div style="color:#6b7280;"><em><?= htmlspecialchars($dn['nota']) ?></em></div>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -847,11 +876,33 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 </div>
             </div>
 
+            <div class="premium-card" style="margin-bottom: 1rem;">
+                <div class="premium-card-header">
+                    <h3><i class="bi bi-info-circle"></i> Cómo leer los escenarios</h3>
+                </div>
+                <div class="premium-card-body">
+                    <?php $escenariosDisponibles = implode(', ', array_keys($escenarios)); ?>
+                    <div style="display:grid; gap:.45rem; font-size:.83rem; color:#334155; line-height:1.45;">
+                        <div>• Los escenarios <strong><?= htmlspecialchars($escenariosDisponibles) ?></strong> son simulaciones comparativas del motor: no son etapas obligatorias del caso, sino estrategias tipo para ordenar alternativas posibles.</div>
+                        <div>• <strong>Beneficio</strong>: puede significar recupero potencial, ahorro o exposición evitada, según el tipo de escenario y la parte analizada.</div>
+                        <div>• <strong>Costo</strong>: costo profesional, de gestión o de regularización que el modelo proyecta para esa alternativa.</div>
+                        <div>• <strong>Balance neto</strong>: diferencia entre beneficio y costo, útil para no leer los importes en forma aislada.</div>
+                        <div>• <strong>Duración</strong> y <strong>Riesgo</strong>: permiten evaluar tiempo esperado, fricción institucional y probabilidad de desgaste procesal.</div>
+                        <div>• El <strong>Índice Estratégico</strong> es orientativo y compara balance relativo entre retorno neto, costo, tiempo y riesgo.</div>
+                        <div>• El escenario <strong>D</strong> representa una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.</div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Cuadrícula de Escenarios side-by-side -->
             <div class="escenarios-premium-grid">
                 <?php foreach ($escenarios as $letra => $esc):
                     $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
+                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
+                    $beneficioLabel = ($letra === 'D' && $tipoUsuarioAnalisis === 'empleador')
+                        ? 'Beneficio (ahorro pot.)'
+                        : 'Beneficio';
                     ?>
                     <div class="escenario-premium-card">
                         <div class="escenario-premium-header">
@@ -860,9 +911,12 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             </h4>
                         </div>
                         <div class="escenario-premium-body">
+                            <p style="margin:0 0 .9rem; font-size:.82rem; color:#475569; line-height:1.45;">
+                                <?= htmlspecialchars($esc['descripcion'] ?? '') ?>
+                            </p>
                             <ul class="escenario-metric-list">
                                 <li class="escenario-metric-item">
-                                    <span class="escenario-metric-label"><i class="bi bi-person-fill"></i> Beneficio:</span>
+                                    <span class="escenario-metric-label"><i class="bi bi-person-fill"></i> <?= htmlspecialchars($beneficioLabel) ?>:</span>
                                     <span
                                         class="escenario-metric-value"><?= ml_formato_moneda($esc['beneficio_estimado'] ?? 0) ?></span>
                                 </li>
@@ -877,6 +931,11 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                         class="escenario-metric-value"><?= ($esc['duracion_min_meses'] ?? 0) ?>-<?= ($esc['duracion_max_meses'] ?? 0) ?>
                                         meses</span>
                                 </li>
+                                <li class="escenario-metric-item">
+                                    <span class="escenario-metric-label"><i class="bi bi-plus-slash-minus"></i> Balance neto:</span>
+                                    <span
+                                        class="escenario-metric-value"><?= ml_formato_moneda($esc['vbp'] ?? 0) ?></span>
+                                </li>
                             </ul>
                             <div class="escenario-risk-row">
                                 <div class="escenario-metric-label"><i class="bi bi-shield-lock"></i> Riesgo:
@@ -888,6 +947,12 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             </div>
                             <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--premium-blue);">
                                 <u>Índice Estratégico:</u>
+                            </div>
+                            <div style="margin-top:.45rem; font-size:.75rem; color:#64748b; line-height:1.4;">
+                                Referencia comparativa interna del motor sobre 100 puntos: cuanto mayor el puntaje, mejor es el equilibrio relativo frente a las demás opciones mostradas.
+                            </div>
+                            <div style="margin-top:.65rem; padding-top:.65rem; border-top:1px dashed #dbeafe; font-size:.76rem; color:#475569; line-height:1.45;">
+                                <strong>Lectura económica:</strong> <?= htmlspecialchars($lecturaEconomica) ?>
                             </div>
                         </div>
                     </div>
@@ -959,7 +1024,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <?php
                                 $recEsc = $escenarios[$escRecomendado] ?? [];
                                 $indiceRec = number_format(floatval($recEsc['indice_estrategico'] ?? 0), 1);
-                                echo 'Se sugiere considerar el <strong>Escenario ' . $escRecomendado . '</strong> por registrar el mayor <strong>Índice Estratégico</strong> (' . $indiceRec . '/100), ponderando retorno neto, costo, duración y riesgo institucional en ' . htmlspecialchars($datosLaborales['provincia'] ?? 'la provincia') . '.';
+                                echo 'Se sugiere considerar el <strong>Escenario ' . $escRecomendado . '</strong> por registrar el mayor <strong>Índice Estratégico</strong> (' . $indiceRec . '/100), ponderando retorno neto, costo, duración y riesgo institucional en ' . htmlspecialchars($datosLaborales['provincia'] ?? 'la provincia') . '. Esta sugerencia es <strong>orientativa</strong> y debe leerse junto con el contexto del caso, la prueba disponible y el objetivo práctico del cliente.';
                                 ?>
                             </p>
                         </div>
