@@ -1174,7 +1174,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                     spellcheck="false"
                                     data-tooltip="Remuneraciones sujetas a aportes previas al accidente"></textarea>
                                 <small class="form-ayuda">
-                                    <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de hasta los <strong>12 meses anteriores</strong> al accidente o primera manifestación invalidante.
+                                    <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de los <strong>últimos 12 meses anteriores</strong> al accidente o primera manifestación invalidante.
                                     <br>Si trabajaste menos de 12 meses, cargá solo los meses efectivamente trabajados. Si hubo registración deficiente, luego puede reconstruirse el salario real con prueba.
                                 </small>
                                 <div class="form-example" id="ej-salarios-art">
@@ -1287,7 +1287,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </div>
                                 <div class="paso-info-card-content">
                                     <h4>Datos especiales para despido e intereses (v2.1)</h4>
-                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART se reemplaza por la base salarial de hasta 12 meses y, cuando queda oculto, estos campos no se consideran ni se validan.</p>
+                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART se oculta y se reemplaza por la sección de base salarial de hasta 12 meses.</p>
                                 </div>
                             </div>
 
@@ -1370,7 +1370,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         <!-- ═════════════════════════════════════════════════════════════════
                              LEY 27.802 — Campos de análisis avanzado (Marzo 2026)
                         ════════════════════════════════════════════════════════════════ -->
-                        <details class="form-section seccion-condicional"
+                        <details id="ley27802-panel" class="form-section seccion-condicional"
                             style="border-left: 3px solid #1a5276; background: linear-gradient(135deg, #f0f7fb 0%, #e8f4f8 100%); padding: 1.5rem; margin-top: 1.5rem; border-radius: 0 8px 8px 0;">
                             <summary style="cursor:pointer; font-weight:700; color:#1a5276; list-style:none;">
                                 <i class="bi bi-shield-check"></i> Ley 27.802 — Abrir análisis de presunción, solidaria, fraude y daño
@@ -1382,7 +1382,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                     </div>
                                     <div class="paso-info-card-content">
                                         <h4>Ley 27.802 — Cargar solo si realmente corresponde</h4>
-                                        <p>Usá este bloque cuando haya <strong>trabajo no registrado, registración deficiente, tercerización/solidaria o indicios concretos de fraude</strong>. Si la relación estuvo correctamente registrada y no querés profundizar este frente, dejalo cerrado.</p>
+                                        <p>Usá este bloque cuando haya <strong>trabajo no registrado, registración deficiente, tercerización/solidaria o indicios concretos de fraude</strong>. Si la relación estuvo correctamente registrada y no querés analizar estos aspectos, dejalo cerrado.</p>
                                     </div>
                                 </div>
 
@@ -1594,13 +1594,13 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </div>
                                 </fieldset>
 
-                                <details style="margin-top: 1rem;">
+                                <details id="dano-complementario-panel" style="margin-top: 1rem;">
                                     <summary style="cursor:pointer; font-weight:600; color:#7c3aed;">
                                         <span class="ui-emoji" aria-hidden="true">💔</span> Abrir daño complementario (solo si hubo trabajo no registrado, registración deficiente o un agravamiento puntual)
                                     </summary>
                                     <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 16px 0 0; background-color: #f8fafb;">
                                         <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
-                                        <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Abrilo cuando quieras medir un plus por afectación moral/patrimonial vinculada al trabajo no registrado o a una extinción especialmente gravosa.</p>
+                                        <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Abrilo cuando quieras medir daños adicionales por afectación moral/patrimonial vinculada al trabajo no registrado o a una extinción especialmente gravosa.</p>
                                         
                                         <div class="form-group">
                                             <label for="tipo_extincion">Tipo de terminación de la relación:</label>
@@ -2157,6 +2157,29 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                 container.querySelectorAll('input, select, textarea').forEach(resetFieldToDefault);
             };
 
+            const syncAdvancedAnalysisPanels = function () {
+                const panelLey27802 = document.getElementById('ley27802-panel');
+                const panelDano = document.getElementById('dano-complementario-panel');
+                const conflicto = document.getElementById('tipo_conflicto')?.value || '';
+                const registradoAfip = document.querySelector('input[name="registrado_afip"]:checked')?.value || '';
+                const tipoRegistro = document.getElementById('tipo_registro')?.value || 'registrado';
+
+                if (!panelLey27802) {
+                    return;
+                }
+
+                const esSolidaridad = conflicto === 'responsabilidad_solidaria';
+                const registroIrregular = conflicto === 'trabajo_no_registrado'
+                    || registradoAfip === 'no'
+                    || tipoRegistro !== 'registrado';
+
+                panelLey27802.open = esSolidaridad || registroIrregular;
+
+                if (panelDano) {
+                    panelDano.open = registroIrregular;
+                }
+            };
+
             // Mostrar/ocultar campo de fecha del último telegrama según intercambio
             document.querySelectorAll('input[name="hay_intercambio"]').forEach(function (radio) {
                 radio.addEventListener('change', function () {
@@ -2384,6 +2407,8 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         }
                     });
 
+                    syncAdvancedAnalysisPanels();
+
                     // BARRIDO GLOBAL ANTI-BLOQUEO: 
                     // Remover 'required' de todo elemento que esté oculto en el formulario para evitar 
                     // el error de validación silenciosa "invalid form control is not focusable" o validación del wizard js.
@@ -2485,12 +2510,20 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         resetFields([id]);
                     }
                 });
+
+                syncAdvancedAnalysisPanels();
             };
 
             if (selectTipoRegistro) {
                 selectTipoRegistro.addEventListener('change', syncCamposRegistroDeficiente);
                 syncCamposRegistroDeficiente();
             }
+
+            document.querySelectorAll('input[name="registrado_afip"]').forEach(function (radio) {
+                radio.addEventListener('change', syncAdvancedAnalysisPanels);
+            });
+
+            syncAdvancedAnalysisPanels();
         });
     </script>
 

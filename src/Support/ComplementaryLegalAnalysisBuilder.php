@@ -168,7 +168,7 @@ final class ComplementaryLegalAnalysisBuilder
      */
     private static function hasMeaningfulDamageContext(array $situacion): bool
     {
-        if (ml_boolish($situacion['fue_violenta'] ?? false)) {
+        if (ml_boolish($situacion['fue_violenta'] ?? 'no')) {
             return true;
         }
 
