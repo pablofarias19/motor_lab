@@ -29,14 +29,19 @@ if (empty($uuid) || !preg_match('/^[a-f0-9\-]{36}$/', $uuid)) {
 }
 
 // ─── Recuperar análisis ───────────────────────────────────────────────────────
-try {
-    $db = new DatabaseManager();
-    $analisis = $db->obtenerAnalisisPorUUID($uuid);
+$analisis = \App\Support\AnalysisSessionStore::fetch($uuid);
+$usaRespaldoSesion = is_array($analisis);
 
-    if (!$analisis) {
-        // UUID válido pero no encontrado → redirigir al inicio
-        header('Location: index.php?error=no_encontrado');
-        exit;
+try {
+    if (!$usaRespaldoSesion) {
+        $db = new DatabaseManager();
+        $analisis = $db->obtenerAnalisisPorUUID($uuid);
+
+        if (!$analisis) {
+            // UUID válido pero no encontrado → redirigir al inicio
+            header('Location: index.php?error=no_encontrado');
+            exit;
+        }
     }
 
 } catch (Exception $e) {
@@ -68,10 +73,12 @@ $alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 $tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
 
 // ─── Registrar que el usuario vio el informe ──────────────────────────────────
-try {
-    $db->registrarAccion($uuid, 'ver_informe');
-} catch (Exception $e) {
-    // No interrumpir si falla el registro de acción
+if (!$usaRespaldoSesion && isset($db)) {
+    try {
+        $db->registrarAccion($uuid, 'ver_informe');
+    } catch (Exception $e) {
+        // No interrumpir si falla el registro de acción
+    }
 }
 
 $analisisComplementario = is_array($exposicion['analisis_complementario'] ?? null)

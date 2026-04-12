@@ -7,13 +7,14 @@ use App\Engines\ArtEmpresaEngine;
 use App\Engines\AuditoriaEngine;
 use App\Engines\SolidaridadEngine;
 use App\Support\AnalysisPayloadNormalizer;
+use App\Support\AnalysisSessionStore;
 use App\Support\ComplementaryLegalAnalysisBuilder;
 use App\Support\LegacyEngineFactory;
 use Exception;
 
 class AnalysisService
 {
-    private DatabaseManager $db;
+    private ?DatabaseManager $db;
     private \IrilEngine $irilEngine;
     private \EscenariosEngine $escenariosEngine;
     private \ExposicionEngine $exposicionEngine;
@@ -24,7 +25,7 @@ class AnalysisService
         ?\EscenariosEngine $escenariosEngine = null,
         ?\ExposicionEngine $exposicionEngine = null
     ) {
-        $this->db = $db ?? new DatabaseManager();
+        $this->db = $db;
         $this->irilEngine = $irilEngine ?? LegacyEngineFactory::createIrilEngine();
         $this->escenariosEngine = $escenariosEngine ?? LegacyEngineFactory::createEscenariosEngine();
         $this->exposicionEngine = $exposicionEngine ?? LegacyEngineFactory::createExposicionEngine();
@@ -39,16 +40,6 @@ class AnalysisService
         }
 
         $uuid = ml_uuid();
-        $id = $this->db->insertarAnalisis(
-            $uuid,
-            $payload['tipo_usuario'],
-            $payload['tipo_conflicto'],
-            $payload['datos_laborales'],
-            $payload['documentacion'],
-            $payload['situacion'],
-            $payload['contacto']['email']
-        );
-
         $exposicion = $this->exposicionEngine->calcularExposicion(
             $payload['datos_laborales'],
             $payload['documentacion'],
@@ -80,18 +71,50 @@ class AnalysisService
             $payload['datos_laborales']['provincia']
         );
 
-        $this->db->actualizarResultados(
-            $id,
-            $irilResult,
-            $exposicion,
-            $escenariosResult,
-            $escenariosResult['recomendado']
+        AnalysisSessionStore::remember(
+            AnalysisSessionStore::buildRecord($uuid, $payload, $irilResult, $exposicion, $escenariosResult)
         );
+
+        try {
+            $db = $this->getDb();
+            $id = $db->insertarAnalisis(
+                $uuid,
+                $payload['tipo_usuario'],
+                $payload['tipo_conflicto'],
+                $payload['datos_laborales'],
+                $payload['documentacion'],
+                $payload['situacion'],
+                $payload['contacto']['email']
+            );
+
+            $db->actualizarResultados(
+                $id,
+                $irilResult,
+                $exposicion,
+                $escenariosResult,
+                $escenariosResult['recomendado']
+            );
+        } catch (Exception $e) {
+            ml_logear(
+                '[AnalysisService] Persistencia degradada, se usará respaldo temporal de sesión: ' . $e->getMessage(),
+                'warning',
+                'analisis.log'
+            );
+        }
 
         return [
             'uuid' => $uuid,
             'schema_version' => $payload['schema_version'],
         ];
+    }
+
+    private function getDb(): DatabaseManager
+    {
+        if (!$this->db instanceof DatabaseManager) {
+            $this->db = new DatabaseManager();
+        }
+
+        return $this->db;
     }
 
     private function enriquecerAnalisisEmpresa(array $payload, array $exposicion): array

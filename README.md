@@ -39,6 +39,22 @@ Notas:
 - Los tests nuevos cubren normalización de payloads y persistencia del análisis legal complementario.
 - El flujo de resultados reutiliza el análisis complementario guardado en `exposicion_json` para evitar recálculos divergentes.
 
+## 🔐 Configuración de entorno
+
+1. Copiar `.env.example` a `.env`
+2. Completar `ML_DB_PASS` solo en tu entorno local o de despliegue
+3. Si usás MySQL remoto de Hostinger, autorizar la IP del servidor antes de conectar
+
+Variables esperadas:
+
+```env
+ML_DB_HOST=srv1524.hstgr.io
+ML_DB_PORT=3306
+ML_DB_NAME=u580580751_motor_laboral
+ML_DB_USER=u580580751_1905
+ML_DB_PASS=...
+```
+
 ---
 
 ## 📋 Cambios Principales v2.1
@@ -161,10 +177,10 @@ motor_laboral/
 
 ```bash
 # Linux/Mac/WSL
-mysql -h localhost -u root -p motor_laboral < sql/setup_ripte_v2.1.sql
+mysql -h localhost -u root -p u580580751_motor_laboral < sql/setup_ripte_v2.1.sql
 
 # Windows (PowerShell)
-mysql.exe -h localhost -u root -p motor_laboral -e "source C:\...\setup_ripte_v2.1.sql"
+mysql.exe -h localhost -u root -p u580580751_motor_laboral -e "source C:\...\setup_ripte_v2.1.sql"
 ```
 
 **Verifica**:

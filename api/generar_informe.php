@@ -105,9 +105,13 @@ if (empty($uuid) || !preg_match('/^[a-f0-9\-]{36}$/', $uuid)) {
 }
 
 // ─── Recuperar análisis de la BD ─────────────────────────────────────────────
+$analisis = \App\Support\AnalysisSessionStore::fetch($uuid);
+
 try {
-    $db       = new DatabaseManager();
-    $analisis = $db->obtenerAnalisisPorUUID($uuid);
+    if (!$analisis) {
+        $db       = new DatabaseManager();
+        $analisis = $db->obtenerAnalisisPorUUID($uuid);
+    }
 
     if (!$analisis) {
         $logPdfRequest('no_encontrado', 404, ['uuid' => $uuid]);

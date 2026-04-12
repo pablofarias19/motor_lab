@@ -9,7 +9,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Usar base de datos existente
-USE motor_laboral;
+USE u580580751_motor_laboral;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- TABLA 1: ripte_indices
@@ -204,11 +204,11 @@ ORDER BY tipo_incapacidad;
 
 CREATE USER 'ripte_sync'@'localhost' IDENTIFIED BY 'CAMBIAR_CONTRASEÑA';
 
-GRANT SELECT, INSERT, UPDATE ON motor_laboral.ripte_indices TO 'ripte_sync'@'localhost';
-GRANT SELECT, INSERT, UPDATE ON motor_laboral.ripte_pisos_minimos TO 'ripte_sync'@'localhost';
-GRANT SELECT, INSERT ON motor_laboral.ripte_sincronizaciones TO 'ripte_sync'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON u580580751_motor_laboral.ripte_indices TO 'ripte_sync'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON u580580751_motor_laboral.ripte_pisos_minimos TO 'ripte_sync'@'localhost';
+GRANT SELECT, INSERT ON u580580751_motor_laboral.ripte_sincronizaciones TO 'ripte_sync'@'localhost';
 
-GRANT SELECT ON motor_laboral.* TO 'ripte_sync'@'localhost'; -- Lectura general
+GRANT SELECT ON u580580751_motor_laboral.* TO 'ripte_sync'@'localhost'; -- Lectura general
 
 FLUSH PRIVILEGES;
 
@@ -291,7 +291,7 @@ DELIMITER ;
 -- ═══════════════════════════════════════════════════════════════════════════
 
 -- Ejecutar este script con:
--- mysql -u root -p motor_laboral < setup_ripte_v2.1.sql
+-- mysql -u root -p u580580751_motor_laboral < setup_ripte_v2.1.sql
 ```
 
 ---
@@ -302,7 +302,7 @@ DELIMITER ;
 
 ```bash
 # Conectar a MySQL e importar script
-mysql -h localhost -u root -p motor_laboral < sql/setup_ripte_v2.1.sql
+mysql -h localhost -u root -p u580580751_motor_laboral < sql/setup_ripte_v2.1.sql
 
 # O si no existe la BD:
 mysql -h localhost -u root -p < sql/setup_ripte_v2.1.sql
@@ -311,7 +311,7 @@ mysql -h localhost -u root -p < sql/setup_ripte_v2.1.sql
 **Opción 2: Desde phpMyAdmin**
 
 1. Conectar a MySQL en `http://localhost/phpmyadmin`
-2. Seleccionar BD `motor_laboral`
+2. Seleccionar BD `u580580751_motor_laboral`
 3. Ir a **SQL** → Copiar contenido del script
 4. Ejecutar
 
@@ -319,7 +319,7 @@ mysql -h localhost -u root -p < sql/setup_ripte_v2.1.sql
 
 ```php
 <?php
-$conexion = new mysqli('localhost', 'root', '', 'motor_laboral');
+$conexion = new mysqli('localhost', 'root', '', 'u580580751_motor_laboral');
 
 $sql = file_get_contents(__DIR__ . '/sql/setup_ripte_v2.1.sql');
 
