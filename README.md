@@ -51,12 +51,15 @@ Notas:
 Variables esperadas:
 
 ```env
-ML_DB_HOST=srv1524.hstgr.io
+ML_DB_HOST=193.203.175.97
 ML_DB_PORT=3306
 ML_DB_NAME=u580580751_motor_laboral
 ML_DB_USER=u580580751_1905
 ML_DB_PASS=...
 ```
+
+También se aceptan variables `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASS`
+mediante `config/database.php`.
 
 ---
 
