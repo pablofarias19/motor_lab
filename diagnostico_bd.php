@@ -44,7 +44,7 @@ $conexion = null;
 $insertIdTemporal = null;
 $transactionStarted = false;
 
-echo '=== DIAGNOSTICO BASE DE DATOS / MOTOR LABORAL ===' . PHP_EOL;
+echo '=== DIAGNÓSTICO BASE DE DATOS / MOTOR LABORAL ===' . PHP_EOL;
 diag_print('Fecha', date('Y-m-d H:i:s'));
 diag_print('PHP', PHP_VERSION);
 diag_print('SAPI', PHP_SAPI);
@@ -62,13 +62,13 @@ try {
     $dbManager = new DatabaseManager();
     $conexion = $dbManager->getConnection();
 
-    diag_print('Conexion inicial', 'OK');
+    diag_print('Conexión inicial', 'OK');
 
     $infoServidor = $conexion->query('SELECT DATABASE() AS db_actual, VERSION() AS version_mysql');
     if ($infoServidor instanceof mysqli_result) {
         $filaServidor = $infoServidor->fetch_assoc() ?: [];
         diag_print('DB conectada', (string) ($filaServidor['db_actual'] ?? '(sin nombre)'));
-        diag_print('Version MySQL', (string) ($filaServidor['version_mysql'] ?? '(sin dato)'));
+        diag_print('Versión MySQL', (string) ($filaServidor['version_mysql'] ?? '(sin dato)'));
         $infoServidor->free();
     }
 
