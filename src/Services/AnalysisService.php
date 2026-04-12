@@ -274,6 +274,8 @@ class AnalysisService
 
         $maxActual = floatval($exposicion['resultados_clave']['exposicion_maxima_real_con_costas'] ?? 0);
         $totalConMultas = floatval($exposicion['total_con_multas'] ?? 0);
+        // El análisis empresa puede elevar la contingencia legacy después del cálculo
+        // inicial; preservamos el máximo para no subestimar la exposición final.
         $maximo = max($maxActual, $totalConMultas);
 
         $exposicion['cuantificacion_economica']['resultado_final']['exposicion_maxima_real'] = round($maximo, 2);

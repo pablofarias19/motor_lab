@@ -845,12 +845,17 @@ class EscenariosEngine
         // ── Escenario D — Acción Civil Complementaria ───────────────────────
         $cfgD = $cfgArt['civil_complementaria'];
         $benefD = $montoCivilProbable;
-        $costasCivilProbables = floatval($cuantificacion['costas']['probable'] ?? ($benefD * 0.22));
+        $costasCivilProbables = floatval(
+            $cuantificacion['costas']['probable']
+            ?? ($benefD * ($params['calculos_especificos']['accidentes']['civil']['honorarios']['probable'] ?? 0.22))
+        );
         $costoD = ($honorariosBase * $cfgD['factor_honorarios']) + $costasCivilProbables;
         $vbpD = $benefD - $costoD;
         $riesgoD = min(5.0, $irilScore * $cfgD['factor_riesgo']);
         $vaeD = ($cfgD['duracion_promedio'] > 0 && $riesgoD > 0)
             ? round($vbpD / ($cfgD['duracion_promedio'] * $riesgoD), 0) : 0;
+        // Base de 35% con mejora gradual según IRIL, acotada a +25% para no sobreprometer cierre.
+        $probabilidadCierreD = round(0.35 + min(0.25, $irilScore / 20), 2);
 
         $d = [
             'codigo' => 'D',
@@ -861,7 +866,7 @@ class EscenariosEngine
             'vbp' => round($vbpD, 2),
             'vae' => $vaeD,
             'via_juridica' => 'civil',
-            'probabilidad_cierre' => round(0.35 + min(0.25, $irilScore / 20), 2),
+            'probabilidad_cierre' => $probabilidadCierreD,
             'exposicion_economica' => [
                 'conservador' => round($montoCivilConservador, 2),
                 'probable' => round($montoCivilProbable, 2),

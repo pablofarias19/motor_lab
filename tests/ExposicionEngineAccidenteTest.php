@@ -64,6 +64,12 @@ final class ExposicionEngineAccidenteTest extends TestCase
         $this->assertTrue(isset($conArt['cuantificacion_economica']['via_art']), 'Debe exponer la vía ART explícita.');
         $this->assertTrue(isset($conArt['cuantificacion_economica']['via_civil']['escenarios']), 'Debe exponer escenarios civiles explícitos.');
         $this->assertTrue(($conArt['cuantificacion_economica']['comparativa']['opcion_excluyente'] ?? false), 'ART y civil deben figurar como vías excluyentes.');
+        $this->assertSame(true, $conArt['cuantificacion_economica']['via_art']['disponible'] ?? null);
+        $this->assertSame('tarifado', $conArt['cuantificacion_economica']['via_art']['tipo'] ?? null);
+        $this->assertTrue(($conArt['cuantificacion_economica']['via_art']['monto_seguro'] ?? 0) > 0);
+        $escenariosCiviles = $conArt['cuantificacion_economica']['via_civil']['escenarios'] ?? [];
+        $this->assertTrue(isset($escenariosCiviles['conservador'], $escenariosCiviles['probable'], $escenariosCiviles['agresivo']));
+        $this->assertTrue(($escenariosCiviles['conservador'] ?? 0) > 0);
         $detalleArt = $conArt['conceptos']['prestacion_art_tarifa']['detalle_calculo'] ?? [];
         $this->assertSame(false, $detalleArt['calculo_estimado'] ?? true, 'Con fecha y salarios históricos debería reconstruirse el IBM.');
         $this->assertTrue(($detalleArt['ibm'] ?? 0) > 440000, 'El IBM ajustado por RIPTE debe superar los salarios históricos nominales del ejemplo.');

@@ -120,7 +120,7 @@ return (static function (): array {
                     'probable' => 0.22,
                     'max' => 0.27,
                 ],
-                'temeridad_tasa' => 0.10,
+                'temeridad_tasa' => 0.10, // Recargo orientativo para supuestos de temeridad/mala praxis empresaria en el escenario civil agresivo
             ],
 
             // ── Escenarios ART (reemplazan A/B/C/D cuando tiene_art=si) ──

@@ -846,6 +846,10 @@ function _renderTablaExposicion(exposicion) {
     }).join('');
 
     const resultadosClave = exposicion.resultados_clave || {};
+    const estrategiaSugerida = String(resultadosClave.estrategia_sugerida || 'art').toLowerCase();
+    const estrategiaSugeridaHtml = estrategiaSugerida === 'art'
+        ? '<abbr title="Aseguradora de Riesgos del Trabajo">ART</abbr>'
+        : 'CIVIL';
     const resumenFooter = resultadosClave.exposicion_maxima_real_con_costas
         ? `
             <tr class="total-base">
@@ -862,7 +866,7 @@ function _renderTablaExposicion(exposicion) {
             </tr>
             <tr class="total-base">
                 <td colspan="2"><strong>Estrategia sugerida</strong></td>
-                <td><strong>${_escaparHTML(String(resultadosClave.estrategia_sugerida || 'art').toUpperCase())}</strong></td>
+                <td aria-label="Estrategia sugerida: ${_escaparHTML(estrategiaSugerida === 'art' ? 'ART' : 'Civil')}"><strong>${estrategiaSugeridaHtml}</strong></td>
             </tr>
         `
         : `

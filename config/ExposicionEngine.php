@@ -11,6 +11,9 @@ require_once __DIR__ . '/ripte_functions.php';
 
 class ExposicionEngine
 {
+    private const CIVIL_PROBABLE_THRESHOLD_MULTIPLIER = 1.35;
+    private const CIVIL_AGGRESSIVE_THRESHOLD_MULTIPLIER = 1.75;
+    private const MIN_APERTURA_CIVIL_FOR_RECOMMENDATION = 0.58;
     /**
      * Tasa pura anual de referencia para la proyección civil integral cuando
      * el motor no discrimina una tasa jurisdiccional específica.
@@ -685,8 +688,9 @@ class ExposicionEngine
         $hayNexoFuerte = in_array('alta_probabilidad_nexo', array_column($alertasCriticas, 'codigo'), true);
         $documentacionDeficitaria = in_array('documentacion_insuficiente_empresa', array_column($alertasCriticas, 'codigo'), true);
 
-        if (($civilProbable > ($montoArt * 1.35) || $civilAgresivo > ($montoArt * 1.75))
-            && $aperturaCivil >= 0.58
+        if (($civilProbable > ($montoArt * self::CIVIL_PROBABLE_THRESHOLD_MULTIPLIER)
+                || $civilAgresivo > ($montoArt * self::CIVIL_AGGRESSIVE_THRESHOLD_MULTIPLIER))
+            && $aperturaCivil >= self::MIN_APERTURA_CIVIL_FOR_RECOMMENDATION
             && ($hayNexoFuerte || $documentacionDeficitaria)) {
             return 'civil';
         }

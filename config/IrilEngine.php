@@ -357,9 +357,11 @@ class IrilEngine
 
     private function buildSenalesArt(array $documentacion, array $situacion): array
     {
+        $nexoCausalDefault = ($situacion['denuncia_art'] ?? 'no') === 'si' ? 'alto' : 'medio';
+
         return [
             'calidad_prueba_medica' => (string) ($situacion['calidad_prueba_medica'] ?? 'media'),
-            'nexo_causal' => (string) ($situacion['nexo_causal'] ?? (($situacion['denuncia_art'] ?? 'no') === 'si' ? 'alto' : 'medio')),
+            'nexo_causal' => (string) ($situacion['nexo_causal'] ?? $nexoCausalDefault),
             'rechazo_art' => ($situacion['rechazo_art'] ?? 'no') === 'si',
             'dictamen_cm' => (string) ($situacion['comision_medica'] ?? 'no_iniciada'),
             'documentacion_empresa_completa' => ($documentacion['documentacion_empresa_completa'] ?? 'no') === 'si',
