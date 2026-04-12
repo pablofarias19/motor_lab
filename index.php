@@ -1665,7 +1665,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         <div class="form-group">
                             <label for="email">Correo electrónico <span class="field-note">(obligatorio)</span></label>
                             <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com"
-                                autocomplete="email" inputmode="email" required aria-required="true">
+                                autocomplete="email" inputmode="email" required>
                             <small class="form-ayuda">
                                 Es obligatorio para enviarte el informe. No enviamos spam.
                             </small>

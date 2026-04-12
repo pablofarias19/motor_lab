@@ -683,6 +683,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 $colorDiferenciaPositiva = '#16a34a';
                 $colorDiferenciaNeutra = 'var(--premium-blue)';
                 $colorDiferenciaNegativa = '#dc2626';
+                // Se conserva el color negativo como resguardo visual ante payloads legacy o cálculos históricos persistidos.
                 $colorDiferenciaCivil = $montoCivil > $montoTarifa
                     ? $colorDiferenciaPositiva
                     : ($montoCivil === $montoTarifa ? $colorDiferenciaNeutra : $colorDiferenciaNegativa);
