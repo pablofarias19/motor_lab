@@ -32,9 +32,6 @@ final class ExposicionEngineDiferenciasSalarialesTest extends TestCase
             ],
         ];
 
-        $this->assertSame('si', $input['situacion']['ya_despedido']);
-        $this->assertSame('2026-03-10', $input['situacion']['fecha_despido']);
-
         $payload = AnalysisPayloadNormalizer::normalize($input);
 
         $resultado = $engine->calcularExposicion(
