@@ -96,6 +96,17 @@ function pdf_latin1(string $str): string {
     );
 }
 
+function pdf_safe_text($value): string {
+    if (!is_scalar($value)) {
+        return '';
+    }
+
+    $text = trim(strip_tags((string) $value));
+    $normalized = preg_replace('/\s+/u', ' ', $text);
+
+    return $normalized !== null ? $normalized : $text;
+}
+
 // ─── Obtener UUID desde GET o POST ───────────────────────────────────────────
 $uuid = trim($_GET['uuid'] ?? $_POST['uuid'] ?? '');
 
@@ -325,13 +336,29 @@ try {
 
         foreach ($exposicion['conceptos'] as $key => $concepto) {
             if (isset($concepto['aplica']) && $concepto['aplica'] === false) continue;
-            $pdf->Cell(120, 5, pdf_latin1($concepto['descripcion']), 0, 0);
+            $pdf->Cell(120, 5, pdf_latin1(pdf_safe_text($concepto['descripcion'] ?? '')), 0, 0);
             $pdf->Cell(0, 5, ml_formato_moneda($concepto['monto']), 0, 1, 'R');
+            if (!empty($concepto['base_legal'])) {
+                $pdf->SetFont('Arial', 'I', 7);
+                $pdf->SetTextColor(120, 120, 120);
+                $pdf->Cell(10, 4, '', 0, 0);
+                $pdf->Cell(0, 4, pdf_latin1('  Base legal: ' . pdf_safe_text($concepto['base_legal'])), 0, 1);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetFont('Arial', '', 9);
+            }
+            if (!empty($concepto['nota'])) {
+                $pdf->SetFont('Arial', 'I', 7);
+                $pdf->SetTextColor(120, 120, 120);
+                $pdf->Cell(10, 4, '', 0, 0);
+                $pdf->MultiCell(0, 4, pdf_latin1('  Análisis: ' . pdf_safe_text($concepto['nota'])), 0, 'L');
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetFont('Arial', '', 9);
+            }
             if (!empty($concepto['condicion'])) {
                 $pdf->SetFont('Arial', 'I', 7);
                 $pdf->SetTextColor(120, 120, 120);
                 $pdf->Cell(10, 4, '', 0, 0);
-                $pdf->Cell(0, 4, pdf_latin1('  Condición: ' . $concepto['condicion']), 0, 1);
+                $pdf->Cell(0, 4, pdf_latin1('  Condición: ' . pdf_safe_text($concepto['condicion'])), 0, 1);
                 $pdf->SetTextColor(0, 0, 0);
                 $pdf->SetFont('Arial', '', 9);
             }

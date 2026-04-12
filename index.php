@@ -10,7 +10,7 @@
  *   2. Datos laborales:  salario, antigüedad, provincia, categoría, CCT
  *   3. Documentación:    telegramas, recibos, ARCA, testigos, contrato
  *   4. Situación actual: urgencia, intercambio epistolar, plazos
- *   5. Contacto:         email opcional para recibir informe
+ *   5. Contacto:         Email obligatorio para recibir el informe
  *
  * El formulario envía JSON al endpoint api/procesar_analisis.php
  * y redirige a resultado.php?uuid=XXX
@@ -1170,18 +1170,20 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </label>
                                 <textarea id="salarios_historicos" name="salarios_historicos"
                                     rows="5"
-                                    placeholder='Un salario por línea (números sin puntos):'
+                                    placeholder='Un salario por línea (del más antiguo al más reciente). Formato opcional: YYYY-MM: monto'
                                     spellcheck="false"
                                     data-tooltip="Remuneraciones sujetas a aportes previas al accidente"></textarea>
                                 <small class="form-ayuda">
                                     <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de los <strong>últimos 12 meses anteriores</strong> al accidente o primera manifestación invalidante.
+                                    <br>Cargalas del <strong>mes más antiguo al más reciente</strong>. Si querés máxima precisión, podés usar el formato <code>YYYY-MM: monto</code>.
                                     <br>Si trabajaste menos de 12 meses, cargá solo los meses efectivamente trabajados. Si hubo registración deficiente, luego puede reconstruirse el salario real con prueba.
                                 </small>
                                 <div class="form-example" id="ej-salarios-art">
                                     <strong><span class="ui-emoji" aria-hidden="true">📋</span>Cómo cargar la base ART:</strong><br><br>
                                     1. Tomá tus recibos o la constancia de ARCA del período previo al accidente.<br>
-                                    2. Pegá un salario por línea, sin $ ni puntos.<br>
-                                    3. Si no llegás a 12 meses, cargá solo los meses efectivamente trabajados.<br><br>
+                                    2. Pegá un salario por línea, sin $ ni puntos, del más antiguo al más reciente.<br>
+                                    3. Si preferís, indicá el mes: <code>2025-11: 950000</code>.<br>
+                                    4. Si no llegás a 12 meses, cargá solo los meses efectivamente trabajados.<br><br>
                                     <code style="background:#f0f0f0; padding:0.8rem; display:block; border-radius:4px; font-size:0.8rem; font-family:monospace;">
 950000<br>
 965000<br>
@@ -1642,15 +1644,15 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                 </div>
 
                 <!-- ══════════════════════════════════════════
-                 PASO 5 — Contacto (opcional)
+                 PASO 5 — Contacto obligatorio
             ══════════════════════════════════════════ -->
                 <div class="wizard-paso" id="paso-5" style="display:none;">
                     <h2 class="paso-titulo">
                         <i class="bi bi-envelope-check"></i> Recibí tu análisis por email
                     </h2>
                     <p class="paso-descripcion">
-                        Podés recibir el análisis completo en tu correo. Es <strong>completamente opcional</strong>.
-                        Si no querés dejarlo, igual podés ver el resultado en pantalla.
+                        Para generar y enviarte el informe, necesitás cargar un <strong>correo válido</strong>.
+                        El análisis se envía al email que completes en este paso.
                     </p>
 
                     <div class="form-section">
@@ -1658,16 +1660,16 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                             <div class="aviso-importante-icono"><i class="bi bi-person-plus-fill"></i></div>
                             <div class="aviso-importante-content">
                                 <strong>¿Querés registro de usuario y lectura ampliada?</strong>
-                                <p>Para consultas con mayor personalización, seguimiento y datos estratégicos adicionales, solicitá el registro al <a href="mailto:estudio@fariasortiz.com.ar">email estudio@fariasortiz.com.ar</a> o al WhatsApp de referencia del estudio.</p>
+                                <p>Para consultas con mayor personalización, seguimiento y datos estratégicos adicionales, solicitá el registro al email <a href="mailto:estudio@fariasortiz.com.ar" aria-label="Enviar email a estudio@fariasortiz.com.ar">estudio@fariasortiz.com.ar</a> o al WhatsApp de referencia del estudio.</p>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="email">Correo electrónico <span class="opcional">(opcional)</span></label>
+                            <label for="email">Correo electrónico <span class="field-note">(obligatorio)</span></label>
                             <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com"
-                                autocomplete="email">
+                                autocomplete="email" inputmode="email" required>
                             <small class="form-ayuda">
-                                Solo se usará para enviarte este análisis. No enviamos spam.
+                                Es obligatorio para enviarte el informe. No enviamos spam.
                             </small>
                             <span class="form-error" id="error-email"></span>
                         </div>

@@ -74,8 +74,8 @@ window.WizardValidation = class WizardValidation {
 
         const valor = campoEmail.value.trim();
         if (!valor) {
-            limpiarErrorCampo(campoEmail);
-            return true;
+            mostrarError(campoEmail, 'Ingresá un correo electrónico para enviarte el informe.');
+            return false;
         }
 
         const regexEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;

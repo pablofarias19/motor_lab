@@ -22,7 +22,7 @@ final class EscenariosEngineStrategicIndexTest extends TestCase
         );
 
         $escenarios = $resultado['escenarios'] ?? [];
-        $this->assertSame(['A', 'B', 'C', 'D'], array_keys($escenarios), 'Se esperaban los cuatro escenarios estándar');
+        $this->assertSame(['A', 'B', 'C'], array_keys($escenarios), 'Para la parte reclamante solo deben mostrarse escenarios litigiosos aplicables');
 
         foreach ($escenarios as $codigo => $escenario) {
             $this->assertTrue(array_key_exists('indice_estrategico', $escenario), "Falta indice_estrategico en {$codigo}");

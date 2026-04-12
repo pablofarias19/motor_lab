@@ -6,6 +6,23 @@ Tengo 2 métodos para cargar los datos RIPTE reales:
 
 ---
 
+## ⚠️ Aclaración para ejemplos de cálculo
+
+Cuando se explique **cómo aplicar RIPTE a un monto**, el ejemplo debe presentarse como **ilustrativo** y no como tope temporal de la serie.
+
+- **Fórmula del ajuste porcentual**: `((RIPTE t1 - RIPTE t0) / RIPTE t0) × 100`
+- **Monto actualizado**: `Monto inicial + (Monto inicial × ajuste %)`
+- **RIPTE t1**: índice del momento al que se quiere actualizar
+- **RIPTE t0**: índice del inicio del período a ajustar
+
+### Texto sugerido para contenido público
+
+> El ejemplo enero 2023 → noviembre 2023 sirve solo para mostrar el mecanismo de cálculo.  
+> **La referencia temporal informada en este contenido debe aclararse como disponible hasta enero de 2026**.  
+> Por eso, si se actualiza un monto hasta el último período informado en la publicación, el valor `RIPTE t1` a tomar es el correspondiente a **enero de 2026**.
+
+---
+
 ## ✅ **OPCIÓN 1: Ejecutar SQL (Recomendado)**
 
 ### Paso 1: Verificar que MySQL esté corriendo

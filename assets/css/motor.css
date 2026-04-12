@@ -3342,6 +3342,14 @@ header.motor-header {
     margin-left: 0.2rem;
 }
 
+.field-note {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: #94a3b8;
+    font-style: italic;
+    margin-left: 0.2rem;
+}
+
 .form-ayuda,
 small.form-ayuda {
     font-size: 0.76rem;
