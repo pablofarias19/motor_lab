@@ -4,6 +4,7 @@ namespace App\Support;
 final class AnalysisPayloadNormalizer
 {
     private const TIPOS_USUARIO = ['empleado', 'empleador'];
+    private const TIPOS_REGISTRO = ['registrado', 'no_registrado', 'deficiente_fecha', 'deficiente_salario'];
     private const TIPOS_CONFLICTO = [
         'despido_sin_causa',
         'despido_con_causa',
@@ -70,6 +71,8 @@ final class AnalysisPayloadNormalizer
         ] as $flag) {
             $documentacion[$flag] = self::flag($documentacion[$flag] ?? 'no');
         }
+
+        [$datosLaborales, $documentacion] = self::normalizeRegistrationConsistency($datosLaborales, $documentacion);
 
         $salariosHistoricos = $situacionInput['salarios_historicos'] ?? [];
         if (!is_array($salariosHistoricos)) {
@@ -271,5 +274,39 @@ final class AnalysisPayloadNormalizer
 
         $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
         return $date !== false && $date->format('Y-m-d') === $value;
+    }
+
+    private static function normalizeRegistrationConsistency(array $datosLaborales, array $documentacion): array
+    {
+        $tipoRegistro = self::string($datosLaborales['tipo_registro'] ?? 'registrado', 'registrado');
+        if (!in_array($tipoRegistro, self::TIPOS_REGISTRO, true)) {
+            $tipoRegistro = 'registrado';
+        }
+
+        $datosLaborales['tipo_registro'] = $tipoRegistro;
+
+        switch ($tipoRegistro) {
+            case 'no_registrado':
+                $datosLaborales['salario_recibo'] = 0.0;
+                $datosLaborales['antiguedad_recibo'] = 0;
+                $documentacion['tiene_recibos'] = 'no';
+                $documentacion['registrado_afip'] = 'no';
+                break;
+
+            case 'deficiente_fecha':
+                $datosLaborales['salario_recibo'] = 0.0;
+                break;
+
+            case 'deficiente_salario':
+                $datosLaborales['antiguedad_recibo'] = 0;
+                break;
+
+            default:
+                $datosLaborales['salario_recibo'] = 0.0;
+                $datosLaborales['antiguedad_recibo'] = 0;
+                break;
+        }
+
+        return [$datosLaborales, $documentacion];
     }
 }

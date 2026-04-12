@@ -79,6 +79,60 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame(0, $payloadPreventivo['datos_laborales']['antiguedad_meses']);
         $this->assertSame(25, $payloadPreventivo['datos_laborales']['cantidad_empleados']);
 
+        $payloadRegistroNoCorrespondiente = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+                'tipo_registro' => 'no_registrado',
+                'salario_recibo' => '500000',
+                'antiguedad_recibo' => '18',
+            ],
+            'documentacion' => [
+                'tiene_recibos' => 'si',
+                'registrado_afip' => 'si',
+            ],
+        ]);
+
+        $this->assertSame(0.0, $payloadRegistroNoCorrespondiente['datos_laborales']['salario_recibo']);
+        $this->assertSame(0, $payloadRegistroNoCorrespondiente['datos_laborales']['antiguedad_recibo']);
+        $this->assertSame('no', $payloadRegistroNoCorrespondiente['documentacion']['tiene_recibos']);
+        $this->assertSame('no', $payloadRegistroNoCorrespondiente['documentacion']['registrado_afip']);
+
+        $payloadFechaDeficiente = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+                'tipo_registro' => 'deficiente_fecha',
+                'salario_recibo' => '500000',
+                'antiguedad_recibo' => '18',
+            ],
+        ]);
+
+        $this->assertSame(0.0, $payloadFechaDeficiente['datos_laborales']['salario_recibo']);
+        $this->assertSame(18, $payloadFechaDeficiente['datos_laborales']['antiguedad_recibo']);
+
+        $payloadSalarioDeficiente = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+                'tipo_registro' => 'deficiente_salario',
+                'salario_recibo' => '500000',
+                'antiguedad_recibo' => '18',
+            ],
+        ]);
+
+        $this->assertSame(500000.0, $payloadSalarioDeficiente['datos_laborales']['salario_recibo']);
+        $this->assertSame(0, $payloadSalarioDeficiente['datos_laborales']['antiguedad_recibo']);
+
         $payloadAccidenteValido = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleador',
             'tipo_conflicto' => 'accidente_laboral',
