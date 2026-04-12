@@ -49,5 +49,9 @@ final class ExposicionEngineAccidenteTest extends TestCase
         $this->assertFalse(isset($conArt['conceptos']['multa_art80_lct']), 'No debería incluir Art. 80 aun con ART vigente');
         $this->assertTrue(!empty($conArt['conceptos']['prestacion_art_tarifa']['nota'] ?? null), 'La tarifa ART debe conservar su análisis');
         $this->assertTrue(!empty($conArt['conceptos']['estimacion_civil_mendez']['nota'] ?? null), 'La acción civil Méndez debe conservar su análisis');
+        $this->assertTrue(
+            ($conArt['conceptos']['estimacion_civil_mendez']['monto'] ?? 0) >= ($conArt['conceptos']['prestacion_art_tarifa']['monto'] ?? 0),
+            'La estimación civil integral no debe quedar por debajo de la tarifa ART.'
+        );
     }
 }

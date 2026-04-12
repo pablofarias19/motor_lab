@@ -10,7 +10,7 @@
  *   2. Datos laborales:  salario, antigüedad, provincia, categoría, CCT
  *   3. Documentación:    telegramas, recibos, ARCA, testigos, contrato
  *   4. Situación actual: urgencia, intercambio epistolar, plazos
- *   5. Contacto:         email opcional para recibir informe
+ *   5. Contacto:         email obligatorio para recibir informe
  *
  * El formulario envía JSON al endpoint api/procesar_analisis.php
  * y redirige a resultado.php?uuid=XXX
@@ -1642,15 +1642,15 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                 </div>
 
                 <!-- ══════════════════════════════════════════
-                 PASO 5 — Contacto (opcional)
+                 PASO 5 — Contacto obligatorio
             ══════════════════════════════════════════ -->
                 <div class="wizard-paso" id="paso-5" style="display:none;">
                     <h2 class="paso-titulo">
                         <i class="bi bi-envelope-check"></i> Recibí tu análisis por email
                     </h2>
                     <p class="paso-descripcion">
-                        Podés recibir el análisis completo en tu correo. Es <strong>completamente opcional</strong>.
-                        Si no querés dejarlo, igual podés ver el resultado en pantalla.
+                        Para generar y enviarte el informe, necesitás cargar un <strong>correo válido</strong>.
+                        El análisis se envía al email que completes en este paso.
                     </p>
 
                     <div class="form-section">
@@ -1658,16 +1658,16 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                             <div class="aviso-importante-icono"><i class="bi bi-person-plus-fill"></i></div>
                             <div class="aviso-importante-content">
                                 <strong>¿Querés registro de usuario y lectura ampliada?</strong>
-                                <p>Para consultas con mayor personalización, seguimiento y datos estratégicos adicionales, solicitá el registro al <a href="mailto:estudio@fariasortiz.com.ar">email estudio@fariasortiz.com.ar</a> o al WhatsApp de referencia del estudio.</p>
+                                <p>Para consultas con mayor personalización, seguimiento y datos estratégicos adicionales, solicitá el registro al email <a href="mailto:estudio@fariasortiz.com.ar" aria-label="Enviar email a estudio@fariasortiz.com.ar">estudio@fariasortiz.com.ar</a> o al WhatsApp de referencia del estudio.</p>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <label for="email">Correo electrónico <span class="opcional">(opcional)</span></label>
+                            <label for="email">Correo electrónico <span class="opcional">(obligatorio)</span></label>
                             <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com"
-                                autocomplete="email">
+                                autocomplete="email" inputmode="email" required aria-required="true">
                             <small class="form-ayuda">
-                                Solo se usará para enviarte este análisis. No enviamos spam.
+                                Es obligatorio para enviarte el informe. No enviamos spam.
                             </small>
                             <span class="form-error" id="error-email"></span>
                         </div>

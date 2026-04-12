@@ -482,7 +482,7 @@ try {
         $pdf->SetTextColor(255, 255, 255);
         $pdf->Cell(60, 6, '', 1, 0, 'C', true);
         $pdf->Cell(50, 6, pdf_latin1('Tarifa ART (Ley 24.557)'), 1, 0, 'C', true);
-        $pdf->Cell(0, 6, pdf_latin1('Acción Civil (Méndez)'), 1, 1, 'C', true);
+        $pdf->Cell(0, 6, pdf_latin1('Acción Civil integral'), 1, 1, 'C', true);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetFont('Arial', '', 9);
 
@@ -505,6 +505,13 @@ try {
         $pdf->SetFont('Arial', '', 9);
 
         $pdf->Ln(3);
+        $notaCivilPDF = $exposicion['conceptos']['estimacion_civil_mendez']['nota'] ?? '';
+        if ($notaCivilPDF !== '') {
+            $pdf->SetFont('Arial', 'I', 8);
+            $pdf->SetTextColor(90, 90, 90);
+            $pdf->MultiCell(0, 4, pdf_latin1($notaCivilPDF), 0, 'J');
+            $pdf->Ln(1);
+        }
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->SetTextColor(180, 60, 60);
         $pdf->MultiCell(0, 4, pdf_latin1('ADVERTENCIA: La opción civil (Art. 4 Ley 26.773) es EXCLUYENTE. Optar por la vía civil implica renunciar al cobro de la tarifa ART.'), 0, 'J');

@@ -11,7 +11,7 @@
  *   2. datos_laborales — Salario, antigüedad, provincia, CCT, categoría
  *   3. documentacion  — Telegramas, recibos, contrato, registro ARCA, testigos
  *   4. situacion      — Estado actual del conflicto, urgencia, fechas
- *   5. contacto       — Email (opcional) + confirmación y envío
+ *   5. contacto       — Email obligatorio + confirmación y envío
  *
  * Dependencias: ninguna (vanilla JS puro, ES6+).
  * PHP endpoint de destino: api/procesar_analisis.php (POST JSON)
@@ -84,7 +84,9 @@ class WizardMotorLaboral {
             4: [
                 { selector: '#urgencia', mensaje: 'Seleccioná el nivel de urgencia.' },
             ],
-            5: [], // Paso 5: solo email opcional, se valida aparte si no está vacío
+            5: [
+                { selector: '#email', mensaje: 'Ingresá un correo electrónico para enviarte el informe.' },
+            ],
         };
 
         /**
@@ -397,10 +399,9 @@ class WizardMotorLaboral {
     }
 
     /**
-     * _validarEmail() — Valida el email del paso 5 si el campo no está vacío.
+     * _validarEmail() — Valida el email obligatorio del paso 5.
      *
-     * El email es opcional: si está vacío, pasa la validación.
-     * Si tiene contenido, debe ser un formato válido.
+     * Debe estar completo y tener un formato válido antes de avanzar o enviar.
      *
      * @returns {boolean}
      */
@@ -678,10 +679,10 @@ class WizardMotorLaboral {
                 icon: 'bi-envelope-check',
                 eyebrowText: 'Cierre',
                 title: 'Revisá el resumen y generá el análisis',
-                description: 'El email sigue siendo opcional. Antes de enviar, el wizard te devuelve una síntesis corta de lo cargado para confirmar el recorrido.',
+                description: 'Completá un email válido para que el sistema pueda generar y enviarte el informe junto con la síntesis final.',
                 points: [
                     ['bi-list-check', 'Resumen', 'Chequeá perfil, conflicto, base económica y respaldo declarado.'],
-                    ['bi-envelope', 'Email opcional', 'Podés recibir el informe sin frenar el resultado en pantalla.'],
+                    ['bi-envelope', 'Email obligatorio', 'Sin un correo válido no se puede avanzar al envío del informe.'],
                     ['bi-graph-up-arrow', 'Salida', 'Generamos IRIL, exposición y escenarios en una sola lectura.'],
                 ],
             },
@@ -1341,7 +1342,7 @@ class WizardMotorLaboral {
             ['Provincia', payload.datos_laborales.provincia || 'Sin informar'],
             ['Urgencia', urgenciaLabel[payload.situacion.urgencia] || 'Sin definir'],
             ['Documentación útil', docs.length ? docs.join(', ') : 'Sin respaldo declarado'],
-            ['Email', payload.contacto.email || 'No informado'],
+            ['Email', payload.contacto.email || 'Pendiente de completar'],
         ];
 
         contenedor.innerHTML = `

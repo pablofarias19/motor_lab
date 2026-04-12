@@ -70,6 +70,9 @@ final class AnalysisServiceFallbackTest extends TestCase
             'situacion' => [
                 'urgencia' => 'media',
             ],
+            'contacto' => [
+                'email' => 'fallback@example.com',
+            ],
         ]);
 
         $this->assertNotNull($resultado['uuid']);

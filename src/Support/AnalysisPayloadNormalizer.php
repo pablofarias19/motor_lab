@@ -29,7 +29,9 @@ final class AnalysisPayloadNormalizer
         $errors = [];
 
         $email = self::string($contactoInput['email'] ?? ($input['email'] ?? ''));
-        if ($email !== '' && !ml_validar_email($email)) {
+        if ($email === '') {
+            $errors['contacto.email'] = 'Ingresá un correo electrónico para enviarte el informe.';
+        } elseif (!ml_validar_email($email)) {
             $errors['contacto.email'] = 'El email informado no es válido.';
         }
 

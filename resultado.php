@@ -755,13 +755,13 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     </div>
 
                     <!-- Tabla comparativa ART vs Civil -->
-                    <h4 style="font-size: 0.85rem; color: var(--premium-blue); margin-bottom: 0.5rem;">Comparativa: Tarifa ART vs Acción Civil</h4>
+                    <h4 style="font-size: 0.85rem; color: var(--premium-blue); margin-bottom: 0.5rem;">Comparativa: Tarifa ART vs Acción Civil integral</h4>
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                         <thead>
                             <tr style="background: var(--premium-blue); color: #fff;">
                                 <th style="padding: 8px; text-align: left;"></th>
                                 <th style="padding: 8px; text-align: right;">Tarifa ART (Ley 24.557)</th>
-                                <th style="padding: 8px; text-align: right;">Acción Civil (Méndez)</th>
+                                <th style="padding: 8px; text-align: right;">Acción Civil integral</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -782,12 +782,18 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             </tr>
                             <tr>
                                 <td style="padding: 6px 8px;">Diferencia</td>
-                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil > $montoTarifa ? '#16a34a' : '#dc2626' ?>;">
+                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil >= $montoTarifa ? '#16a34a' : '#dc2626' ?>;">
                                     <?= $montoCivil > $montoTarifa ? '+' : '' ?><?= ml_formato_moneda($montoCivil - $montoTarifa) ?> vía civil
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <?php if (!empty($exposicion['conceptos']['estimacion_civil_mendez']['nota'])): ?>
+                    <div style="margin-top: .65rem; font-size: .78rem; color: #6b7280; line-height: 1.45;">
+                        <em><?= htmlspecialchars($exposicion['conceptos']['estimacion_civil_mendez']['nota']) ?></em>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($estadoCM === 'homologado'): ?>
                     <div class="motor-aviso-legal" style="margin-top: 1rem; background: #fef2f2; border-color: #fecaca;">

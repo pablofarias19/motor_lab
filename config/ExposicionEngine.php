@@ -162,14 +162,26 @@ class ExposicionEngine
                     'nota' => $notaLRT
                 ];
 
-                // ═══ VÍA CIVIL: Fórmula Méndez (estimación comparativa) ═══
-                $montoCivil = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
+                // ═══ VÍA CIVIL: estimación integral comparativa ═══
+                $montoCivilBase = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
+                $duracionCivilMeses = max(1, intval($p['escenarios_art']['civil_complementaria']['duracion_promedio'] ?? 48));
+                $tasaInteresCivil = 0.06;
+                $danioMoral = $montoCivilBase * 0.20;
+                $subtotalCivil = $montoCivilBase + $danioMoral;
+                $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
+                $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;
+                $aplicaPisoComparativo = $montoCivilIntegral < $montoLRT;
+                $montoCivil = $aplicaPisoComparativo ? $montoLRT : $montoCivilIntegral;
+                $notaCivil = "Estimación integral de vía civil: capital base Méndez {$p['meses_año']} meses + daño moral 20% + intereses judiciales estimados al 6% anual por {$duracionCivilMeses} meses.";
+                if ($aplicaPisoComparativo) {
+                    $notaCivil .= " Se aplica como piso comparativo la tarifa ART para no subestimar la reparación integral.";
+                }
 
                 $conceptos['estimacion_civil_mendez'] = [
-                    'descripcion' => "Estimación acción civil complementaria (Méndez/Vuotto)",
+                    'descripcion' => "Estimación acción civil integral (Méndez + daño moral + intereses)",
                     'monto' => round($montoCivil, 2),
-                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente',
-                    'nota' => "Fórmula Méndez: (Salario x 13 x {$incapacidad}% x 65) / {$edad}. ADVERTENCIA: Optar por vía civil excluye cobro de tarifa ART."
+                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente + criterio de reparación integral',
+                    'nota' => $notaCivil
                 ];
 
                 // Adicional gran invalidez
