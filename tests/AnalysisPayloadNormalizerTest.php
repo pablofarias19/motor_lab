@@ -91,7 +91,10 @@ final class AnalysisPayloadNormalizerTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('2026-03-01', $payloadConFechas['situacion']['fecha_despido']);
+        $this->assertSame('', $payloadConFechas['situacion']['fecha_despido']);
+        $this->assertSame('no', $payloadConFechas['situacion']['ya_despedido']);
+        $this->assertSame(15, $payloadConFechas['situacion']['dia_despido']);
+        $this->assertSame('no', $payloadConFechas['situacion']['check_inconstitucionalidad']);
         $this->assertEquals(0.7, $payloadConFechas['situacion']['probabilidad_condena']);
 
         $payloadPreventivo = AnalysisPayloadNormalizer::normalize([
@@ -210,6 +213,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame('no', $payloadOcultoPorConflicto['situacion']['actividad_esencial']);
         $this->assertSame('horas_extras', $payloadOcultoPorConflicto['situacion']['motivo_diferencia']);
         $this->assertSame(6, $payloadOcultoPorConflicto['situacion']['meses_adeudados']);
+        $this->assertSame('no', $payloadOcultoPorConflicto['situacion']['ya_despedido']);
+        $this->assertSame('', $payloadOcultoPorConflicto['situacion']['fecha_despido']);
+        $this->assertSame('no', $payloadOcultoPorConflicto['situacion']['check_inconstitucionalidad']);
 
         $payloadTelegramaNo = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleado',
