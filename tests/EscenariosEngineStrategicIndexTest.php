@@ -29,17 +29,17 @@ final class EscenariosEngineStrategicIndexTest extends TestCase
             $this->assertTrue($escenario['indice_estrategico'] >= 0 && $escenario['indice_estrategico'] <= 100, "indice_estrategico fuera de rango en {$codigo}");
         }
 
-        $mejorCodigo = null;
+        $mejorCodigoABC = null;
         $mejorIndice = -1.0;
         foreach (['A', 'B', 'C'] as $codigo) {
             $indice = floatval($escenarios[$codigo]['indice_estrategico']);
             if ($indice > $mejorIndice) {
                 $mejorIndice = $indice;
-                $mejorCodigo = $codigo;
+                $mejorCodigoABC = $codigo;
             }
         }
 
-        $this->assertSame($mejorCodigo, $resultado['recomendado'] ?? null, 'La recomendación debe seguir el mayor índice estratégico permitido');
+        $this->assertSame($mejorCodigoABC, $resultado['recomendado'] ?? null, 'La recomendación debe seguir el mayor índice estratégico permitido');
         $this->assertTrue(
             floatval($escenarios['A']['indice_estrategico']) > floatval($escenarios['B']['indice_estrategico']),
             'La duración y el riesgo deben penalizar al litigio completo frente a negociación temprana'

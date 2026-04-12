@@ -99,7 +99,7 @@ function initBarChart(escenarios, recomendado) {
     const letters = ['A', 'B', 'C', 'D'].filter(l => escenarios[l]);
 
     const labels = letters.map(l => l);
-    const dataValues = letters.map(l => Number.parseFloat(escenarios[l].indice_estrategico || 0));
+    const dataValues = letters.map(l => Number(escenarios[l].indice_estrategico || 0));
 
     const colors = letters.map(l => {
         if (l === recomendado) return '#1d4ed8';

@@ -715,15 +715,12 @@ class EscenariosEngine
 
         $vbpValores = array_map(static fn(array $esc): float => floatval($esc['vbp'] ?? 0), $escenarios);
         $costos = array_map(static fn(array $esc): float => floatval($esc['costo_estimado'] ?? 0), $escenarios);
-        $duraciones = array_map(function (array $esc): float {
-            if (isset($esc['duracion_promedio'])) {
-                return floatval($esc['duracion_promedio']);
-            }
-
-            $min = floatval($esc['duracion_min_meses'] ?? 0);
-            $max = floatval($esc['duracion_max_meses'] ?? 0);
-            return ($min + $max) / 2;
-        }, $escenarios);
+        $duraciones = array_map(
+            static fn(array $esc): float => isset($esc['duracion_promedio'])
+                ? floatval($esc['duracion_promedio'])
+                : ((floatval($esc['duracion_min_meses'] ?? 0) + floatval($esc['duracion_max_meses'] ?? 0)) / 2),
+            $escenarios
+        );
         $riesgos = array_map(static fn(array $esc): float => floatval($esc['riesgo_institucional'] ?? 0), $escenarios);
 
         $minVbp = min($vbpValores);

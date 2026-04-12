@@ -73,8 +73,7 @@ try {
     }
 
     $tablaExiste = false;
-    $tabla = $conexion->real_escape_string('analisis_laborales');
-    $resultadoTabla = $conexion->query("SHOW TABLES LIKE '{$tabla}'");
+    $resultadoTabla = $conexion->query("SHOW TABLES LIKE 'analisis_laborales'");
     $tablaExiste = $resultadoTabla instanceof mysqli_result && $resultadoTabla->num_rows > 0;
     $resultadoTabla?->free();
 
