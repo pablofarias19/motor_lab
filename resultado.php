@@ -680,9 +680,12 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 $tipoContingencia = $situacion['tipo_contingencia'] ?? 'accidente_tipico';
                 $estadoCM = $situacion['comision_medica'] ?? 'no_iniciada';
                 $incapTipo = $situacion['incapacidad_tipo'] ?? 'permanente_definitiva';
+                $colorDiferenciaPositiva = '#16a34a';
+                $colorDiferenciaNeutra = 'var(--premium-blue)';
+                $colorDiferenciaNegativa = '#dc2626';
                 $colorDiferenciaCivil = $montoCivil > $montoTarifa
-                    ? '#16a34a'
-                    : ($montoCivil === $montoTarifa ? 'var(--premium-blue)' : '#dc2626');
+                    ? $colorDiferenciaPositiva
+                    : ($montoCivil === $montoTarifa ? $colorDiferenciaNeutra : $colorDiferenciaNegativa);
 
                 $etiquetasContingencia = [
                     'accidente_tipico' => 'Accidente de trabajo (típico)',

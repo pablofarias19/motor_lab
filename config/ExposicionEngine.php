@@ -11,6 +11,9 @@ require_once __DIR__ . '/ripte_functions.php';
 
 class ExposicionEngine
 {
+    private const TASA_CIVIL_REFERENCIA_ANUAL = 0.06;
+    private const DANIO_MORAL_CIVIL_MINIMO = 0.20;
+
     /**
      * calcularExposicion() — Estima el impacto económico estructural del conflicto
      * según la Ley de Contrato de Trabajo (LCT) argentina.
@@ -165,10 +168,10 @@ class ExposicionEngine
                 // ═══ VÍA CIVIL: estimación integral comparativa ═══
                 $montoCivilBase = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
                 $duracionCivilMeses = max(1, intval($p['escenarios_art']['civil_complementaria']['duracion_promedio'] ?? 48));
-                // Tasa pura de referencia usada por la documentación interna para litigios civiles cuando no hay tasa jurisdiccional específica cargada.
-                $tasaInteresCivil = 0.06;
+                // Tasa pura de referencia estándar que hoy usa esta estimación civil integral en ausencia de un cálculo jurisdiccional específico.
+                $tasaInteresCivil = self::TASA_CIVIL_REFERENCIA_ANUAL;
                 // Piso orientativo de daño moral/extrapatrimonial según la documentación funcional vigente del motor (+20% mínimo en vía civil).
-                $danioMoral = $montoCivilBase * 0.20;
+                $danioMoral = $montoCivilBase * self::DANIO_MORAL_CIVIL_MINIMO;
                 $subtotalCivil = $montoCivilBase + $danioMoral;
                 $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
                 $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;
