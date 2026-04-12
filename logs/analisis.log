@@ -27,6 +27,3 @@
 [2026-04-12 18:36:07] [warning] [AnalysisService] Persistencia degradada, se usará respaldo temporal de sesión: db offline
 [2026-04-12 18:36:07] [warning] [ArtCalculationEngine] RIPTE BD no disponible: No such file or directory
 [2026-04-12 18:36:07] [warning] [ArtCalculationEngine] Piso RIPTE BD no disponible: No such file or directory
-[2026-04-12 19:55:39] [warning] [AnalysisService] Persistencia degradada, se usará respaldo temporal de sesión: db offline
-[2026-04-12 19:55:39] [warning] [ArtCalculationEngine] RIPTE BD no disponible: No such file or directory
-[2026-04-12 19:55:39] [warning] [ArtCalculationEngine] Piso RIPTE BD no disponible: No such file or directory
