@@ -51,7 +51,11 @@ class AnalysisService
         $exposicion['analisis_complementario'] = ComplementaryLegalAnalysisBuilder::build(
             $payload['datos_laborales'],
             $payload['situacion'],
-            $exposicion
+            $exposicion,
+            [
+                'tipo_conflicto' => $payload['tipo_conflicto'],
+                'documentacion' => $payload['documentacion'],
+            ]
         );
 
         $irilResult = $this->irilEngine->calcularIRIL(

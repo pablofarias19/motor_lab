@@ -943,8 +943,11 @@ function detectar_fraude_laboral($indicadores = []) {
 
 /**
  * evaluar_dano_complementario() — Calcula daños morales, patrimoniales y reputacionales
- * 
- * Art. 527 CCCN (Daño): Reparable cuando causa "menoscabo patrimonial o extrapatrimonial"
+ *
+ * Base normativa de referencia:
+ * - Art. 1738 CCCN: indemnización por consecuencias patrimoniales y no patrimoniales
+ * - Art. 1740 CCCN: principio de reparación plena
+ * - Art. 1741 CCCN: indemnización de consecuencias no patrimoniales
  * 
  * 3 categorías de daño complementario (adicional a indemnización por extinción):
  * 1. DAÑO MORAL (20-50% de indemnización base): Sufrimiento, angustia, desprestigio
@@ -1054,26 +1057,26 @@ function evaluar_dano_complementario(
             'daño_moral' => [
                 'monto' => round($dano_moral, 2),
                 'porcentaje_indemnizacion' => round($porcentaje_moral * 100, 1) . '%',
-                'base_legal' => 'Art. 527 CCCN (Daño Moral)'
+                'base_legal' => 'Art. 1741 CCCN (Consecuencias no patrimoniales)'
             ],
             'daño_patrimonial' => [
                 'lucro_cesante' => round($lucro_cesante, 2),
                 'costos_litigio' => round($costos_litigio, 2),
                 'subtotal' => round($dano_patrimonial, 2),
                 'meses_litigio' => $meses_litigio,
-                'base_legal' => 'Art. 1738 CCCN (Lucro cesante)'
+                'base_legal' => 'Arts. 1738 y 1740 CCCN (Lucro cesante y reparación plena)'
             ],
             'daño_reputacional' => [
                 'monto' => round($dano_reputacional, 2),
                 'porcentaje_salario' => round($porcentaje_reputacional * 100, 1) . '%',
-                'base_legal' => 'Art. 527 CCCN (Daño patrimonial futuro)',
+                'base_legal' => 'Arts. 1738 y 1740 CCCN (Afectación patrimonial futura)',
                 'aplica' => $aplicaReputacional,
                 'criterio' => $criterioReputacionalTexto,
             ]
         ],
         
         'análisis' => "Extinción: $tipo_extincion. " . ($fue_violenta ? "Con violencia/discriminación. " : "") . "Daño total: \$$" . number_format($total, 2),
-        'nota' => 'Adicional a indemnización por extinción (Art. 245 LCT)'
+        'nota' => 'Adicional orientativo a la indemnización por extinción, bajo pauta de reparación plena (Arts. 1738, 1740 y 1741 CCCN; Art. 245 LCT)'
     ];
 }
 
