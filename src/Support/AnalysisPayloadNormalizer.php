@@ -308,9 +308,6 @@ final class AnalysisPayloadNormalizer
                 $datosLaborales['salario_recibo'] = 0.0;
                 $datosLaborales['antiguedad_recibo'] = 0;
                 break;
-
-            default:
-                break;
         }
 
         return [$datosLaborales, $documentacion];
