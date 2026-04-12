@@ -301,9 +301,12 @@ final class AnalysisPayloadNormalizer
                 $datosLaborales['antiguedad_recibo'] = 0;
                 break;
 
-            default:
+            case 'registrado':
                 $datosLaborales['salario_recibo'] = 0.0;
                 $datosLaborales['antiguedad_recibo'] = 0;
+                break;
+
+            default:
                 break;
         }
 
