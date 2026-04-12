@@ -155,10 +155,6 @@ final class AnalysisPayloadNormalizerTest extends TestCase
             ],
         ]);
 
-        $this->assertSame('no', $payloadOcultoPorConflicto['situacion']['ya_despedido']);
-        $this->assertSame('', $payloadOcultoPorConflicto['situacion']['fecha_despido']);
-        $this->assertSame('no', $payloadOcultoPorConflicto['situacion']['check_inconstitucionalidad']);
-        $this->assertSame(15, $payloadOcultoPorConflicto['situacion']['dia_despido']);
         $this->assertSame('', $payloadOcultoPorConflicto['situacion']['fecha_siniestro']);
         $this->assertSame(0.0, $payloadOcultoPorConflicto['situacion']['porcentaje_incapacidad']);
         $this->assertSame(0, $payloadOcultoPorConflicto['situacion']['meses_no_registrados']);

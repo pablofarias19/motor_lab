@@ -98,6 +98,7 @@ final class AnalysisPayloadNormalizer
             'porcentaje_incapacidad' => self::float($situacionInput['porcentaje_incapacidad'] ?? 0),
             'incapacidad_tipo' => self::string($situacionInput['incapacidad_tipo'] ?? 'permanente_definitiva', 'permanente_definitiva'),
             'estado_art' => self::string($situacionInput['estado_art'] ?? 'activa_valida', 'activa_valida'),
+            'tiene_art' => self::flag($situacionInput['tiene_art'] ?? 'no'),
             'culpa_grave' => self::flag($situacionInput['culpa_grave'] ?? 'no'),
             'via_civil' => self::flag($situacionInput['via_civil'] ?? 'no'),
             'denuncia_art' => self::flag($situacionInput['denuncia_art'] ?? 'no'),
@@ -322,17 +323,9 @@ final class AnalysisPayloadNormalizer
         $esPrevencion = in_array($tipoConflicto, ['responsabilidad_solidaria', 'riesgo_inspeccion', 'auditoria_preventiva'], true);
         $esAuditoria = in_array($tipoConflicto, ['auditoria_preventiva', 'riesgo_inspeccion'], true);
         $esSolidaridad = $tipoConflicto === 'responsabilidad_solidaria';
-        $usaCamposDespido = !$esAccidente && !$esDiferencia && !$esPrevencion;
 
         if (($situacion['hay_intercambio'] ?? 'no') !== 'si') {
             $situacion['fecha_ultimo_telegrama'] = '';
-        }
-
-        if (($situacion['ya_despedido'] ?? 'no') !== 'si' || !$usaCamposDespido) {
-            $situacion['ya_despedido'] = 'no';
-            $situacion['fecha_despido'] = '';
-            $situacion['check_inconstitucionalidad'] = 'no';
-            $situacion['dia_despido'] = 15;
         }
 
         if (!$esAccidente) {
@@ -340,7 +333,6 @@ final class AnalysisPayloadNormalizer
             $situacion['fecha_siniestro'] = '';
             $situacion['porcentaje_incapacidad'] = 0.0;
             $situacion['incapacidad_tipo'] = 'permanente_definitiva';
-            $situacion['estado_art'] = 'activa_valida';
             $situacion['culpa_grave'] = 'no';
             $situacion['via_civil'] = 'no';
             $situacion['denuncia_art'] = 'no';
@@ -389,7 +381,6 @@ final class AnalysisPayloadNormalizer
             $situacion['meses_no_registrados'] = 0;
             $situacion['meses_en_mora'] = 0;
             $situacion['aplica_blanco_laboral'] = 'no';
-            $situacion['probabilidad_condena'] = 0.5;
             $situacion['chk_alta_sipa'] = 'no';
             $situacion['chk_libro_art52'] = 'no';
             $situacion['chk_recibos_cct'] = 'no';
