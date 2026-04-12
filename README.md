@@ -33,6 +33,9 @@ php tests/run.php
 
 # Sintaxis PHP del módulo
 find . -name '*.php' -print0 | xargs -0 -n1 php -l
+
+# Diagnóstico de conexión y escritura en BD
+php diagnostico_bd.php
 ```
 
 Notas:
