@@ -187,7 +187,7 @@ if (ML_DEBUG) {
 // ─── Base de datos exclusiva del módulo ──────────────────────────────────────
 $mlDatabaseConfig = require __DIR__ . '/database.php';
 
-define('ML_DB_HOST', (string) ($mlDatabaseConfig['host'] ?? '193.203.175.97'));
+define('ML_DB_HOST', (string) ($mlDatabaseConfig['host'] ?? 'localhost'));
 define('ML_DB_USER', (string) ($mlDatabaseConfig['user'] ?? ''));
 define('ML_DB_PASS', (string) ($mlDatabaseConfig['password'] ?? ''));
 define('ML_DB_NAME', (string) ($mlDatabaseConfig['database'] ?? 'u580580751_motor_laboral'));

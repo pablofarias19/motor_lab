@@ -59,7 +59,7 @@ ML_DB_PASS=...
 ```
 
 También se aceptan variables `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` y `DB_PASS`
-mediante `/home/runner/work/motor_lab/motor_lab/config/database.php`.
+mediante `config/database.php`.
 
 ---
 
