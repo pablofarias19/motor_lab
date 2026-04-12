@@ -2,7 +2,7 @@
 /**
  * EscenariosEngine.php — Generador de escenarios estratégicos comparativos
  *
- * Genera los 4 escenarios estratégicos del Motor de Riesgo Laboral:
+ * Genera los escenarios estratégicos del Motor de Riesgo Laboral:
  *
  *   A — Negociación Temprana:  cierre anticipado, costo controlado
  *   B — Litigio Completo:      mayor impacto potencial, mayor duración
@@ -27,6 +27,7 @@ require_once __DIR__ . '/config.php';
 
 class EscenariosEngine
 {
+    private const TIPO_USUARIO_EMPLEADOR = 'empleador';
 
     // ─────────────────────────────────────────────────────────────────────────
     // MÉTODO PRINCIPAL
@@ -52,7 +53,7 @@ class EscenariosEngine
     ];
 
     /**
-     * generarEscenarios() — Genera los 4 escenarios comparativos.
+     * generarEscenarios() — Genera los escenarios comparativos aplicables.
      *
      * @param array  $exposicion     Resultado de IrilEngine::calcularExposicion()
      * @param float  $irilScore      Puntaje IRIL
@@ -71,6 +72,7 @@ class EscenariosEngine
         string $provincia = 'CABA'
     ): array {
 
+        $tipoUsuarioNormalizado = strtolower(trim($tipoUsuario));
         $totalBase = $exposicion['total_base'] ?? 0;
         $totalConMultas = $exposicion['total_con_multas'] ?? 0;
         $salario = $exposicion['salario_base'] ?? 0;
@@ -103,10 +105,11 @@ class EscenariosEngine
         // ── Escenario C — Estrategia Mixta ────────────────────────────────────
         $c = $this->escenarioMixto($totalBase, $totalConMultas, $honorariosJudiciales, $irilScore, $tipoUsuario, $provincia);
 
-        // ── Escenario D — Reconfiguración Preventiva ──────────────────────────
-        $d = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
-
-        $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
+        $escenarios = ['A' => $a, 'B' => $b, 'C' => $c];
+        if ($tipoUsuarioNormalizado === self::TIPO_USUARIO_EMPLEADOR) {
+            // ── Escenario D — Reconfiguración Preventiva ──────────────────────
+            $escenarios['D'] = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
+        }
         $escenarios = $this->agregarIndicesEstrategicos($escenarios);
         $recomendado = $this->determinarRecomendado($escenarios, $tipoUsuario, $irilScore, $tipoConflicto);
 
