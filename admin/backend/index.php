@@ -33,6 +33,16 @@ if (!function_exists('ml_admin_backend_color')) {
     }
 }
 
+if (!function_exists('ml_admin_backend_field_suffix')) {
+    function ml_admin_backend_field_suffix(string $value): string
+    {
+        $normalized = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        $normalized = $normalized !== false ? $normalized : $value;
+        $normalized = strtolower($normalized);
+        return preg_replace('/[^a-z0-9_]+/', '_', $normalized) ?: 'campo';
+    }
+}
+
 $tiposExtincion = [
     'despido' => 'Despido directo',
     'renuncia_previa' => 'Renuncia previa coercitiva',
@@ -282,7 +292,7 @@ $parametrosPreventivo = $parametrosOverrides['escenarios']['preventivo'] ?? [];
 
         <?php foreach ($tiposExtincion as $tipo => $label): ?>
             <?php
-            $fieldName = $tipo === 'suspensión' ? 'suspension' : $tipo;
+            $fieldName = ml_admin_backend_field_suffix($tipo);
             $currentPct = $reputacional['percentages'][$tipo] ?? 0;
             ?>
             <div class="col-md-3">

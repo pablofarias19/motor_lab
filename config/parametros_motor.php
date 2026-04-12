@@ -173,9 +173,7 @@ return (static function (): array {
     ]
     ];
 
-    $overrides = function_exists('ml_admin_runtime_get')
-        ? ml_admin_runtime_get('calculation_rules.parametros_motor_overrides', [])
-        : [];
+    $overrides = ml_admin_runtime_get('calculation_rules.parametros_motor_overrides', []);
 
     if (is_array($overrides) && !empty($overrides)) {
         $parametros = ml_array_deep_merge($parametros, $overrides);

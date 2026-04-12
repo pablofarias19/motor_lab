@@ -1006,9 +1006,7 @@ function evaluar_dano_complementario(
     // 3. DAÑO REPUTACIONAL (5-15% salario promedio)
     // ─────────────────────────────────────────────────────────────────────────
     
-    $criterioReputacional = function_exists('ml_admin_runtime_get')
-        ? ml_admin_runtime_get('calculation_rules.dano_complementario.reputacional', [])
-        : [];
+    $criterioReputacional = ml_admin_runtime_get('calculation_rules.dano_complementario.reputacional', []);
     $porcentajesReputacionales = is_array($criterioReputacional['percentages'] ?? null)
         ? $criterioReputacional['percentages']
         : [];
@@ -1038,9 +1036,7 @@ function evaluar_dano_complementario(
     }
 
     $dano_reputacional = $salario_promedio * $porcentaje_reputacional;
-    $criterioReputacionalTexto = function_exists('ml_admin_runtime_get')
-        ? (string) ml_admin_runtime_get('ui.dano_complementario.reputacional_criterio', '')
-        : '';
+    $criterioReputacionalTexto = (string) ml_admin_runtime_get('ui.dano_complementario.reputacional_criterio', '');
     
     // ─────────────────────────────────────────────────────────────────────────
     // TOTAL DAÑO COMPLEMENTARIO

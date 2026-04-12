@@ -915,8 +915,11 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     $beneficioLabel = ($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'
                         : 'Beneficio';
+                    $preventivoInlineStyle = $esEscenarioPreventivo
+                        ? '--escenario-preventivo-accent:' . htmlspecialchars($preventivoAccentColor, ENT_QUOTES, 'UTF-8') . ';'
+                        : '';
                     ?>
-                    <div class="escenario-premium-card<?= $esEscenarioPreventivo ? ' escenario-premium-card--preventivo' : '' ?>" style="<?= $esEscenarioPreventivo ? '--escenario-preventivo-accent:' . htmlspecialchars($preventivoAccentColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>">
+                    <div class="escenario-premium-card<?= $esEscenarioPreventivo ? ' escenario-premium-card--preventivo' : '' ?>" style="<?= $preventivoInlineStyle ?>">
                         <div class="escenario-premium-header<?= $esEscenarioPreventivo ? ' escenario-premium-header--preventivo' : '' ?>">
                             <h4>Escenario <?= $letra ?> <span
                                     style="font-weight: 300; opacity: 0.8;"><?= htmlspecialchars($esc['nombre'] ?? '') ?></span>
