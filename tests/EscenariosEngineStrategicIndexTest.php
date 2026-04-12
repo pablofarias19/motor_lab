@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/bootstrap.php';
 require_once dirname(__DIR__) . '/config/EscenariosEngine.php';
+require_once __DIR__ . '/TestCase.php';
 
 final class EscenariosEngineStrategicIndexTest extends TestCase
 {

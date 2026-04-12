@@ -42,6 +42,15 @@ Notas:
 - Los tests nuevos cubren normalización de payloads y persistencia del análisis legal complementario.
 - El flujo de resultados reutiliza el análisis complementario guardado en `exposicion_json` para evitar recálculos divergentes.
 
+## 🛠️ Backend editable paralelo
+
+El sistema ahora puede alimentarse sin tocar el motor base desde un backend oculto en `admin/backend/index.php`.
+
+- Edita textos explicativos, prompts y criterios del daño reputacional.
+- Sobrescribe números estratégicos del escenario preventivo sin modificar `config/parametros_motor.php`.
+- Guarda la capa editable en `config/admin_runtime_store.php` o en la ruta definida por `ML_ADMIN_RUNTIME_CONFIG_PATH`.
+- Si el archivo editable no existe, el motor sigue funcionando con sus valores originales.
+
 ## 🔐 Configuración de entorno
 
 1. Copiar `.env.example` a `.env`

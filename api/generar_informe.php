@@ -30,6 +30,8 @@ $logPdfRequest = static function (string $estado, int $httpCode, array $contexto
     ] + $contexto);
 };
 
+$uiDanoComplementario = ml_admin_runtime_get('ui.dano_complementario', []);
+
 // ─── Verificar que FPDF existe (reutilizamos la del sistema /document) ────────
 if (!file_exists(ML_FPDF_PATH)) {
     $logPdfRequest('fpdf_missing', 500, ['path' => ML_FPDF_PATH]);
@@ -379,7 +381,7 @@ try {
     if (!empty($danoComplementario)) {
         $pdf->seccion('Análisis legal complementario');
         $pdf->SetFont('Arial', 'I', 8);
-        $pdf->MultiCell(0, 4, pdf_latin1('El daño complementario muestra un extra potencial sobre la indemnización base por extinción. Se desglosa para distinguir afectación personal, impacto económico indirecto y proyección reputacional.'), 0, 'J');
+        $pdf->MultiCell(0, 4, pdf_latin1((string) ($uiDanoComplementario['intro'] ?? 'El daño complementario muestra un extra potencial sobre la indemnización base por extinción. Se desglosa para distinguir afectación personal, impacto económico indirecto y proyección reputacional.')), 0, 'J');
         $pdf->Ln(2);
 
         $pdf->SetFont('Arial', 'B', 9);
@@ -400,6 +402,10 @@ try {
         $pdf->Cell(60, 6, pdf_latin1('Daño reputacional'), 1, 0);
         $pdf->Cell(40, 6, ml_formato_moneda($danoComplementario['daño_reputacional'] ?? 0), 1, 0, 'R');
         $pdf->Cell(0, 6, pdf_latin1('Porcentaje del salario promedio: ' . ($dnDesglosePdf['daño_reputacional']['porcentaje_salario'] ?? '-')), 1, 1);
+
+        if (!empty($dnDesglosePdf['daño_reputacional']['criterio'])) {
+            $pdf->MultiCell(0, 4, pdf_latin1('Criterio reputacional: ' . $dnDesglosePdf['daño_reputacional']['criterio']), 0, 'J');
+        }
 
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(60, 6, pdf_latin1('Total complementario'), 1, 0);

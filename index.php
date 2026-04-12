@@ -1605,7 +1605,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                             <!-- ─── DAÑO COMPLEMENTARIO (Art. 527 CCCN) ─── -->
                             <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
                                 <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
-                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Para evaluar daños morales, patrimoniales y reputacionales:</p>
+                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Para evaluar daños morales, patrimoniales y, si se cumplen criterios específicos, reputacionales.</p>
                                 
                                 <div class="form-group">
                                     <label for="tipo_extincion">Tipo de terminación de la relación:</label>
@@ -1630,7 +1630,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                             <span>No</span>
                                         </label>
                                     </div>
-                                    <small class="form-ayuda">Incrementa multiplicador de daño moral hasta 50%</small>
+                                    <small class="form-ayuda">Además puede habilitar el rubro reputacional cuando la configuración del backend así lo exige.</small>
                                 </div>
                                 
                                 <div class="form-group">
