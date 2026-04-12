@@ -868,8 +868,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     <h3><i class="bi bi-info-circle"></i> Cómo leer los escenarios</h3>
                 </div>
                 <div class="premium-card-body">
+                    <?php $escenariosDisponibles = implode(', ', array_keys($escenarios)); ?>
                     <div style="display:grid; gap:.45rem; font-size:.83rem; color:#334155; line-height:1.45;">
-                        <div>• Los escenarios <strong>A, B, C y D son simulaciones comparativas del motor</strong>: no son etapas obligatorias del caso, sino estrategias tipo para ordenar alternativas posibles.</div>
+                        <div>• Los escenarios <strong><?= htmlspecialchars($escenariosDisponibles) ?></strong> son simulaciones comparativas del motor: no son etapas obligatorias del caso, sino estrategias tipo para ordenar alternativas posibles.</div>
                         <div>• <strong>Beneficio</strong>: recuperación o ahorro potencial estimado para cada vía.</div>
                         <div>• <strong>Costo</strong>: costo profesional, de gestión o de exposición que el modelo proyecta para esa alternativa.</div>
                         <div>• <strong>Duración</strong> y <strong>Riesgo</strong>: ayudan a leer tiempo esperado y fricción institucional.</div>
@@ -925,7 +926,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <u>Índice Estratégico:</u>
                             </div>
                             <div style="margin-top:.45rem; font-size:.75rem; color:#64748b; line-height:1.4;">
-                                Referencia comparativa interna del motor: a mayor puntaje, mejor equilibrio relativo frente a las demás opciones mostradas.
+                                Referencia comparativa interna del motor sobre 100 puntos: a mayor puntaje, mejor equilibrio relativo frente a las demás opciones mostradas.
                             </div>
                         </div>
                     </div>
