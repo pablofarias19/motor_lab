@@ -11,9 +11,17 @@ require_once __DIR__ . '/ripte_functions.php';
 
 class ExposicionEngine
 {
-    // Tasa pura anual de referencia para la proyección civil integral cuando el motor no discrimina una tasa jurisdiccional específica.
+    /**
+     * Tasa pura anual de referencia para la proyección civil integral cuando
+     * el motor no discrimina una tasa jurisdiccional específica.
+     * Se mantiene en 6% anual como tasa pura orientativa ya documentada
+     * en la estimación civil vigente del motor.
+     */
     private const TASA_CIVIL_REFERENCIA_ANUAL = 0.06;
-    // Piso funcional de daño moral/extrapatrimonial que la documentación vigente del motor aplica a la vía civil.
+    /**
+     * Piso funcional de daño moral/extrapatrimonial que la documentación
+     * vigente del motor aplica a la vía civil.
+     */
     private const DANIO_MORAL_CIVIL_PORCENTAJE = 0.20;
 
     /**
@@ -159,10 +167,10 @@ class ExposicionEngine
                 $subtotalCivil = $montoCivilBase + $danioMoral;
                 $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
                 $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;
-                $aplicaPisoComparativo = $montoCivilIntegral <= $montoLRT;
-                $montoCivil = $aplicaPisoComparativo ? $montoLRT : $montoCivilIntegral;
+                $civilBelowArtFloor = $montoCivilIntegral <= $montoLRT;
+                $montoCivil = $civilBelowArtFloor ? $montoLRT : $montoCivilIntegral;
                 $notaCivil = "Estimación integral de vía civil: capital base Méndez {$p['meses_año']} meses + daño moral 20% + intereses judiciales estimados al 6% anual por {$duracionCivilMeses} meses.";
-                if ($aplicaPisoComparativo) {
+                if ($civilBelowArtFloor) {
                     $notaCivil .= " Se aplica como piso comparativo la tarifa ART para no subestimar la reparación integral.";
                 }
 

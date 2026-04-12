@@ -769,7 +769,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             <tr style="background: var(--premium-blue); color: #fff;">
                                 <th style="padding: 8px; text-align: left;"></th>
                                 <th style="padding: 8px; text-align: right;">Tarifa ART (Ley 24.557)</th>
-                                <th style="padding: 8px; text-align: right;">Acción civil integral</th>
+                                <th style="padding: 8px; text-align: right;">Acción Civil integral</th>
                             </tr>
                         </thead>
                         <tbody>

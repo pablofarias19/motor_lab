@@ -1170,7 +1170,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </label>
                                 <textarea id="salarios_historicos" name="salarios_historicos"
                                     rows="5"
-                                    placeholder='Un salario por línea, del más antiguo al más reciente. Opcional: YYYY-MM: monto'
+                                    placeholder='Un salario por línea (del más antiguo al más reciente). Formato opcional: YYYY-MM: monto'
                                     spellcheck="false"
                                     data-tooltip="Remuneraciones sujetas a aportes previas al accidente"></textarea>
                                 <small class="form-ayuda">

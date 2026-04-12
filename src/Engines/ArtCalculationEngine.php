@@ -282,6 +282,8 @@ final class ArtCalculationEngine
             return $incapacidad;
         }
 
+        // Fórmula de Balthazard para estimar la incapacidad atribuible al infortunio
+        // descontando la capacidad residual previa del trabajador sobre la capacidad remanente.
         $resultado = (1 - (1 - $incapacidad / 100) / (1 - $preexistencia / 100)) * 100;
         return max(0.0, min(100.0, $resultado));
     }
