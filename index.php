@@ -1287,7 +1287,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </div>
                                 <div class="paso-info-card-content">
                                     <h4>Datos especiales para despido e intereses (v2.1)</h4>
-                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART se oculta y se reemplaza por la sección de base salarial de hasta 12 meses.</p>
+                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART y otros supuestos donde no aplica, se oculta y se reemplaza por la sección contextual correspondiente.</p>
                                 </div>
                             </div>
 
@@ -2169,6 +2169,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                 }
 
                 const esSolidaridad = conflicto === 'responsabilidad_solidaria';
+                // Mantener este criterio alineado con ComplementaryLegalAnalysisBuilder::isRegistroIrregular().
                 const registroIrregular = conflicto === 'trabajo_no_registrado'
                     || registradoAfip === 'no'
                     || tipoRegistro !== 'registrado';
