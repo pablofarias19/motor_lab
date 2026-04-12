@@ -1174,7 +1174,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                     spellcheck="false"
                                     data-tooltip="Remuneraciones sujetas a aportes previas al accidente"></textarea>
                                 <small class="form-ayuda">
-                                    <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de hasta los <strong>12 meses previos</strong> al accidente o primera manifestación invalidante.
+                                    <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de hasta los <strong>12 meses anteriores</strong> al accidente o primera manifestación invalidante.
                                     <br>Si trabajaste menos de 12 meses, cargá solo los meses efectivamente trabajados. Si hubo registración deficiente, luego puede reconstruirse el salario real con prueba.
                                 </small>
                                 <div class="form-example" id="ej-salarios-art">
@@ -1277,8 +1277,8 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         <!-- ═════════════════════════════════════════════════════════════════
                              RIPTE v2.1 — Cálculos especiales para Ley Bases 27.742
                         ════════════════════════════════════════════════════════════════ -->
-                        <div class="form-section seccion-condicional no-accidente" 
-                            style="border-left: 3px solid var(--primary); background:var(--primary-xlight); padding: 1.5rem; margin-top: 1.5rem;">
+                        <div class="form-section seccion-condicional solo-despido-avanzado" 
+                            style="display:none; border-left: 3px solid var(--primary); background:var(--primary-xlight); padding: 1.5rem; margin-top: 1.5rem;">
                             
                             <!-- Header con explicación -->
                             <div class="paso-info-card">
@@ -1287,7 +1287,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </div>
                                 <div class="paso-info-card-content">
                                     <h4>Datos especiales para despido e intereses (v2.1)</h4>
-                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART se reemplaza por la base salarial de hasta 12 meses.</p>
+                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART se reemplaza por la base salarial de hasta 12 meses y, cuando queda oculto, estos campos no se consideran ni se validan.</p>
                                 </div>
                             </div>
 
@@ -2373,6 +2373,14 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                             if (el.id === 'grupo-ya_despedido') {
                                 el.querySelector('#desp-si').setAttribute('required', 'required');
                             }
+                        }
+                    });
+
+                    document.querySelectorAll('.solo-despido-avanzado').forEach(el => {
+                        const ocultar = esAccidente || esDiferencia || esPrevencion;
+                        el.style.display = ocultar ? 'none' : 'block';
+                        if (ocultar) {
+                            resetFieldsInContainer(el);
                         }
                     });
 

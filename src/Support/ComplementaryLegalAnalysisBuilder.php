@@ -4,6 +4,11 @@ namespace App\Support;
 final class ComplementaryLegalAnalysisBuilder
 {
     private static bool $loaded = false;
+    private const CONFLICTOS_CON_PRESUNCION = [
+        'trabajo_no_registrado',
+        'despido_sin_causa',
+        'despido_con_causa',
+    ];
 
     public static function build(array $datosLaborales, array $situacion, array $exposicion, array $context = []): array
     {
@@ -26,6 +31,12 @@ final class ComplementaryLegalAnalysisBuilder
         ];
     }
 
+    /**
+     * Determina qué bloques del análisis Ley 27.802 corresponde calcular
+     * según el tipo de conflicto, la situación registral y los datos efectivamente cargados.
+     *
+     * @return array{presuncion: bool, solidaria: bool, fraude: bool, dano: bool}
+     */
     private static function resolveApplicability(
         string $tipoConflicto,
         array $datosLaborales,
@@ -57,7 +68,7 @@ final class ComplementaryLegalAnalysisBuilder
         return [
             'presuncion' => $registroIrregular
                 || $presuncionConDatos
-                || in_array($tipoConflicto, ['trabajo_no_registrado', 'despido_sin_causa', 'despido_con_causa'], true),
+                || in_array($tipoConflicto, self::CONFLICTOS_CON_PRESUNCION, true),
             'solidaria' => $solidariaConDatos || $tipoConflicto === 'responsabilidad_solidaria',
             'fraude' => $registroIrregular || $fraudeConDatos,
             'dano' => $registroIrregular || $danoConDatos,
@@ -136,6 +147,10 @@ final class ComplementaryLegalAnalysisBuilder
         return ($documentacion['registrado_afip'] ?? 'si') === 'no';
     }
 
+    /**
+     * Devuelve true cuando alguno de los valores informados se interpreta como afirmativo
+     * usando la normalización booleana estándar del sistema.
+     */
     private static function anyPositive(array $values): bool
     {
         foreach ($values as $value) {
@@ -147,6 +162,10 @@ final class ComplementaryLegalAnalysisBuilder
         return false;
     }
 
+    /**
+     * Detecta un contexto mínimo para daño complementario cuando se informó
+     * una extinción no estándar o un supuesto violento.
+     */
     private static function hasMeaningfulDamageContext(array $situacion): bool
     {
         if (ml_boolish($situacion['fue_violenta'] ?? false)) {
@@ -157,6 +176,6 @@ final class ComplementaryLegalAnalysisBuilder
             return true;
         }
 
-        return intval($situacion['meses_litigio'] ?? 36) !== 36;
+        return false;
     }
 }

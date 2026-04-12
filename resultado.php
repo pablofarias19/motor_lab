@@ -442,7 +442,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php if ($cantidadSalariosArt > 0): ?>
                             Se informaron <strong><?= $cantidadSalariosArt ?></strong> remuneraciones para la base ART. Si la antigüedad era menor a 12 meses, se promedian solo los meses trabajados.
                         <?php else: ?>
-                            No se informaron remuneraciones históricas: el resultado quedó estimado con el salario base cargado. Para una lectura ART más precisa conviene completar los salarios previos.
+                            No se informaron remuneraciones históricas: el resultado quedó estimado con el salario base cargado. Para una lectura ART más precisa es conveniente completar los salarios previos.
                         <?php endif; ?>
                     </p>
                     <p style="margin:0;">Si hubo registración deficiente o salario subdeclarado, la base real puede requerir reconstrucción probatoria y actualización por RIPTE.</p>
