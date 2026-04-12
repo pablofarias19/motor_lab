@@ -13,6 +13,7 @@
  *   - Beneficio estimado y costo total posible
  *   - VBP = Beneficio − Costo
  *   - VAE = VBP / (duración_promedio × riesgo_institucional) — valor ajustado
+ *   - Índice Estratégico (0-100) — combina retorno neto, costo, duración y riesgo
  *   - Duración estimada en meses
  *   - Riesgo institucional (1-5)
  *   - Nivel de intervención profesional
@@ -105,8 +106,8 @@ class EscenariosEngine
         // ── Escenario D — Reconfiguración Preventiva ──────────────────────────
         $d = $this->escenarioPreventivo($salario, $irilScore, $tipoConflicto, $tipoUsuario);
 
-        // Determinar escenario recomendado basado en VAE (valor ajustado estratégico)
         $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
+        $escenarios = $this->agregarIndicesEstrategicos($escenarios);
         $recomendado = $this->determinarRecomendado($escenarios, $tipoUsuario, $irilScore, $tipoConflicto);
 
         // Tabla comparativa para visualización rápida
@@ -589,6 +590,7 @@ class EscenariosEngine
 
         // ── Determinar recomendación ART ─────────────────────────────────────
         $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
+        $escenarios = $this->agregarIndicesEstrategicos($escenarios);
         $recomendado = $this->determinarRecomendadoART($escenarios, $estadoCM, $irilScore, $montoTarifaART, $montoCivil, $situacion);
 
         $tablaComparativa = $this->construirTablaComparativa($escenarios, $recomendado);
@@ -632,12 +634,13 @@ class EscenariosEngine
             return 'C';
         }
 
-        // Default: evaluar por VAE
+        // Default: evaluar por índice estratégico
         $mejorEscenario = 'A';
-        $mejorVae = PHP_INT_MIN;
+        $mejorIndice = -1.0;
         foreach ($escenarios as $codigo => $esc) {
-            if ($esc['vae'] > $mejorVae) {
-                $mejorVae = $esc['vae'];
+            $indice = floatval($esc['indice_estrategico'] ?? 0);
+            if ($indice > $mejorIndice) {
+                $mejorIndice = $indice;
                 $mejorEscenario = $codigo;
             }
         }
@@ -649,8 +652,8 @@ class EscenariosEngine
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * determinarRecomendado() — Sugiere el escenario con mejor VAE
-     * según el perfil del usuario y el IRIL.
+     * determinarRecomendado() — Sugiere el escenario con mejor índice estratégico
+     * disponible para el perfil del usuario.
      *
      * IMPORTANTE: Esta sugerencia es estructural, NO es asesoramiento legal.
      * La decisión final siempre corresponde al profesional y al cliente.
@@ -661,28 +664,18 @@ class EscenariosEngine
         float $iril,
         string $tipoConflicto
     ): string {
-        // Para empleadores con IRIL bajo y conflicto no iniciado → D (preventivo)
-        if ($tipoUsuario === 'empleador' && $iril < 2.5 && $tipoConflicto === 'auditoria_preventiva') {
-            return 'D';
-        }
-
-        // Para IRIL muy alto → siempre C o B (se necesita estructura legal)
-        if ($iril >= 4.0) {
-            // Litigio si hay documentación (el VAE de B sería mayor)
-            return 'C'; // Mixta como primer paso antes de decidir B
-        }
-
-        // Para el resto: ordenar por VAE y devolver el mayor
+        // Ordenar por índice estratégico y devolver el mayor
         $mejorEscenario = 'C';
-        $mejorVae = PHP_INT_MIN;
+        $mejorIndice = -1.0;
 
         foreach ($escenarios as $codigo => $escenario) {
             // No recomendar D para empleados
             if ($codigo === 'D' && $tipoUsuario === 'empleado')
                 continue;
 
-            if ($escenario['vae'] > $mejorVae) {
-                $mejorVae = $escenario['vae'];
+            $indice = floatval($escenario['indice_estrategico'] ?? 0);
+            if ($indice > $mejorIndice) {
+                $mejorIndice = $indice;
                 $mejorEscenario = $codigo;
             }
         }
@@ -704,6 +697,7 @@ class EscenariosEngine
                 'costo' => ml_formato_moneda($esc['costo_estimado']),
                 'beneficio' => ml_formato_moneda($esc['beneficio_estimado']),
                 'vbp' => ml_formato_moneda($esc['vbp']),
+                'indice_estrategico' => round(floatval($esc['indice_estrategico'] ?? 0), 1),
                 'duracion' => $esc['duracion_min_meses'] . '-' . $esc['duracion_max_meses'] . ' meses',
                 'riesgo' => $esc['riesgo_institucional'] . '/5',
                 'intervencion' => ucfirst($esc['nivel_intervencion']),
@@ -711,6 +705,78 @@ class EscenariosEngine
             ];
         }
         return $tabla;
+    }
+
+    private function agregarIndicesEstrategicos(array $escenarios): array
+    {
+        if ($escenarios === []) {
+            return $escenarios;
+        }
+
+        $vbpValores = array_map(static fn(array $esc): float => floatval($esc['vbp'] ?? 0), $escenarios);
+        $costos = array_map(static fn(array $esc): float => floatval($esc['costo_estimado'] ?? 0), $escenarios);
+        $duraciones = array_map(function (array $esc): float {
+            if (isset($esc['duracion_promedio'])) {
+                return floatval($esc['duracion_promedio']);
+            }
+
+            $min = floatval($esc['duracion_min_meses'] ?? 0);
+            $max = floatval($esc['duracion_max_meses'] ?? 0);
+            return ($min + $max) / 2;
+        }, $escenarios);
+        $riesgos = array_map(static fn(array $esc): float => floatval($esc['riesgo_institucional'] ?? 0), $escenarios);
+
+        $minVbp = min($vbpValores);
+        $maxVbp = max($vbpValores);
+        $minCosto = min($costos);
+        $maxCosto = max($costos);
+        $minDuracion = min($duraciones);
+        $maxDuracion = max($duraciones);
+        $minRiesgo = min($riesgos);
+        $maxRiesgo = max($riesgos);
+
+        foreach ($escenarios as $codigo => $escenario) {
+            $scoreRetorno = $this->normalizarMayorMejor(floatval($escenario['vbp'] ?? 0), $minVbp, $maxVbp);
+            $scoreCosto = $this->normalizarMenorMejor(floatval($escenario['costo_estimado'] ?? 0), $minCosto, $maxCosto);
+            $duracionValor = isset($escenario['duracion_promedio'])
+                ? floatval($escenario['duracion_promedio'])
+                : (floatval($escenario['duracion_min_meses'] ?? 0) + floatval($escenario['duracion_max_meses'] ?? 0)) / 2;
+            $scoreDuracion = $this->normalizarMenorMejor($duracionValor, $minDuracion, $maxDuracion);
+            $scoreRiesgo = $this->normalizarMenorMejor(floatval($escenario['riesgo_institucional'] ?? 0), $minRiesgo, $maxRiesgo);
+
+            $indice = ($scoreRetorno * 0.40)
+                + ($scoreCosto * 0.15)
+                + ($scoreDuracion * 0.25)
+                + ($scoreRiesgo * 0.20);
+
+            $escenarios[$codigo]['indice_estrategico'] = round($indice, 1);
+            $escenarios[$codigo]['indice_estrategico_componentes'] = [
+                'retorno_neto' => round($scoreRetorno, 1),
+                'costo' => round($scoreCosto, 1),
+                'duracion' => round($scoreDuracion, 1),
+                'riesgo' => round($scoreRiesgo, 1),
+            ];
+        }
+
+        return $escenarios;
+    }
+
+    private function normalizarMayorMejor(float $valor, float $minimo, float $maximo): float
+    {
+        if ($maximo <= $minimo) {
+            return 50.0;
+        }
+
+        return (($valor - $minimo) / ($maximo - $minimo)) * 100;
+    }
+
+    private function normalizarMenorMejor(float $valor, float $minimo, float $maximo): float
+    {
+        if ($maximo <= $minimo) {
+            return 50.0;
+        }
+
+        return (($maximo - $valor) / ($maximo - $minimo)) * 100;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

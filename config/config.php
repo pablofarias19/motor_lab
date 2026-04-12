@@ -698,6 +698,7 @@ function ml_build_tabla_comparativa(array $escenarios, string $recomendado): arr
             'costo' => ml_formato_moneda(floatval($esc['costo_estimado'] ?? 0)),
             'beneficio' => ml_formato_moneda(floatval($esc['beneficio_estimado'] ?? 0)),
             'vbp' => ml_formato_moneda(floatval($esc['vbp'] ?? 0)),
+            'indice_estrategico' => round(floatval($esc['indice_estrategico'] ?? 0), 1),
             'duracion' => ($esc['duracion_min_meses'] ?? '?') . '–' . ($esc['duracion_max_meses'] ?? '?') . ' meses',
             'riesgo' => ($esc['riesgo_institucional'] ?? 0) . '/5',
             'intervencion' => ucfirst($esc['nivel_intervencion'] ?? ''),

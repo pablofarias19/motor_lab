@@ -73,18 +73,10 @@ try {
     }
 
     $tablaExiste = false;
-    $stmtTabla = $conexion->prepare('SHOW TABLES LIKE ?');
-    if ($stmtTabla === false) {
-        throw new RuntimeException('No se pudo preparar la verificación de la tabla analisis_laborales.');
-    }
-
-    $tabla = 'analisis_laborales';
-    $stmtTabla->bind_param('s', $tabla);
-    $stmtTabla->execute();
-    $resultadoTabla = $stmtTabla->get_result();
+    $tabla = $conexion->real_escape_string('analisis_laborales');
+    $resultadoTabla = $conexion->query("SHOW TABLES LIKE '{$tabla}'");
     $tablaExiste = $resultadoTabla instanceof mysqli_result && $resultadoTabla->num_rows > 0;
     $resultadoTabla?->free();
-    $stmtTabla->close();
 
     diag_print('Tabla analisis_laborales', $tablaExiste ? 'OK' : 'NO ENCONTRADA');
 

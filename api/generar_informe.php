@@ -482,7 +482,7 @@ try {
             $pdf->Ln(2);
             $pdf->SetFont('Arial', 'I', 8);
             $pdf->SetTextColor(30, 74, 139);
-            $pdf->Cell(0, 5, pdf_latin1('* Escenario estructuralmente sugerido en base a VAE (Valor Ajustado Estratégico). No implica garantía de resultado.'), 0, 1, 'L');
+            $pdf->Cell(0, 5, pdf_latin1('* Escenario estructuralmente sugerido por su Índice Estratégico ponderado (retorno neto, costo, duración y riesgo). No implica garantía de resultado.'), 0, 1, 'L');
             $pdf->SetTextColor(0, 0, 0);
         }
 
