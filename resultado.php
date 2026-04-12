@@ -850,9 +850,8 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
             <!-- Cuadrícula de Escenarios side-by-side -->
             <div class="escenarios-premium-grid">
                 <?php foreach ($escenarios as $letra => $esc):
-                    $vbpBase = !empty($escenarios['C']['vbp']) ? $escenarios['C']['vbp'] : (!empty($escenarios['A']['vbp']) ? $escenarios['A']['vbp'] : 1);
-                    $scoreVal = round(($esc['vbp'] / max(1, $vbpBase)) * 75);
-                    $scoreClass = ($esc['riesgo_institucional'] ?? 0) > 3.5 ? 'score-low' : (($esc['riesgo_institucional'] ?? 0) > 2.5 ? 'score-medium' : 'score-high');
+                    $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
+                    $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
                     ?>
                     <div class="escenario-premium-card">
                         <div class="escenario-premium-header">
@@ -884,7 +883,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                     <strong><?= $esc['riesgo_institucional'] > 3.5 ? 'Alto' : ($esc['riesgo_institucional'] > 2.5 ? 'Medio' : 'Bajo') ?></strong>
                                 </div>
                                 <div class="escenario-score-badge <?= $scoreClass ?>">
-                                    <?= max(60, min(95, $scoreVal + 60)) ?>
+                                    <?= number_format($scoreVal, 1) ?>
                                 </div>
                             </div>
                             <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--premium-blue);">
@@ -959,7 +958,8 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             <p class="recomendacion-text" style="margin:0;">
                                 <?php
                                 $recEsc = $escenarios[$escRecomendado] ?? [];
-                                echo 'Se sugiere considerar el <strong>Escenario ' . $escRecomendado . '</strong> por su equilibrio entre beneficio proyectado y riesgo institucional bajo ' . htmlspecialchars($datosLaborales['provincia'] ?? 'la provincia') . '.';
+                                $indiceRec = number_format(floatval($recEsc['indice_estrategico'] ?? 0), 1);
+                                echo 'Se sugiere considerar el <strong>Escenario ' . $escRecomendado . '</strong> por registrar el mayor <strong>Índice Estratégico</strong> (' . $indiceRec . '/100), ponderando retorno neto, costo, duración y riesgo institucional en ' . htmlspecialchars($datosLaborales['provincia'] ?? 'la provincia') . '.';
                                 ?>
                             </p>
                         </div>

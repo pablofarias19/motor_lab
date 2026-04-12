@@ -344,7 +344,7 @@ function renderTablaComparativa(escenarios, recomendado) {
 
         // Badge "Sugerido" solo para el recomendado
         const badgeSugerido = esRecomendado
-            ? '<span class="badge-sugerido" title="Escenario con mejor VAE para este perfil">Sugerido</span>'
+            ? '<span class="badge-sugerido" title="Escenario con mejor Índice Estratégico para este perfil">Sugerido</span>'
             : '';
 
         return `
@@ -388,7 +388,7 @@ function renderTablaComparativa(escenarios, recomendado) {
         </div>
         <p class="texto-ayuda" style="margin-top:0.5rem;">
             VBP = Valor Bruto Proyectado (Beneficio − Costo). La fila resaltada en verde
-            indica el escenario con mejor relación VAE para este perfil de riesgo.
+            indica el escenario con mejor Índice Estratégico para este perfil de riesgo.
             Esta sugerencia es estructural y no reemplaza el asesoramiento profesional.
         </p>
     `;

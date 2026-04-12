@@ -9,7 +9,7 @@
  *   - Situación actual (urgencia, intercambio epistolar)
  *   - Índice IRIL con desglose por dimensión y alertas activas
  *   - Exposición económica estimada por concepto
- *   - Los 4 escenarios estratégicos con VBP y VAE
+ *   - Los 4 escenarios estratégicos con VBP, VAE e índice estratégico
  *   - Acción tomada por el usuario
  *
  * Lee desde DatabaseManager::obtenerAnalisisPorUUID().

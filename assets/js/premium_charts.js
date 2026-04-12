@@ -98,20 +98,15 @@ function initBarChart(escenarios, recomendado) {
 
     const letters = ['A', 'B', 'C', 'D'].filter(l => escenarios[l]);
 
-    // Calcular score relativo (VBP / maxVBP * 100)
-    const maxVbp = Math.max(...Object.values(escenarios).map(e => Math.abs(e.vbp || 0)), 1);
-
     const labels = letters.map(l => l);
-    const dataValues = letters.map(l => {
-        const vbp = Math.abs(escenarios[l].vbp || 0);
-        return Math.round((vbp / maxVbp) * 100);
-    });
+    const dataValues = letters.map(l => Number(escenarios[l].indice_estrategico || 0));
 
     const colors = letters.map(l => {
-        if (l === 'A') return '#3b82f6'; // Azul
-        if (l === 'B') return '#ef4444'; // Rojo
-        if (l === 'C') return '#10b981'; // Verde
-        return '#6b7280'; // Gris
+        if (l === recomendado) return '#1d4ed8';
+        if (l === 'A') return '#60a5fa';
+        if (l === 'B') return '#f87171';
+        if (l === 'C') return '#34d399';
+        return '#9ca3af';
     });
 
     new Chart(ctx, {
@@ -138,7 +133,14 @@ function initBarChart(escenarios, recomendado) {
                 }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label(context) {
+                            return `Índice Estratégico: ${Number(context.parsed.y).toFixed(1)}`;
+                        }
+                    }
+                }
             },
             maintainAspectRatio: false
         }
