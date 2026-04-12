@@ -2353,18 +2353,20 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
 
             // Lógica interna para registro deficiente (sueldo/fecha)
             const selectTipoRegistro = document.getElementById('tipo_registro');
+            const TIPOS_REGISTRO_DEFICIENTE = ['deficiente_fecha', 'deficiente_salario'];
+            const CAMPOS_REGISTRO_DEFICIENTE = ['salario_recibo', 'antiguedad_recibo'];
             const syncCamposRegistroDeficiente = function () {
                 if (!selectTipoRegistro) {
                     return;
                 }
 
-                const esDeficiente = ['deficiente_fecha', 'deficiente_salario'].includes(selectTipoRegistro.value);
+                const esDeficiente = TIPOS_REGISTRO_DEFICIENTE.includes(selectTipoRegistro.value);
                 document.querySelectorAll('.solo-registro-deficiente').forEach(el => {
                     el.style.display = esDeficiente ? 'grid' : 'none';
                 });
 
                 if (!esDeficiente) {
-                    ['salario_recibo', 'antiguedad_recibo'].forEach(id => {
+                    CAMPOS_REGISTRO_DEFICIENTE.forEach(id => {
                         const input = document.getElementById(id);
                         if (input) input.value = '';
                     });
