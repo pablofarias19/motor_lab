@@ -79,6 +79,9 @@ $preventivoBadgeLabel = (string) ($uiEscenarioPreventivo['badge_label'] ?? 'Esce
 $preventivoClarification = (string) ($uiEscenarioPreventivo['clarification'] ?? '');
 $escenarioD = is_array($escenarios['D'] ?? null) ? $escenarios['D'] : [];
 $escenarioDPreventivo = !empty($escenarioD['es_preventivo']);
+$escenarioDResumen = $escenarioDPreventivo
+    ? 'una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.'
+    : 'la alternativa específica de <strong>' . htmlspecialchars((string) ($escenarioD['nombre'] ?? 'Acción Civil Complementaria')) . '</strong> dentro del tipo de análisis realizado.';
 
 $explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario): string {
     if (!empty($escenario['lectura_beneficio'])) {
@@ -1002,9 +1005,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <div>• <strong>Balance neto</strong>: diferencia entre beneficio y costo, útil para no leer los importes en forma aislada.</div>
                         <div>• <strong>Duración</strong> y <strong>Riesgo</strong>: permiten evaluar tiempo esperado, fricción institucional y probabilidad de desgaste procesal.</div>
                         <div>• El <strong>Índice Estratégico</strong> es orientativo y compara balance relativo entre retorno neto, costo, tiempo y riesgo.</div>
-                        <div>• El escenario <strong>D</strong> representa <?= $escenarioDPreventivo
-                            ? 'una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.'
-                            : 'la alternativa específica de <strong>' . htmlspecialchars((string) ($escenarioD['nombre'] ?? 'Acción Civil Complementaria')) . '</strong> dentro del tipo de análisis realizado.' ?>
+                        <div>• El escenario <strong>D</strong> representa <?= $escenarioDResumen ?>
                         </div>
                         <?php if ($escenarioDPreventivo && $preventivoClarification !== ''): ?>
                         <div>• <strong><?= htmlspecialchars($preventivoBadgeLabel) ?>:</strong> <?= htmlspecialchars($preventivoClarification) ?></div>

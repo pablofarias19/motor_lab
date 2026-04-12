@@ -28,7 +28,7 @@ final class EscenariosEnginePreventivoTest extends TestCase
         $this->assertSame('Beneficio (ahorro pot.)', $escenarioAudit['beneficio_label'] ?? null);
         $this->assertSame('Ahorro neto estimado', $escenarioAudit['vbp_label'] ?? null);
         $this->assertSame('alta', $escenarioAudit['aplicabilidad'] ?? null);
-        $this->assertTrue(!empty($escenarioAudit['es_preventivo']), 'El escenario D preventivo debe identificarse explícitamente.');
+        $this->assertTrue($escenarioAudit['es_preventivo'] ?? false, 'El escenario D preventivo debe identificarse explícitamente.');
         $this->assertSame(3000000.0, floatval($escenarioAudit['beneficio_estimado'] ?? 0));
         $this->assertSame(375000.0, floatval($escenarioAudit['costo_estimado'] ?? 0));
         $this->assertTrue(!empty($escenarioAudit['definicion_sistema']), 'El escenario preventivo debe explicar cómo se define.');
