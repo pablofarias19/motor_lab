@@ -58,10 +58,32 @@ window.WizardPayloadBuilder = class WizardPayloadBuilder {
                 salarios_historicos: (() => {
                     const txtAreas = leer('#salarios_historicos').trim();
                     if (!txtAreas) return [];
+
+                    const patronMesMonto = /^\d{4}-\d{2}\s*:\s*[\d.,]+$/;
+                    const patronMesMontoCaptura = /^(\d{4}-\d{2})\s*:\s*([\d.,]+)$/;
+                    const lines = txtAreas
+                        .split(/\n+/)
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+
+                    const conMes = lines.every((line) => patronMesMonto.test(line));
+                    if (conMes) {
+                        return lines.reduce((acc, line) => {
+                            const match = line.match(patronMesMontoCaptura);
+                            if (!match) return acc;
+                            // Soporta formato local "1.234,56" al normalizar miles con punto y decimales con coma.
+                            const monto = parseFloat(match[2].replace(/\./g, '').replace(',', '.'));
+                            if (!Number.isNaN(monto) && monto > 0) {
+                                acc[match[1]] = monto;
+                            }
+                            return acc;
+                        }, {});
+                    }
+
                     return txtAreas
                         .split(/[\n,]+/)
                         .map((s) => parseFloat(s.trim()))
-                        .filter((n) => !Number.isNaN(n));
+                        .filter((n) => !Number.isNaN(n) && n > 0);
                 })(),
                 tiene_facturacion: leerRadio('tiene_facturacion'),
                 tiene_pago_bancario: leerRadio('tiene_pago_bancario'),

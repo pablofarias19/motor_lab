@@ -41,6 +41,37 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame(31, $payload['situacion']['dia_despido']);
         $this->assertSame('estudio@example.com', $payload['contacto']['email']);
 
+        $payloadArtMeses = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'accidente_laboral',
+            'datos_laborales' => [
+                'salario' => '900000',
+                'antiguedad_meses' => '18',
+                'edad' => '38',
+                'provincia' => 'Buenos Aires',
+            ],
+            'situacion' => [
+                'fecha_siniestro' => '2026-02-10',
+                'porcentaje_incapacidad' => '18',
+                'salarios_historicos' => [
+                    '2025-11' => '800000',
+                    '2025-12' => '820000',
+                    '2026-01' => '840000',
+                    'invalido' => 'abc',
+                ],
+                'tiene_art' => 'si',
+            ],
+            'contacto' => [
+                'email' => 'art@example.com',
+            ],
+        ]);
+
+        $this->assertSame([
+            '2025-11' => 800000.0,
+            '2025-12' => 820000.0,
+            '2026-01' => 840000.0,
+        ], $payloadArtMeses['situacion']['salarios_historicos']);
+
         $payloadConFechas = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleado',
             'tipo_conflicto' => 'diferencias_salariales',
@@ -54,6 +85,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'fecha_despido' => '2026-03-01',
                 'fecha_ultimo_telegrama' => '2026-03-15',
                 'probabilidad_condena' => '0.7',
+            ],
+            'contacto' => [
+                'email' => 'empleado@example.com',
             ],
         ]);
 
@@ -72,6 +106,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
             'situacion' => [
                 'urgencia' => 'media',
                 'probabilidad_condena' => '0.35',
+            ],
+            'contacto' => [
+                'email' => 'preventivo@example.com',
             ],
         ]);
 
@@ -94,6 +131,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'tiene_recibos' => 'si',
                 'registrado_afip' => 'si',
             ],
+            'contacto' => [
+                'email' => 'registro@example.com',
+            ],
         ]);
 
         $this->assertSame(0.0, $payloadRegistroNoCorrespondiente['datos_laborales']['salario_recibo']);
@@ -112,6 +152,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'salario_recibo' => '500000',
                 'antiguedad_recibo' => '18',
             ],
+            'contacto' => [
+                'email' => 'fecha@example.com',
+            ],
         ]);
 
         $this->assertSame(0.0, $payloadFechaDeficiente['datos_laborales']['salario_recibo']);
@@ -127,6 +170,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'tipo_registro' => 'deficiente_salario',
                 'salario_recibo' => '500000',
                 'antiguedad_recibo' => '18',
+            ],
+            'contacto' => [
+                'email' => 'salario@example.com',
             ],
         ]);
 
@@ -153,6 +199,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'motivo_diferencia' => 'horas_extras',
                 'meses_adeudados' => '6',
             ],
+            'contacto' => [
+                'email' => 'conflicto@example.com',
+            ],
         ]);
 
         $this->assertSame('', $payloadOcultoPorConflicto['situacion']['fecha_siniestro']);
@@ -175,6 +224,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'fecha_ultimo_telegrama' => '2026-03-15',
                 'ya_despedido' => 'si',
                 'fecha_despido' => '2026-03-10',
+            ],
+            'contacto' => [
+                'email' => 'telegrama@example.com',
             ],
         ]);
 
@@ -199,6 +251,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
                 'tiene_preexistencia' => 'no',
                 'preexistencia_porcentaje' => '12',
             ],
+            'contacto' => [
+                'email' => 'accidente-sin-art@example.com',
+            ],
         ]);
 
         $this->assertSame('no', $payloadAccidenteSinArt['situacion']['denuncia_art']);
@@ -219,6 +274,9 @@ final class AnalysisPayloadNormalizerTest extends TestCase
             ],
             'situacion' => [
                 'fecha_siniestro' => '2026-02-10',
+            ],
+            'contacto' => [
+                'email' => 'accidente-con-art@example.com',
             ],
         ]);
 

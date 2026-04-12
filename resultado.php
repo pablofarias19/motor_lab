@@ -677,9 +677,17 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
             if ($esArtConCobertura):
                 $montoTarifa = $exposicion['conceptos']['prestacion_art_tarifa']['monto'] ?? 0;
                 $montoCivil = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? 0;
+                $detalleArtCalc = $exposicion['conceptos']['prestacion_art_tarifa']['detalle_calculo'] ?? [];
                 $tipoContingencia = $situacion['tipo_contingencia'] ?? 'accidente_tipico';
                 $estadoCM = $situacion['comision_medica'] ?? 'no_iniciada';
                 $incapTipo = $situacion['incapacidad_tipo'] ?? 'permanente_definitiva';
+                $colorDiferenciaPositiva = '#16a34a';
+                $colorDiferenciaNeutra = 'var(--premium-blue)';
+                $colorDiferenciaNegativa = '#dc2626';
+                // Se conserva el color negativo como resguardo visual ante payloads legacy o cálculos históricos persistidos.
+                $colorDiferenciaCivil = $montoCivil > $montoTarifa
+                    ? $colorDiferenciaPositiva
+                    : ($montoCivil === $montoTarifa ? $colorDiferenciaNeutra : $colorDiferenciaNegativa);
 
                 $etiquetasContingencia = [
                     'accidente_tipico' => 'Accidente de trabajo (típico)',
@@ -755,13 +763,13 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     </div>
 
                     <!-- Tabla comparativa ART vs Civil -->
-                    <h4 style="font-size: 0.85rem; color: var(--premium-blue); margin-bottom: 0.5rem;">Comparativa: Tarifa ART vs Acción Civil</h4>
+                    <h4 style="font-size: 0.85rem; color: var(--premium-blue); margin-bottom: 0.5rem;">Comparativa: Tarifa ART vs Acción Civil integral</h4>
                     <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
                         <thead>
                             <tr style="background: var(--premium-blue); color: #fff;">
                                 <th style="padding: 8px; text-align: left;"></th>
                                 <th style="padding: 8px; text-align: right;">Tarifa ART (Ley 24.557)</th>
-                                <th style="padding: 8px; text-align: right;">Acción Civil (Méndez)</th>
+                                <th style="padding: 8px; text-align: right;">Acción Civil integral</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -782,12 +790,61 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             </tr>
                             <tr>
                                 <td style="padding: 6px 8px;">Diferencia</td>
-                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil > $montoTarifa ? '#16a34a' : '#dc2626' ?>;">
+                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $colorDiferenciaCivil ?>;">
                                     <?= $montoCivil > $montoTarifa ? '+' : '' ?><?= ml_formato_moneda($montoCivil - $montoTarifa) ?> vía civil
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <?php if (!empty($detalleArtCalc)): ?>
+                    <div style="margin-top: 1rem; padding: 1rem; border: 1px solid #dbeafe; border-radius: 10px; background: #f8fbff;">
+                        <h4 style="margin: 0 0 .75rem; font-size: .85rem; color: var(--premium-blue);">Trazabilidad del cálculo ART</h4>
+                        <div class="resumen-grid" style="margin-bottom: .75rem;">
+                            <div class="resumen-item">
+                                <div class="resumen-content">
+                                    <span class="resumen-label">IBM / VIB:</span>
+                                    <span class="resumen-value"><?= ml_formato_moneda(floatval($detalleArtCalc['ibm'] ?? 0)) ?></span>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <div class="resumen-content">
+                                    <span class="resumen-label">Piso legal:</span>
+                                    <span class="resumen-value"><?= ml_formato_moneda(floatval($detalleArtCalc['piso_minimo'] ?? 0)) ?><?= !empty($detalleArtCalc['piso_aplicado']) ? ' aplicado' : ' controlado' ?></span>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <div class="resumen-content">
+                                    <span class="resumen-label">RIPTE:</span>
+                                    <span class="resumen-value"><?= htmlspecialchars((string) ($detalleArtCalc['fuente_ripte'] ?? 'no_disponible')) ?></span>
+                                </div>
+                            </div>
+                            <div class="resumen-item">
+                                <div class="resumen-content">
+                                    <span class="resumen-label">Tipo de cálculo:</span>
+                                    <span class="resumen-value"><?= !empty($detalleArtCalc['calculo_estimado']) ? 'Estimado' : 'Completo' ?></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-size: .8rem; color: #4b5563; line-height: 1.5;">
+                            <strong>Fórmula:</strong> <?= htmlspecialchars((string) ($detalleArtCalc['formula_legal'] ?? '')) ?><br>
+                            <strong>Tratamiento:</strong> <?= htmlspecialchars(str_replace('_', ' ', (string) ($detalleArtCalc['tratamiento'] ?? 'pago_unico'))) ?><br>
+                            <strong>Salarios considerados:</strong> <?= intval($detalleArtCalc['cantidad_salarios'] ?? 0) ?><br>
+                            <?php if (!empty($detalleArtCalc['preexistencia_aplicada'])): ?>
+                                <strong>Preexistencia:</strong> <?= floatval($detalleArtCalc['preexistencia_porcentaje'] ?? 0) ?>%<br>
+                            <?php endif; ?>
+                            <?php if (!empty($detalleArtCalc['necesita_comision_medica'])): ?>
+                                <strong>Observación:</strong> Falta dictamen consolidado de Comisión Médica; se tomó el porcentaje informado.
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <?php if (!empty($exposicion['conceptos']['estimacion_civil_mendez']['nota'])): ?>
+                    <div style="margin-top: .65rem; font-size: .78rem; color: #6b7280; line-height: 1.45;">
+                        <em><?= htmlspecialchars($exposicion['conceptos']['estimacion_civil_mendez']['nota']) ?></em>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($estadoCM === 'homologado'): ?>
                     <div class="motor-aviso-legal" style="margin-top: 1rem; background: #fef2f2; border-color: #fecaca;">

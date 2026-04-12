@@ -573,7 +573,7 @@ class EscenariosEngine
             'nivel_intervencion' => 'profesional',
             'intervencion_desc' => 'Representación letrada especializada en daños y perjuicios',
             'ventajas' => [
-                'Monto potencialmente superior a la tarifa ART (2-3x)',
+                'Monto potencialmente superior a la tarifa ART',
                 'Incluye daño moral y reparación integral',
                 'Actualización por fórmulas civiles (Méndez/Vuotto)',
                 'No está sujeta a topes tarifarios del sistema LRT',

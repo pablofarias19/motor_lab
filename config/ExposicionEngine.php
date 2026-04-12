@@ -12,6 +12,19 @@ require_once __DIR__ . '/ripte_functions.php';
 class ExposicionEngine
 {
     /**
+     * Tasa pura anual de referencia para la proyección civil integral cuando
+     * el motor no discrimina una tasa jurisdiccional específica.
+     * Se mantiene en 6% anual como tasa pura orientativa ya documentada
+     * en la estimación civil vigente del motor.
+     */
+    private const TASA_CIVIL_REFERENCIA_ANUAL = 0.06;
+    /**
+     * Piso funcional de daño moral/extrapatrimonial que la documentación
+     * vigente del motor aplica a la vía civil.
+     */
+    private const DANIO_MORAL_CIVIL_PORCENTAJE = 0.20;
+
+    /**
      * calcularExposicion() — Estima el impacto económico estructural del conflicto
      * según la Ley de Contrato de Trabajo (LCT) argentina.
      *
@@ -118,69 +131,79 @@ class ExposicionEngine
             $p = $ce['accidentes'];
 
             if ($incapacidad > 0 && $tieneArt) {
-                // ═══ VÍA ART: Fórmula LRT (Art. 14.2.a Ley 24.557) ═══
-                // Fórmula: 53 × IBM × (65 / Edad) × (%Incapacidad / 100)
-                $ibm = $salario; // Simplificación: IBM ≈ salario declarado
-                $montoLRT = $p['coeficiente_lrt'] * $ibm * ($p['factor_edad_limite'] / $edad) * ($incapacidad / 100);
-
-                // Aplicar pisos mínimos RIPTE según tipo de incapacidad
+                $motorArt = new \App\Engines\ArtCalculationEngine();
+                $analisisArt = $motorArt->calcular($datosLaborales, $situacion, $p);
+                $montoLRT = floatval($analisisArt['monto_final'] ?? 0);
+                $incapFinal = floatval($analisisArt['incapacidad_usada'] ?? $incapacidad);
                 $tipoIncap = $situacion['incapacidad_tipo'] ?? 'permanente_definitiva';
-                $pisoAplicado = '';
-                if ($tipoIncap === 'gran_invalidez' || $incapacidad >= $p['umbral_gran_invalidez']) {
-                    $montoLRT = max($montoLRT, $p['piso_gran_invalidez']);
-                    $pisoAplicado = 'Piso gran invalidez RIPTE';
-                } elseif ($tipoIncap === 'muerte') {
-                    $montoLRT = max($montoLRT, $p['piso_muerte']);
-                    $pisoAplicado = 'Piso muerte RIPTE';
-                } elseif ($tipoIncap === 'permanente_definitiva') {
-                    $montoLRT = max($montoLRT, $p['piso_minimo_ipd']);
-                    $pisoAplicado = 'Piso IPD RIPTE';
-                } else {
-                    $montoLRT = max($montoLRT, $p['piso_minimo_ipp']);
-                    $pisoAplicado = 'Piso IPP RIPTE';
-                }
 
-                // Preexistencias (Balthazard simplificado)
-                $incapFinal = $incapacidad;
-                if (($situacion['tiene_preexistencia'] ?? 'no') === 'si') {
-                    $preex = floatval($situacion['preexistencia_porcentaje'] ?? 0);
-                    if ($preex > 0 && $preex < 100) {
-                        // Incapacidad atribuible = total - preexistencia (Balthazard)
-                        $incapFinal = (1 - (1 - $incapacidad / 100) / (1 - $preex / 100)) * 100;
-                        $incapFinal = max(0, $incapFinal);
-                        $montoLRT = $p['coeficiente_lrt'] * $ibm * ($p['factor_edad_limite'] / $edad) * ($incapFinal / 100);
-                    }
+                $notaLRT = "Fórmula LRT: {$analisisArt['formula_legal']} = " . ml_formato_moneda(floatval($analisisArt['monto_formula'] ?? 0)) . ".";
+                $notaLRT .= " IBM/VIB: " . ml_formato_moneda(floatval($analisisArt['ibm'] ?? $salario)) . ".";
+                if (!empty($analisisArt['fecha_siniestro'])) {
+                    $notaLRT .= " PMI/siniestro: {$analisisArt['fecha_siniestro']}.";
                 }
-
-                $notaLRT = "Fórmula LRT: 53 x IBM x (65/{$edad}) x {$incapFinal}%.";
-                if (!empty($pisoAplicado)) $notaLRT .= " {$pisoAplicado} aplicado (vigencia: {$p['fecha_pisos_ripte']}).";
+                if (!empty($analisisArt['piso_descripcion'])) {
+                    $notaLRT .= " {$analisisArt['piso_descripcion']}" . (($analisisArt['piso_aplicado'] ?? false) ? ' aplicado' : ' controlado') . ".";
+                }
+                if (!empty($analisisArt['calculo_estimado'])) {
+                    $notaLRT .= " Cálculo estimado por falta de serie RIPTE completa; se usó salario base como fallback.";
+                }
 
                 $conceptos['prestacion_art_tarifa'] = [
                     'descripcion' => "Prestación dineraria ART — Tarifa Ley 24.557 ({$incapFinal}% incap.)",
                     'monto' => round($montoLRT, 2),
                     'base_legal' => 'Art. 14.2.a Ley 24.557 + Ley 26.773 (pisos RIPTE)',
-                    'nota' => $notaLRT
+                    'nota' => $notaLRT,
+                    'detalle_calculo' => $analisisArt,
                 ];
 
-                // ═══ VÍA CIVIL: Fórmula Méndez (estimación comparativa) ═══
-                $montoCivil = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
+                // ═══ VÍA CIVIL: estimación integral comparativa ═══
+                $montoCivilBase = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
+                $duracionCivilMeses = max(1, intval($p['escenarios_art']['civil_complementaria']['duracion_promedio'] ?? 48));
+                // Tasa pura de referencia estándar que usa hoy esta estimación civil integral en ausencia de un cálculo jurisdiccional específico.
+                $tasaInteresCivil = self::TASA_CIVIL_REFERENCIA_ANUAL;
+                // Piso orientativo de daño moral/extrapatrimonial según la documentación funcional vigente del motor (+20% mínimo en vía civil).
+                $danioMoral = $montoCivilBase * self::DANIO_MORAL_CIVIL_PORCENTAJE;
+                $subtotalCivil = $montoCivilBase + $danioMoral;
+                $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
+                $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;
+                $civilBelowArtFloor = $montoCivilIntegral <= $montoLRT;
+                $montoCivil = $civilBelowArtFloor ? $montoLRT : $montoCivilIntegral;
+                $notaCivil = "Estimación integral de vía civil: capital base Méndez {$p['meses_año']} meses + daño moral 20% + intereses judiciales estimados al 6% anual por {$duracionCivilMeses} meses.";
+                if ($civilBelowArtFloor) {
+                    $notaCivil .= " Se aplica como piso comparativo la tarifa ART para no subestimar la reparación integral.";
+                }
 
                 $conceptos['estimacion_civil_mendez'] = [
-                    'descripcion' => "Estimación acción civil complementaria (Méndez/Vuotto)",
+                    'descripcion' => "Estimación acción civil integral (Méndez + daño moral + intereses)",
                     'monto' => round($montoCivil, 2),
-                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente',
-                    'nota' => "Fórmula Méndez: (Salario x 13 x {$incapacidad}% x 65) / {$edad}. ADVERTENCIA: Optar por vía civil excluye cobro de tarifa ART."
+                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente + criterio de reparación integral',
+                    'nota' => $notaCivil
                 ];
 
                 // Adicional gran invalidez
-                if ($tipoIncap === 'gran_invalidez' || $incapacidad >= $p['umbral_gran_invalidez']) {
+                if (($analisisArt['adicional_gran_invalidez'] ?? 0) > 0) {
                     $conceptos['adicional_gran_invalidez'] = [
                         'descripcion' => 'Prestación adicional por gran invalidez (Art. 17 Ley 24.557)',
-                        'monto' => round($p['piso_gran_invalidez'], 2),
+                        'monto' => round(floatval($analisisArt['adicional_gran_invalidez'] ?? $p['piso_gran_invalidez']), 2),
                         'base_legal' => 'Art. 17 Ley 24.557',
                         'nota' => 'Prestación de pago mensual adicional equivalente a 3 MOPRE para asistencia.'
                     ];
                 }
+
+                $conceptos['indicadores_art'] = [
+                    'descripcion' => 'Indicadores del cálculo ART',
+                    'monto' => 0.0,
+                    'base_legal' => 'Trazabilidad interna del motor',
+                    'nota' => sprintf(
+                        'Fuente RIPTE: %s. Cálculo %s. Tratamiento: %s. %s',
+                        $analisisArt['fuente_ripte'] ?? 'no_disponible',
+                        !empty($analisisArt['calculo_estimado']) ? 'estimado' : 'completo',
+                        $analisisArt['tratamiento'] ?? 'pago_unico',
+                        !empty($analisisArt['necesita_comision_medica']) ? 'Falta dictamen firme de Comisión Médica.' : 'Dictamen/porcentaje consolidado.'
+                    ),
+                    'detalle_calculo' => $analisisArt,
+                ];
 
             } elseif ($incapacidad > 0 && !$tieneArt) {
                 // ═══ SIN ART: Mantener lógica original (acción civil directa) ═══
