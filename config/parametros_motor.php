@@ -39,6 +39,13 @@ return (static function (): array {
             'piso_muerte' => 6780000,               // Piso prestación por muerte (RIPTE)
             'umbral_gran_invalidez' => 66,          // % a partir del cual se considera gran invalidez
             'fecha_pisos_ripte' => '2025-09-01',    // Fecha de última actualización pisos RIPTE
+            'civil_mendez' => [
+                'danio_moral_pct' => 0.20,                    // Piso orientativo extrapatrimonial
+                'danio_vida_relacion_pct' => 0.15,            // Pérdida de chance / vida de relación
+                'interes_judicial_anual_orientativo' => 0.50, // Litigio largo 36-60 meses
+                'meses_litigio_default' => 48,
+                'piso_sobre_tarifa_art' => 1.00,              // Nunca mostrar civil por debajo del umbral tarifado ART (>=)
+            ],
 
             // ── Pesos IRIL específicos para ART (con tiene_art=si) ──
             'iril_pesos_art' => [

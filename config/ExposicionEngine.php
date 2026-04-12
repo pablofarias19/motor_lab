@@ -165,22 +165,23 @@ class ExposicionEngine
                     'detalle_calculo' => $analisisArt,
                 ];
 
-                $analisisCivil = $this->buildCivilScenarios(
+                // ═══ VÍA CIVIL: Fórmula Méndez + reparación integral orientativa ═══
+                $estimacionCivil = $this->calcularEstimacionCivilIntegral(
                     $salario,
                     $edad,
                     $incapacidad,
                     $montoLRT,
-                    $p,
-                    $perfilJurisdiccional,
-                    true
+                    $situacion,
+                    $p
                 );
-                $montoCivil = floatval($analisisCivil['escenarios']['probable']['monto_total'] ?? $montoLRT);
+                $montoCivil = $estimacionCivil['monto_total'];
 
                 $conceptos['estimacion_civil_mendez'] = [
-                    'descripcion' => "Estimación acción civil integral — escenario probable",
+                    'descripcion' => "Estimación acción civil complementaria (Méndez integral)",
                     'monto' => round($montoCivil, 2),
-                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente + criterio de reparación integral',
-                    'nota' => (string) ($analisisCivil['escenarios']['probable']['nota'] ?? '')
+                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente',
+                    'nota' => $estimacionCivil['nota'],
+                    'componentes' => $estimacionCivil['componentes']
                 ];
 
                 // Adicional gran invalidez
@@ -450,12 +451,16 @@ class ExposicionEngine
         // ─────────────────────────────────────────────────────────────────────
         // 5. CÁLCULO DE TOTALES  
         // ─────────────────────────────────────────────────────────────────────
-        $totalBase = 0;
-        $totalConMultas = 0;
-        foreach ($conceptos as $key => $concepto) {
-            $totalConMultas += $concepto['monto'];
-            if (strpos($key, 'multa') === false && strpos($key, 'sancion') === false) {
-                $totalBase += $concepto['monto'];
+        if ($tipoConflicto === 'accidente_laboral' && (($situacion['tiene_art'] ?? 'no') === 'si')) {
+            [$totalBase, $totalConMultas] = $this->calcularTotalesAccidenteArt($conceptos);
+        } else {
+            $totalBase = 0;
+            $totalConMultas = 0;
+            foreach ($conceptos as $key => $concepto) {
+                $totalConMultas += $concepto['monto'];
+                if (strpos($key, 'multa') === false && strpos($key, 'sancion') === false) {
+                    $totalBase += $concepto['monto'];
+                }
             }
         }
 
@@ -737,5 +742,94 @@ class ExposicionEngine
             'total_base' => floatval($resultadosClave['exposicion_art_segura'] ?? 0),
             'total_con_multas' => floatval($resultadosClave['exposicion_maxima_real_con_costas'] ?? 0),
         ];
+    }
+
+    private function calcularEstimacionCivilIntegral(
+        float $salario,
+        int $edad,
+        float $incapacidad,
+        float $montoTarifaArt,
+        array $situacion,
+        array $parametrosAccidente
+    ): array {
+        $cfgCivil = $parametrosAccidente['civil_mendez'] ?? [];
+        $capitalBase = ($salario * $parametrosAccidente['meses_año'] * ($incapacidad / 100) * $parametrosAccidente['factor_edad_limite']) / $edad;
+
+        $danioMoral = $capitalBase * floatval($cfgCivil['danio_moral_pct'] ?? 0.20);
+        $danioVidaRelacion = $capitalBase * floatval($cfgCivil['danio_vida_relacion_pct'] ?? 0.15);
+
+        $mesesLitigio = intval($situacion['meses_litigio'] ?? 0);
+        if ($mesesLitigio <= 0) {
+            $mesesLitigio = intval($cfgCivil['meses_litigio_default'] ?? 48);
+        }
+
+        $subtotalIntegral = $capitalBase + $danioMoral + $danioVidaRelacion;
+        $tasaAnual = floatval($cfgCivil['interes_judicial_anual_orientativo'] ?? 0.50);
+        $factorActualizacion = pow(1 + $tasaAnual, $mesesLitigio / 12) - 1;
+        $actualizacionJudicial = $subtotalIntegral * $factorActualizacion;
+
+        $montoIntegral = $subtotalIntegral + $actualizacionJudicial;
+        $pisoCivil = $montoTarifaArt * floatval($cfgCivil['piso_sobre_tarifa_art'] ?? 1.0);
+        $pisoAplicado = $montoIntegral < $pisoCivil;
+        $montoTotal = $pisoAplicado ? $pisoCivil : $montoIntegral;
+
+        $nota = sprintf(
+            'Estimación integral civil sobre base Méndez: capital base %s + daño moral mínimo %s + vida de relación/pérdida de chance %s + actualización judicial orientativa %s (%d meses). %s ADVERTENCIA: optar por vía civil excluye cobro de tarifa ART.',
+            ml_formato_moneda($capitalBase),
+            ml_formato_moneda($danioMoral),
+            ml_formato_moneda($danioVidaRelacion),
+            ml_formato_moneda($actualizacionJudicial),
+            $mesesLitigio,
+            $pisoAplicado
+                ? 'Se aplicó piso comparativo equivalente a la tarifa ART para evitar una estimación civil por debajo del umbral tarifado.'
+                : 'No fue necesario aplicar piso comparativo sobre la tarifa ART.'
+        );
+
+        return [
+            'monto_total' => round($montoTotal, 2),
+            'nota' => $nota,
+            'componentes' => [
+                'capital_base' => round($capitalBase, 2),
+                'danio_moral' => round($danioMoral, 2),
+                'danio_vida_relacion' => round($danioVidaRelacion, 2),
+                'actualizacion_judicial' => round($actualizacionJudicial, 2),
+                'meses_litigio' => $mesesLitigio,
+                'piso_tarifa_art' => round($pisoCivil, 2),
+                'piso_aplicado' => $pisoAplicado,
+            ],
+        ];
+    }
+
+    private function calcularTotalesAccidenteArt(array $conceptos): array
+    {
+        $rutaArt = 0.0;
+        $rutaCivil = 0.0;
+        $extrasBase = 0.0;
+        $extrasConMultas = 0.0;
+
+        foreach ($conceptos as $key => $concepto) {
+            $monto = floatval($concepto['monto'] ?? 0);
+
+            if ($key === 'prestacion_art_tarifa' || $key === 'adicional_gran_invalidez') {
+                $rutaArt += $monto;
+                continue;
+            }
+
+            if ($key === 'estimacion_civil_mendez') {
+                $rutaCivil += $monto;
+                continue;
+            }
+
+            $extrasConMultas += $monto;
+            if (strpos($key, 'multa') === false && strpos($key, 'sancion') === false) {
+                $extrasBase += $monto;
+            }
+        }
+
+        $mejorRuta = max($rutaArt, $rutaCivil);
+        $totalBase = $mejorRuta + $extrasBase;
+        $totalConMultas = $mejorRuta + $extrasConMultas;
+
+        return [round($totalBase, 2), round($totalConMultas, 2)];
     }
 }
