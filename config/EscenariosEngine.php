@@ -702,8 +702,16 @@ class EscenariosEngine
     ): array {
 
         $conceptos = $exposicion['conceptos'] ?? [];
-        $montoTarifaART = $conceptos['prestacion_art_tarifa']['monto'] ?? ($exposicion['total_base'] ?? 0);
-        $montoCivil = $conceptos['estimacion_civil_mendez']['monto'] ?? ($montoTarifaART * 2.5);
+        $cuantificacion = $exposicion['cuantificacion_economica'] ?? [];
+        $viaArt = is_array($cuantificacion['via_art'] ?? null) ? $cuantificacion['via_art'] : [];
+        $viaCivil = is_array($cuantificacion['via_civil'] ?? null) ? $cuantificacion['via_civil'] : [];
+        $comparativa = is_array($cuantificacion['comparativa'] ?? null) ? $cuantificacion['comparativa'] : [];
+
+        $montoTarifaART = floatval($viaArt['monto_seguro'] ?? ($conceptos['prestacion_art_tarifa']['monto'] ?? ($exposicion['total_base'] ?? 0)));
+        $civilEscenarios = is_array($viaCivil['escenarios'] ?? null) ? $viaCivil['escenarios'] : [];
+        $montoCivilConservador = floatval($civilEscenarios['conservador'] ?? ($montoTarifaART * 1.1));
+        $montoCivilProbable = floatval($civilEscenarios['probable'] ?? ($conceptos['estimacion_civil_mendez']['monto'] ?? ($montoTarifaART * 2.5)));
+        $montoCivilAgresivo = floatval($civilEscenarios['agresivo'] ?? max($montoCivilProbable, $montoTarifaART * 2.8));
         $honorariosBase = $montoTarifaART * ($params['escenarios']['global']['honorarios_judiciales_tasa'] ?? 0.22);
 
         $cfgArt = $params['calculos_especificos']['accidentes']['escenarios_art'];
@@ -726,6 +734,9 @@ class EscenariosEngine
             'costo_estimado' => round($costoA, 2),
             'vbp' => round($vbpA, 2),
             'vae' => $vaeA,
+            'via_juridica' => 'art',
+            'probabilidad_cierre' => 0.85,
+            'exposicion_economica' => ['art' => round($montoTarifaART, 2)],
             'duracion_min_meses' => $cfgA['duracion_min'],
             'duracion_max_meses' => $cfgA['duracion_max'],
             'duracion_promedio' => $cfgA['duracion_promedio'],
@@ -765,6 +776,9 @@ class EscenariosEngine
             'costo_estimado' => round($costoB, 2),
             'vbp' => round($vbpB, 2),
             'vae' => $vaeB,
+            'via_juridica' => 'art',
+            'probabilidad_cierre' => 0.60,
+            'exposicion_economica' => ['art' => round($benefB, 2)],
             'duracion_min_meses' => $cfgB['duracion_min'],
             'duracion_max_meses' => $cfgB['duracion_max'],
             'duracion_promedio' => $cfgB['duracion_promedio'],
@@ -803,6 +817,9 @@ class EscenariosEngine
             'costo_estimado' => round($costoC, 2),
             'vbp' => round($vbpC, 2),
             'vae' => $vaeC,
+            'via_juridica' => 'art_judicial',
+            'probabilidad_cierre' => 0.45,
+            'exposicion_economica' => ['art_judicial' => round($benefC, 2)],
             'duracion_min_meses' => $cfgC['duracion_min'],
             'duracion_max_meses' => $cfgC['duracion_max'],
             'duracion_promedio' => $cfgC['duracion_promedio'],
@@ -827,8 +844,9 @@ class EscenariosEngine
 
         // ── Escenario D — Acción Civil Complementaria ───────────────────────
         $cfgD = $cfgArt['civil_complementaria'];
-        $benefD = $montoCivil;
-        $costoD = $honorariosBase * $cfgD['factor_honorarios'];
+        $benefD = $montoCivilProbable;
+        $costasCivilProbables = floatval($cuantificacion['costas']['probable'] ?? ($benefD * 0.22));
+        $costoD = ($honorariosBase * $cfgD['factor_honorarios']) + $costasCivilProbables;
         $vbpD = $benefD - $costoD;
         $riesgoD = min(5.0, $irilScore * $cfgD['factor_riesgo']);
         $vaeD = ($cfgD['duracion_promedio'] > 0 && $riesgoD > 0)
@@ -842,6 +860,13 @@ class EscenariosEngine
             'costo_estimado' => round($costoD, 2),
             'vbp' => round($vbpD, 2),
             'vae' => $vaeD,
+            'via_juridica' => 'civil',
+            'probabilidad_cierre' => round(0.35 + min(0.25, $irilScore / 20), 2),
+            'exposicion_economica' => [
+                'conservador' => round($montoCivilConservador, 2),
+                'probable' => round($montoCivilProbable, 2),
+                'agresivo' => round($montoCivilAgresivo, 2),
+            ],
             'duracion_min_meses' => $cfgD['duracion_min'],
             'duracion_max_meses' => $cfgD['duracion_max'],
             'duracion_promedio' => $cfgD['duracion_promedio'],
@@ -861,13 +886,13 @@ class EscenariosEngine
                 'Honorarios más elevados',
                 'Resultado incierto: depende de pericial y jurisprudencia',
             ],
-            'nota' => 'IMPORTANTE: Elegir esta vía implica renunciar definitivamente al cobro de la prestación tarifada ART. Solo conviene si la diferencia entre monto civil y tarifa ART es significativa y la prueba es sólida.',
+            'nota' => 'IMPORTANTE: Elegir esta vía implica renunciar definitivamente al cobro de la prestación tarifada ART. El motor la valora por rango (conservador/probable/agresivo) e integra costas probables, no por una suma acumulada con ART.',
         ];
 
         // ── Determinar recomendación ART ─────────────────────────────────────
         $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
         $escenarios = $this->agregarIndicesEstrategicos($escenarios);
-        $recomendado = $this->determinarRecomendadoART($escenarios, $estadoCM, $irilScore, $montoTarifaART, $montoCivil, $situacion);
+        $recomendado = $this->determinarRecomendadoART($escenarios, $estadoCM, $irilScore, $montoTarifaART, $montoCivilProbable, $situacion, $comparativa);
 
         $tablaComparativa = $this->construirTablaComparativa($escenarios, $recomendado);
 
@@ -875,6 +900,7 @@ class EscenariosEngine
             'escenarios' => $escenarios,
             'recomendado' => $recomendado,
             'tabla_comparativa' => $tablaComparativa,
+            'via_recomendada' => $comparativa['via_recomendada'] ?? null,
         ];
     }
 
@@ -887,8 +913,17 @@ class EscenariosEngine
         float $iril,
         float $montoTarifa,
         float $montoCivil,
-        array $situacion
+        array $situacion,
+        array $comparativa = []
     ): string {
+        if (($comparativa['via_recomendada'] ?? '') === 'civil') {
+            return 'D';
+        }
+
+        if (($comparativa['via_recomendada'] ?? '') === 'art' && $estadoCM !== 'homologado') {
+            return 'A';
+        }
+
         // Si el dictamen CM ya fue homologado → solo D es viable (cosa juzgada administrativa)
         if ($estadoCM === 'homologado') {
             return 'D';

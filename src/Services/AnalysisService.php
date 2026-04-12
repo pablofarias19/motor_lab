@@ -48,6 +48,7 @@ class AnalysisService
             $payload['tipo_usuario']
         );
         $exposicion = $this->enriquecerAnalisisEmpresa($payload, $exposicion);
+        $exposicion = $this->sincronizarModeloAccidente($exposicion);
         $exposicion['analisis_complementario'] = ComplementaryLegalAnalysisBuilder::build(
             $payload['datos_laborales'],
             $payload['situacion'],
@@ -261,6 +262,24 @@ class AnalysisService
         if (!empty($analisisEmpresa)) {
             $exposicion['analisis_empresa'] = $analisisEmpresa;
         }
+
+        return $exposicion;
+    }
+
+    private function sincronizarModeloAccidente(array $exposicion): array
+    {
+        if (!isset($exposicion['cuantificacion_economica']) || !is_array($exposicion['cuantificacion_economica'])) {
+            return $exposicion;
+        }
+
+        $maxActual = floatval($exposicion['resultados_clave']['exposicion_maxima_real_con_costas'] ?? 0);
+        $totalConMultas = floatval($exposicion['total_con_multas'] ?? 0);
+        $maximo = max($maxActual, $totalConMultas);
+
+        $exposicion['cuantificacion_economica']['resultado_final']['exposicion_maxima_real'] = round($maximo, 2);
+        $exposicion['resultados_clave']['exposicion_maxima_real_con_costas'] = round($maximo, 2);
+        $exposicion['total_con_multas'] = round($maximo, 2);
+        $exposicion['total'] = round($maximo, 2);
 
         return $exposicion;
     }

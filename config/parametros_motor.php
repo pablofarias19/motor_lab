@@ -56,6 +56,73 @@ return (static function (): array {
                 'enfermedad_profesional'  => 5.0,   // Listado cerrado, máxima incertidumbre
             ],
 
+            // ── Perfiles jurisdiccionales para vía civil y estrategia ──
+            'perfiles_jurisdiccionales' => [
+                'default' => [
+                    'tendencia_danio_moral' => 'media',
+                    'danio_moral_factor' => 1.00,
+                    'interes_anual_base' => 0.10,
+                    'apertura_accion_civil' => 0.55,
+                    'severidad_costas' => 1.00,
+                ],
+                'Córdoba' => [
+                    'tendencia_danio_moral' => 'media_alta',
+                    'danio_moral_factor' => 1.10,
+                    'interes_anual_base' => 0.12,
+                    'apertura_accion_civil' => 0.60,
+                    'severidad_costas' => 1.05,
+                ],
+                'CABA' => [
+                    'tendencia_danio_moral' => 'media',
+                    'danio_moral_factor' => 1.00,
+                    'interes_anual_base' => 0.11,
+                    'apertura_accion_civil' => 0.58,
+                    'severidad_costas' => 1.00,
+                ],
+                'Buenos Aires' => [
+                    'tendencia_danio_moral' => 'media_alta',
+                    'danio_moral_factor' => 1.08,
+                    'interes_anual_base' => 0.12,
+                    'apertura_accion_civil' => 0.57,
+                    'severidad_costas' => 1.08,
+                ],
+            ],
+
+            // ── Matriz civil comparativa (Art. 4 Ley 26.773) ──
+            'civil' => [
+                'escenarios' => [
+                    'conservador' => [
+                        'danio_moral' => 0.20,
+                        'interes_anual' => 0.06,
+                        'duracion_meses' => 36,
+                        'factor_probatorio' => 0.95,
+                    ],
+                    'probable' => [
+                        'danio_moral' => 0.35,
+                        'interes_anual' => 0.12,
+                        'duracion_meses' => 48,
+                        'factor_probatorio' => 1.10,
+                    ],
+                    'agresivo' => [
+                        'danio_moral' => 0.50,
+                        'interes_anual' => 0.18,
+                        'duracion_meses' => 60,
+                        'factor_probatorio' => 1.25,
+                    ],
+                ],
+                'costas' => [
+                    'min' => 0.20,
+                    'probable' => 0.275,
+                    'max' => 0.35,
+                ],
+                'honorarios' => [
+                    'min' => 0.18,
+                    'probable' => 0.22,
+                    'max' => 0.27,
+                ],
+                'temeridad_tasa' => 0.10,
+            ],
+
             // ── Escenarios ART (reemplazan A/B/C/D cuando tiene_art=si) ──
             'escenarios_art' => [
                 'aceptacion_cm' => [

@@ -110,6 +110,9 @@ class IrilEngine
         $pesos = $esArtConCobertura
             ? $params['calculos_especificos']['accidentes']['iril_pesos_art']
             : $params['iril_pesos'];
+        $perfilJurisdiccionalArt = $esArtConCobertura
+            ? $this->resolvePerfilJurisdiccionalART((string) ($datosLaborales['provincia'] ?? 'CABA'), $params)
+            : [];
 
         // Calcular cada dimensión
         $saturacion = $this->calcularSaturacion($datosLaborales['provincia'] ?? 'CABA');
@@ -117,9 +120,9 @@ class IrilEngine
             ? $this->calcularComplejidadProbatoriaART($documentacion, $situacion)
             : $this->calcularComplejidadProbatoria($documentacion, $tipoUsuario);
         $volatilidad = $esArtConCobertura
-            ? $this->calcularVolatilidadART($situacion, $params)
+            ? $this->calcularVolatilidadART($situacion, $params, $perfilJurisdiccionalArt)
             : $this->calcularVolatilidad($tipoConflicto);
-        $costas = $this->calcularRiesgoCostas($situacion, $tipoUsuario);
+        $costas = $this->calcularRiesgoCostas($situacion, $tipoUsuario, $perfilJurisdiccionalArt);
         $multiplicador = $this->calcularRiesgoMultiplicador($situacion);
 
         // Aplicar pesos desde la configuración
@@ -143,7 +146,7 @@ class IrilEngine
             ? 'Variabilidad jurisprudencial según tipo de contingencia ART'
             : 'Variabilidad interpretativa del tipo de conflicto';
 
-        return [
+        $resultado = [
             'score' => $score,
             'nivel' => ml_nivel_iril($score),
             'detalle' => [
@@ -175,6 +178,13 @@ class IrilEngine
             ],
             'alertas' => $alertas,
         ];
+
+        if ($esArtConCobertura) {
+            $resultado['perfil_jurisdiccional'] = $perfilJurisdiccionalArt;
+            $resultado['senales_art'] = $this->buildSenalesArt($documentacion, $situacion);
+        }
+
+        return $resultado;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -286,6 +296,26 @@ class IrilEngine
             $score -= 0.5;
         }
 
+        if (($situacion['calidad_prueba_medica'] ?? 'media') === 'alta') {
+            $score -= 0.7;
+        } elseif (($situacion['calidad_prueba_medica'] ?? 'media') === 'baja') {
+            $score += 0.5;
+        }
+
+        if (($situacion['nexo_causal'] ?? 'medio') === 'alto') {
+            $score -= 0.7;
+        } elseif (($situacion['nexo_causal'] ?? 'medio') === 'bajo') {
+            $score += 0.6;
+        }
+
+        if (($situacion['contingencia_similar_previa'] ?? 'no') === 'si') {
+            $score += 0.4;
+        }
+
+        if (($doc['documentacion_empresa_completa'] ?? 'no') === 'no') {
+            $score += 0.4;
+        }
+
         // Rechazo de ART → sube complejidad (+0.5)
         if (($situacion['rechazo_art'] ?? 'no') === 'si') {
             $score += 0.5;
@@ -298,18 +328,50 @@ class IrilEngine
      * calcularVolatilidadART() — Volatilidad normativa específica según tipo
      * de contingencia ART (accidente típico / in itinere / enfermedad profesional).
      */
-    private function calcularVolatilidadART(array $situacion, array $params): float
+    private function calcularVolatilidadART(array $situacion, array $params, array $perfilJurisdiccional = []): float
     {
         $tipo = $situacion['tipo_contingencia'] ?? 'accidente_tipico';
         $tabla = $params['calculos_especificos']['accidentes']['volatilidad_contingencia'] ?? [];
-        return $tabla[$tipo] ?? 3.0;
+        $base = $tabla[$tipo] ?? 3.0;
+        $aperturaCivil = floatval($perfilJurisdiccional['apertura_accion_civil'] ?? 0.55);
+        if ($aperturaCivil >= 0.60) {
+            $base += 0.3;
+        }
+
+        return max(1.0, min(5.0, round($base, 1)));
+    }
+
+    private function resolvePerfilJurisdiccionalART(string $provincia, array $params): array
+    {
+        $perfiles = $params['calculos_especificos']['accidentes']['perfiles_jurisdiccionales'] ?? [];
+        $perfil = $perfiles[$provincia] ?? ($perfiles['default'] ?? []);
+
+        return [
+            'jurisdiccion' => $provincia,
+            'tendencia_danio_moral' => (string) ($perfil['tendencia_danio_moral'] ?? 'media'),
+            'interes_anual_base' => floatval($perfil['interes_anual_base'] ?? 0.10),
+            'apertura_accion_civil' => floatval($perfil['apertura_accion_civil'] ?? 0.55),
+            'severidad_costas' => floatval($perfil['severidad_costas'] ?? 1.0),
+        ];
+    }
+
+    private function buildSenalesArt(array $documentacion, array $situacion): array
+    {
+        return [
+            'calidad_prueba_medica' => (string) ($situacion['calidad_prueba_medica'] ?? 'media'),
+            'nexo_causal' => (string) ($situacion['nexo_causal'] ?? (($situacion['denuncia_art'] ?? 'no') === 'si' ? 'alto' : 'medio')),
+            'rechazo_art' => ($situacion['rechazo_art'] ?? 'no') === 'si',
+            'dictamen_cm' => (string) ($situacion['comision_medica'] ?? 'no_iniciada'),
+            'documentacion_empresa_completa' => ($documentacion['documentacion_empresa_completa'] ?? 'no') === 'si',
+            'contingencia_similar_previa' => ($situacion['contingencia_similar_previa'] ?? 'no') === 'si',
+        ];
     }
 
     /**
      * calcularRiesgoCostas() — Evalúa el riesgo de ser condenado en costas.
      * Considera si ya se inició intercambio epistolar y la posición procesal.
      */
-    private function calcularRiesgoCostas(array $situacion, string $tipoUsuario): float
+    private function calcularRiesgoCostas(array $situacion, string $tipoUsuario, array $perfilJurisdiccional = []): float
     {
         $score = 2.5; // base neutral
 
@@ -331,6 +393,11 @@ class IrilEngine
         // Si hay urgencia declarada → el tiempo apremia, sube el riesgo estructural
         if (!empty($situacion['urgencia']) && $situacion['urgencia'] === 'alta') {
             $score += 0.5;
+        }
+
+        $severidadCostas = floatval($perfilJurisdiccional['severidad_costas'] ?? 1.0);
+        if ($severidadCostas > 1.0) {
+            $score += min(0.5, ($severidadCostas - 1.0) * 2);
         }
 
         return max(1.0, min(5.0, round($score, 1)));
@@ -533,6 +600,68 @@ class IrilEngine
                     'urgencia' => 'alta',
                     'descripcion' => 'El acuerdo homologado en Comisión Médica tiene efecto de cosa juzgada administrativa. Solo queda disponible la vía civil complementaria (Art. 4 Ley 26.773).',
                     'fecha_vencimiento' => null
+                ];
+            }
+        }
+
+        if ($tipoConflicto === 'accidente_laboral') {
+            if (($situacion['tiene_art'] ?? 'no') !== 'si') {
+                $alertas[] = [
+                    'tipo' => 'falta_art',
+                    'codigo' => 'falta_art',
+                    'urgencia' => 'critica',
+                    'descripcion' => 'No se informó cobertura ART activa: la empresa queda expuesta a responsabilidad directa.',
+                    'fecha_vencimiento' => null,
+                ];
+            }
+
+            if (($situacion['comision_medica'] ?? 'no_iniciada') === 'no_iniciada') {
+                $alertas[] = [
+                    'tipo' => 'dictamen_cm_ausente',
+                    'codigo' => 'dictamen_cm_ausente',
+                    'urgencia' => 'alta',
+                    'descripcion' => 'Aún no existe dictamen firme de Comisión Médica; el porcentaje de incapacidad sigue abierto.',
+                    'fecha_vencimiento' => null,
+                ];
+            }
+
+            if (($situacion['denuncia_art'] ?? 'no') === 'si' && ($situacion['rechazo_art'] ?? 'no') === 'no') {
+                $alertas[] = [
+                    'tipo' => 'alta_probabilidad_nexo',
+                    'codigo' => 'alta_probabilidad_nexo',
+                    'urgencia' => 'alta',
+                    'descripcion' => 'La denuncia ante ART no fue rechazada: existe una señal favorable de nexo causal.',
+                    'fecha_vencimiento' => null,
+                ];
+            }
+
+            if (($documentacion['registrado_afip'] ?? 'no') === 'no' || ($documentacion['documentacion_empresa_completa'] ?? 'no') === 'no') {
+                $alertas[] = [
+                    'tipo' => 'documentacion_insuficiente_empresa',
+                    'codigo' => 'documentacion_insuficiente_empresa',
+                    'urgencia' => 'alta',
+                    'descripcion' => 'La documentación empresaria aparece incompleta para defender la contingencia.',
+                    'fecha_vencimiento' => null,
+                ];
+            }
+
+            if (intval($situacion['cantidad_empleados'] ?? 1) > 1) {
+                $alertas[] = [
+                    'tipo' => 'riesgo_cascada',
+                    'codigo' => 'riesgo_cascada',
+                    'urgencia' => 'media',
+                    'descripcion' => 'El caso puede generar reclamos similares en otros trabajadores de la misma dotación.',
+                    'fecha_vencimiento' => null,
+                ];
+            }
+
+            if (($situacion['rechazo_art'] ?? 'no') === 'si' || ($situacion['culpa_grave'] ?? 'no') === 'si') {
+                $alertas[] = [
+                    'tipo' => 'via_civil_viable',
+                    'codigo' => 'via_civil_viable',
+                    'urgencia' => 'alta',
+                    'descripcion' => 'Hay señales que justifican estudiar la vía civil integral como alternativa estratégica.',
+                    'fecha_vencimiento' => null,
                 ];
             }
         }
