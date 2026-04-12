@@ -327,6 +327,22 @@ try {
             if (isset($concepto['aplica']) && $concepto['aplica'] === false) continue;
             $pdf->Cell(120, 5, pdf_latin1($concepto['descripcion']), 0, 0);
             $pdf->Cell(0, 5, ml_formato_moneda($concepto['monto']), 0, 1, 'R');
+            if (!empty($concepto['base_legal'])) {
+                $pdf->SetFont('Arial', 'I', 7);
+                $pdf->SetTextColor(120, 120, 120);
+                $pdf->Cell(10, 4, '', 0, 0);
+                $pdf->Cell(0, 4, pdf_latin1('  Base legal: ' . $concepto['base_legal']), 0, 1);
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetFont('Arial', '', 9);
+            }
+            if (!empty($concepto['nota'])) {
+                $pdf->SetFont('Arial', 'I', 7);
+                $pdf->SetTextColor(120, 120, 120);
+                $pdf->Cell(10, 4, '', 0, 0);
+                $pdf->MultiCell(0, 4, pdf_latin1('  Análisis: ' . $concepto['nota']), 0, 'L');
+                $pdf->SetTextColor(0, 0, 0);
+                $pdf->SetFont('Arial', '', 9);
+            }
             if (!empty($concepto['condicion'])) {
                 $pdf->SetFont('Arial', 'I', 7);
                 $pdf->SetTextColor(120, 120, 120);

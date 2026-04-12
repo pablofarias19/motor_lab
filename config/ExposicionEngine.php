@@ -321,8 +321,8 @@ class ExposicionEngine
         // 4. MULTAS LEGALES (ART. 80, 24.013, 25.323)
         // ─────────────────────────────────────────────────────────────────────
 
-        // Solo si no es accidente puro o auditoria preventiva
-        $casosSinMultas = ['auditoria_preventiva'];
+        // Solo si no es accidente puro ni auditoría preventiva
+        $casosSinMultas = ['auditoria_preventiva', 'accidente_laboral'];
         if (!in_array($tipoConflicto, $casosSinMultas)) {
             // Multa Art. 80 LCT (SÍ APLICA siempre — no fue derogada por Ley Bases)
             $conceptos['multa_art80_lct'] = [
