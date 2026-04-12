@@ -79,6 +79,10 @@ $preventivoBadgeLabel = (string) ($uiEscenarioPreventivo['badge_label'] ?? 'Esce
 $preventivoClarification = (string) ($uiEscenarioPreventivo['clarification'] ?? '');
 
 $explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario): string {
+    if (!empty($escenario['lectura_beneficio'])) {
+        return (string) $escenario['lectura_beneficio'];
+    }
+
     return match ($codigo) {
         'D' => $tipoUsuario === 'empleador'
             ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.')
@@ -1011,9 +1015,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
                     $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
                     $esEscenarioPreventivo = $letra === 'D';
-                    $beneficioLabel = ($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
+                    $beneficioLabel = (string) ($esc['beneficio_label'] ?? (($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'
-                        : 'Beneficio';
+                        : 'Beneficio'));
+                    $balanceLabel = (string) ($esc['vbp_label'] ?? 'Balance neto');
                     $preventivoInlineStyle = $esEscenarioPreventivo
                         ? '--escenario-preventivo-accent:' . htmlspecialchars($preventivoAccentColor, ENT_QUOTES, 'UTF-8') . ';'
                         : '';
@@ -1054,7 +1059,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                         meses</span>
                                 </li>
                                 <li class="escenario-metric-item">
-                                    <span class="escenario-metric-label"><i class="bi bi-plus-slash-minus"></i> Balance neto:</span>
+                                    <span class="escenario-metric-label"><i class="bi bi-plus-slash-minus"></i> <?= htmlspecialchars($balanceLabel) ?>:</span>
                                     <span
                                         class="escenario-metric-value"><?= ml_formato_moneda($esc['vbp'] ?? 0) ?></span>
                                 </li>
@@ -1079,6 +1084,25 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             <?php if ($esEscenarioPreventivo && $preventivoClarification !== ''): ?>
                             <div style="margin-top:.65rem; font-size:.75rem; color:#0f766e; line-height:1.45;">
                                 <strong>Condición de aplicación:</strong> <?= htmlspecialchars($preventivoClarification) ?>
+                            </div>
+                            <?php endif; ?>
+                            <?php if ($esEscenarioPreventivo && !empty($esc['definicion_sistema'])): ?>
+                            <div style="margin-top:.75rem; padding:.75rem; border:1px solid #ccfbf1; border-radius:10px; background:#f0fdfa; font-size:.76rem; color:#115e59; line-height:1.5;">
+                                <strong>Cómo lo define el sistema:</strong>
+                                <div style="margin-top:.35rem;"><?= htmlspecialchars((string) $esc['definicion_sistema']) ?></div>
+                            </div>
+                            <?php endif; ?>
+                            <?php if ($esEscenarioPreventivo && !empty($esc['criterios_definidos']) && is_array($esc['criterios_definidos'])): ?>
+                            <div style="margin-top:.75rem; font-size:.76rem; color:#334155; line-height:1.45;">
+                                <strong>Criterios definidos</strong>
+                                <ul style="margin:.45rem 0 0 1rem; padding:0;">
+                                    <?php foreach ($esc['criterios_definidos'] as $criterio): ?>
+                                    <li style="margin-bottom:.3rem;">
+                                        <strong><?= htmlspecialchars((string) ($criterio['titulo'] ?? 'Criterio')) ?>:</strong>
+                                        <?= htmlspecialchars((string) ($criterio['valor'] ?? '')) ?>
+                                    </li>
+                                    <?php endforeach; ?>
+                                </ul>
                             </div>
                             <?php endif; ?>
                         </div>

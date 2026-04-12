@@ -104,7 +104,7 @@ class EscenariosEngine
         $c = $this->escenarioMixto($totalBase, $totalConMultas, $honorariosJudiciales, $irilScore, $tipoUsuario, $provincia);
 
         // ── Escenario D — Reconfiguración Preventiva ──────────────────────────
-        $d = $this->escenarioPreventivo($salario, $irilScore, $tipoConflicto, $tipoUsuario);
+        $d = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
 
         $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
         $escenarios = $this->agregarIndicesEstrategicos($escenarios);
@@ -348,40 +348,106 @@ class EscenariosEngine
      * Orientado principalmente a empleadores. Regularización y mitigación.
      */
     private function escenarioPreventivo(
-        float $salario,
+        array $exposicion,
         float $iril,
         string $tipoConflicto,
-        string $tipoUsuario
+        string $tipoUsuario,
+        array $situacion
     ): array {
         // Cargar parámetros específicos
         $params = require __DIR__ . '/parametros_motor.php';
         $cfg = $params['escenarios']['preventivo'];
 
-        // Costo de regularización: estimado en 1-2 meses de sueldo por empleado
-        $costoRegularizacion = $salario * $cfg['factor_costo_regularizacion'];
+        $salario = max(0.0, floatval($exposicion['salario_base'] ?? 0));
+        $totalBase = max(0.0, floatval($exposicion['total_base'] ?? 0));
+        $totalConMultas = max($totalBase, floatval($exposicion['total_con_multas'] ?? $totalBase));
+        $perfil = $this->resolverPerfilPreventivo($exposicion, $situacion, $tipoConflicto, $tipoUsuario, $cfg);
 
-        // Beneficio: evita exposición potencial
-        $ahorroEstimado = $salario * $cfg['meses_ahorro_litigio'];
+        $bases = [
+            'salario' => $salario,
+            'salario_trimestral' => $salario * 3,
+            'salario_semestral' => $salario * 6,
+            'salario_anual' => $salario * max(1.0, floatval($cfg['meses_ahorro_litigio'] ?? 12)),
+            'total_base' => $totalBase,
+            'total_con_multas' => $totalConMultas,
+        ];
+        $baseCalculo = max(0.0, floatval($bases[$perfil['base_fuente']] ?? 0.0));
+        if ($baseCalculo <= 0) {
+            $baseCalculo = max($salario * max(1.0, floatval($cfg['meses_ahorro_litigio'] ?? 12)), $totalBase, $totalConMultas);
+        }
+
+        $ahorroEstimado = round($baseCalculo * floatval($perfil['factor_beneficio'] ?? 0), 2);
+        $costoBase = $salario > 0
+            ? $salario * floatval($cfg['factor_costo_regularizacion'] ?? 1.5)
+            : $baseCalculo * 0.08;
+        $costoRegularizacion = round($costoBase * floatval($perfil['factor_costo'] ?? 1.0), 2);
 
         $vbp = $ahorroEstimado - $costoRegularizacion;
-        $duracionPromedio = $cfg['duracion_promedio'];
+        $duracionPromedio = max(1, intval($perfil['duracion_promedio'] ?? $cfg['duracion_promedio'] ?? 2));
+        $riesgoInst = max(1.0, floatval($perfil['riesgo_institucional'] ?? 1.0));
 
-        $riesgoInst = 1.0; // Sin litigio, riesgo institucional mínimo
-
-        $vae = $duracionPromedio > 0
-            ? round($vbp / $duracionPromedio, 0)
+        $vae = ($duracionPromedio > 0 && $riesgoInst > 0)
+            ? round($vbp / ($duracionPromedio * $riesgoInst), 0)
             : 0;
+
+        $criterios = [
+            [
+                'titulo' => 'Perfil evaluado',
+                'valor' => $perfil['perfil_label'],
+            ],
+            [
+                'titulo' => 'Estado del caso',
+                'valor' => $perfil['estado_caso'],
+            ],
+            [
+                'titulo' => 'Base económica',
+                'valor' => sprintf('%s (%s)', $perfil['base_label'], ml_formato_moneda($baseCalculo)),
+            ],
+            [
+                'titulo' => 'Criterio de beneficio',
+                'valor' => sprintf(
+                    '%s de la base económica seleccionada.',
+                    $this->formatearPorcentaje(floatval($perfil['factor_beneficio'] ?? 0))
+                ),
+            ],
+            [
+                'titulo' => 'Criterio de costo',
+                'valor' => sprintf(
+                    '%s sobre el costo base de regularización (%s).',
+                    $this->formatearPorcentaje(floatval($perfil['factor_costo'] ?? 0)),
+                    ml_formato_moneda($costoBase)
+                ),
+            ],
+            [
+                'titulo' => 'Aplicabilidad',
+                'valor' => ucfirst($perfil['aplicabilidad']) . ' — ' . $perfil['aplicabilidad_detalle'],
+            ],
+        ];
+        foreach ($perfil['criterios_contexto'] as $criterioContextual) {
+            $criterios[] = [
+                'titulo' => 'Criterio contextual',
+                'valor' => $criterioContextual,
+            ];
+        }
+
+        $definicionSistema = sprintf(
+            'El sistema toma %s como base, aplica un factor de beneficio del %s y un costo de regularización del %s. La lectura económica del resultado es "%s".',
+            strtolower($perfil['base_label']),
+            $this->formatearPorcentaje(floatval($perfil['factor_beneficio'] ?? 0)),
+            $this->formatearPorcentaje(floatval($perfil['factor_costo'] ?? 0)),
+            $perfil['lectura_beneficio']
+        );
 
         return [
             'codigo' => 'D',
             'nombre' => 'Reconfiguración Preventiva',
-            'descripcion' => 'Para empleadores: regularización laboral, ajuste contractual, revisión de cumplimiento normativo y diseño de cobertura preventiva.',
+            'descripcion' => $perfil['descripcion'],
             'beneficio_estimado' => round($ahorroEstimado, 2),
             'costo_estimado' => round($costoRegularizacion, 2),
             'vbp' => round($vbp, 2),
             'vae' => $vae,
             'duracion_min_meses' => 1,
-            'duracion_max_meses' => 3,
+            'duracion_max_meses' => max(3, $duracionPromedio),
             'duracion_promedio' => $duracionPromedio,
             'riesgo_institucional' => $riesgoInst,
             'nivel_intervencion' => 'bajo',
@@ -400,8 +466,218 @@ class EscenariosEngine
                 'Puede implicar pago de diferencias salariales',
                 'No elimina derechos adquiridos del empleado',
             ],
-            'nota' => 'Este escenario es exclusivamente preventivo. Si ya hay conflicto activo con telegramas intercambiados, su aplicabilidad es limitada.'
+            'nota' => $perfil['nota'],
+            'beneficio_label' => $perfil['beneficio_label'],
+            'vbp_label' => $perfil['vbp_label'],
+            'lectura_beneficio' => $perfil['lectura_beneficio'],
+            'aplicabilidad' => $perfil['aplicabilidad'],
+            'aplicabilidad_detalle' => $perfil['aplicabilidad_detalle'],
+            'definicion_sistema' => $definicionSistema,
+            'criterios_definidos' => $criterios,
+            'criterios_contexto' => $perfil['criterios_contexto'],
         ];
+    }
+
+    private function resolverPerfilPreventivo(
+        array $exposicion,
+        array $situacion,
+        string $tipoConflicto,
+        string $tipoUsuario,
+        array $cfg
+    ): array {
+        $hayIntercambio = ($situacion['hay_intercambio'] ?? 'no') === 'si'
+            || ($situacion['fue_intimado'] ?? 'no') === 'si'
+            || ($situacion['tiene_telegramas'] ?? 'no') === 'si';
+        $yaDespedido = ($situacion['ya_despedido'] ?? 'no') === 'si';
+        $inspeccionPrevia = ($situacion['inspeccion_previa'] ?? 'no') === 'si';
+        $estadoCm = (string) ($situacion['comision_medica'] ?? 'no_iniciada');
+        $tipoUsuarioNormalizado = strtolower(trim($tipoUsuario));
+        $perfil = [
+            'perfil_label' => $tipoUsuarioNormalizado === 'empleador'
+                ? 'Empleador con margen de regularización'
+                : 'Lectura referencial para la parte reclamante',
+            'estado_caso' => $hayIntercambio || $yaDespedido || $inspeccionPrevia || $estadoCm !== 'no_iniciada'
+                ? 'Conflicto activo o escalado'
+                : 'Ventana preventiva abierta',
+            'base_fuente' => 'salario_anual',
+            'base_label' => '12 meses de salario de referencia',
+            'factor_beneficio' => 1.0,
+            'factor_costo' => 1.0,
+            'duracion_promedio' => max(1, intval($cfg['duracion_promedio'] ?? 2)),
+            'riesgo_institucional' => 1.0,
+            'beneficio_label' => $tipoUsuarioNormalizado === 'empleador'
+                ? 'Beneficio (ahorro pot.)'
+                : 'Beneficio (referencial)',
+            'vbp_label' => $tipoUsuarioNormalizado === 'empleador'
+                ? 'Ahorro neto estimado'
+                : 'Balance neto referencial',
+            'lectura_beneficio' => $tipoUsuarioNormalizado === 'empleador'
+                ? 'ahorro potencial o contingencia evitada'
+                : 'referencia de ahorro potencial para la parte que regulariza',
+            'aplicabilidad' => $tipoUsuarioNormalizado === 'empleador' ? 'media' : 'referencial',
+            'aplicabilidad_detalle' => $tipoUsuarioNormalizado === 'empleador'
+                ? 'Conviene cuando todavía existe margen real para corregir registros, procesos o coberturas antes de un cierre litigioso.'
+                : 'Se muestra solo para explicar qué ahorro podría capturar la parte empleadora si regulariza.',
+            'descripcion' => 'Escenario exclusivo para empleadores y para contextos con margen real de regularización. El beneficio debe leerse como ahorro potencial o contingencia evitada, no como ingreso directo.',
+            'nota' => 'Este escenario es exclusivamente preventivo. Si ya hay conflicto activo con telegramas intercambiados, su aplicabilidad es limitada.',
+            'criterios_contexto' => [],
+        ];
+
+        switch ($tipoConflicto) {
+            case 'auditoria_preventiva':
+                $nivel = (string) ($situacion['nivel_cumplimiento'] ?? 'desconocido');
+                $perfil['base_fuente'] = floatval($exposicion['total_base'] ?? 0) > 0 ? 'total_base' : 'salario_anual';
+                $perfil['base_label'] = 'contingencia latente diagnosticada';
+                $perfil['factor_beneficio'] = 1.0;
+                $perfil['factor_costo'] = 1.0;
+                $perfil['duracion_promedio'] = 2;
+                $perfil['riesgo_institucional'] = 1.0;
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador' ? 'alta' : 'referencial';
+                $perfil['aplicabilidad_detalle'] = 'Aplica cuando la empresa todavía puede corregir procesos, registrar personal y ajustar documentación antes de una contingencia formal.';
+                $perfil['descripcion'] = 'Escenario preventivo para empleadores con margen real de regularización: auditoría laboral, ajuste contractual, revisión de cumplimiento normativo y diseño de cobertura preventiva.';
+                $perfil['criterios_contexto'][] = 'Nivel de cumplimiento declarado: ' . $nivel . '.';
+                break;
+
+            case 'riesgo_inspeccion':
+            case 'multas_legales':
+                $perfil['base_fuente'] = floatval($exposicion['total_base'] ?? 0) > 0 ? 'total_base' : 'salario_semestral';
+                $perfil['base_label'] = 'contingencia inspectiva y sancionatoria';
+                $perfil['factor_beneficio'] = $inspeccionPrevia ? 0.45 : 0.75;
+                $perfil['factor_costo'] = $inspeccionPrevia ? 1.2 : 1.0;
+                $perfil['duracion_promedio'] = $inspeccionPrevia ? 3 : 2;
+                $perfil['riesgo_institucional'] = $inspeccionPrevia ? 1.4 : 1.1;
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador'
+                    ? ($inspeccionPrevia ? 'media' : 'alta')
+                    : 'referencial';
+                $perfil['aplicabilidad_detalle'] = $inspeccionPrevia
+                    ? 'Ya existe antecedente inspectivo: la regularización todavía reduce exposición futura, pero el ahorro posible es menor.'
+                    : 'La regularización temprana puede bajar multas, recargos y riesgo de nuevas inspecciones.';
+                $perfil['criterios_contexto'][] = $inspeccionPrevia
+                    ? 'Se detectó inspección previa, por eso el motor reduce el porcentaje de ahorro potencial.'
+                    : 'Sin inspección previa registrada, el motor asume mayor margen para evitar sanciones.';
+                break;
+
+            case 'responsabilidad_solidaria':
+                $controles = $this->contarControlesSolidarios($situacion);
+                $faltantes = max(0, 5 - $controles);
+                $perfil['base_fuente'] = floatval($exposicion['total_base'] ?? 0) > 0 ? 'total_base' : 'salario_semestral';
+                $perfil['base_label'] = 'exposición por solidaridad de contratistas';
+                $perfil['factor_beneficio'] = min(0.85, 0.35 + ($faltantes * 0.10));
+                $perfil['factor_costo'] = 0.9 + ($faltantes * 0.08);
+                $perfil['duracion_promedio'] = min(4, 2 + (int) ceil($faltantes / 2));
+                $perfil['riesgo_institucional'] = $faltantes >= 3 ? 1.5 : 1.2;
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador'
+                    ? ($faltantes === 0 ? 'baja' : 'alta')
+                    : 'referencial';
+                $perfil['aplicabilidad_detalle'] = $faltantes === 0
+                    ? 'La empresa ya cumple los cinco controles del art. 30 LCT; el margen preventivo adicional es acotado.'
+                    : 'El ahorro depende de cuántos controles del art. 30 LCT falten implementar.';
+                $perfil['criterios_contexto'][] = sprintf('Controles art. 30 LCT presentes: %d/5.', $controles);
+                break;
+
+            case 'diferencias_salariales':
+                $mesesAdeudados = max(1, intval($situacion['meses_adeudados'] ?? 12));
+                $perfil['base_fuente'] = floatval($exposicion['total_base'] ?? 0) > 0 ? 'total_base' : 'salario_semestral';
+                $perfil['base_label'] = 'deuda regularizable y reclamo asociado';
+                $perfil['factor_beneficio'] = $hayIntercambio ? 0.35 : 0.60;
+                $perfil['factor_costo'] = $hayIntercambio ? 1.15 : 0.95;
+                $perfil['duracion_promedio'] = $hayIntercambio ? 3 : 2;
+                $perfil['riesgo_institucional'] = $hayIntercambio ? 1.7 : 1.3;
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador'
+                    ? ($hayIntercambio ? 'media' : 'alta')
+                    : 'referencial';
+                $perfil['aplicabilidad_detalle'] = $hayIntercambio
+                    ? 'La regularización todavía puede acotar escalada, pero ya no evita todo el reclamo.'
+                    : 'Si se corrige temprano, el motor asume mayor capacidad de contener deuda acumulada y fricción futura.';
+                $perfil['criterios_contexto'][] = sprintf('Meses adeudados considerados: %d.', $mesesAdeudados);
+                break;
+
+            case 'trabajo_no_registrado':
+                $perfil['base_fuente'] = floatval($exposicion['total_con_multas'] ?? 0) > 0 ? 'total_con_multas' : 'total_base';
+                $perfil['base_label'] = 'pasivo por registración omitida y multas asociadas';
+                $perfil['factor_beneficio'] = ($hayIntercambio || $yaDespedido) ? 0.25 : 0.55;
+                $perfil['factor_costo'] = ($hayIntercambio || $yaDespedido) ? 1.35 : 1.15;
+                $perfil['duracion_promedio'] = 3;
+                $perfil['riesgo_institucional'] = ($hayIntercambio || $yaDespedido) ? 1.8 : 1.5;
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador'
+                    ? (($hayIntercambio || $yaDespedido) ? 'baja' : 'media')
+                    : 'referencial';
+                $perfil['aplicabilidad_detalle'] = ($hayIntercambio || $yaDespedido)
+                    ? 'Con intercambio o ruptura activa, el escenario solo sirve como referencia de daño controlable hacia adelante.'
+                    : 'Regularizar antes del conflicto abierto permite contener parte relevante del pasivo laboral y administrativo.';
+                $perfil['criterios_contexto'][] = ($hayIntercambio || $yaDespedido)
+                    ? 'Existe escalada formal, por eso el motor reduce la evitabilidad del beneficio.'
+                    : 'No hay ruptura formal detectada, por eso el motor reconoce margen preventivo intermedio.';
+                break;
+
+            case 'despido_sin_causa':
+            case 'despido_con_causa':
+            case 'reclamo_indemnizatorio':
+                $perfil['base_fuente'] = floatval($exposicion['total_base'] ?? 0) > 0 ? 'total_base' : 'salario_semestral';
+                $perfil['base_label'] = 'exposición indemnizatoria ya configurada';
+                $perfil['factor_beneficio'] = ($hayIntercambio || $yaDespedido) ? 0.15 : 0.35;
+                $perfil['factor_costo'] = ($hayIntercambio || $yaDespedido) ? 1.1 : 0.95;
+                $perfil['duracion_promedio'] = ($hayIntercambio || $yaDespedido) ? 3 : 2;
+                $perfil['riesgo_institucional'] = ($hayIntercambio || $yaDespedido) ? 1.6 : 1.2;
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador'
+                    ? (($hayIntercambio || $yaDespedido) ? 'baja' : 'media')
+                    : 'referencial';
+                $perfil['aplicabilidad_detalle'] = ($hayIntercambio || $yaDespedido)
+                    ? 'Con despido o intimación activa, el ahorro se limita a contener derivaciones futuras y ordenar la salida.'
+                    : 'Solo tiene sentido si aún hay margen para rediseñar la salida o reconducir la relación sin litigio pleno.';
+                $perfil['criterios_contexto'][] = ($hayIntercambio || $yaDespedido)
+                    ? 'El caso ya aparece como conflicto activo, por eso el motor rebaja la aplicabilidad preventiva.'
+                    : 'No hay escalada formal detectada, por eso el motor conserva una ventana preventiva acotada.';
+                break;
+
+            case 'accidente_laboral':
+                $tieneArt = ($situacion['tiene_art'] ?? 'no') === 'si';
+                $perfil['base_fuente'] = floatval($exposicion['total_base'] ?? 0) > 0 ? 'total_base' : 'salario_anual';
+                $perfil['base_label'] = 'contingencia futura y costos de cobertura';
+                $perfil['factor_beneficio'] = $tieneArt ? 0.20 : 0.12;
+                $perfil['factor_costo'] = $tieneArt ? 1.1 : 1.3;
+                $perfil['duracion_promedio'] = 3;
+                $perfil['riesgo_institucional'] = 1.4;
+                $perfil['beneficio_label'] = 'Beneficio (contención futura)';
+                $perfil['vbp_label'] = 'Ahorro neto futuro';
+                $perfil['aplicabilidad'] = $tipoUsuarioNormalizado === 'empleador' ? 'baja' : 'referencial';
+                $perfil['aplicabilidad_detalle'] = 'No corrige el siniestro ya ocurrido: solo ordena cobertura y prevención hacia adelante.';
+                $perfil['criterios_contexto'][] = $tieneArt
+                    ? 'Hay ART vigente: la lectura es de mejora de cumplimiento y prevención futura.'
+                    : 'No hay ART: el motor limita el ahorro a contingencia futura, no al daño ya causado.';
+                break;
+        }
+
+        return $perfil;
+    }
+
+    private function contarControlesSolidarios(array $situacion): int
+    {
+        $controles = 0;
+        if (($situacion['principal_valida_cuil'] ?? 'no') === 'si') {
+            $controles++;
+        }
+        // Se mantiene la clave legacy `principal_verifica_aaportes` por compatibilidad
+        // con payloads históricos ya persistidos.
+        if ((($situacion['principal_verifica_aportes'] ?? ($situacion['principal_verifica_aaportes'] ?? 'no'))) === 'si') {
+            $controles++;
+        }
+        if (($situacion['principal_paga_directo'] ?? 'no') === 'si') {
+            $controles++;
+        }
+        if (($situacion['principal_valida_cbu_trabajador'] ?? 'no') === 'si') {
+            $controles++;
+        }
+        if (($situacion['principal_cubre_art'] ?? 'no') === 'si') {
+            $controles++;
+        }
+
+        return $controles;
+    }
+
+    private function formatearPorcentaje(float $valor): string
+    {
+        return number_format($valor * 100, 1, ',', '.') . '%';
     }
 
     // ─────────────────────────────────────────────────────────────────────────
