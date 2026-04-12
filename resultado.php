@@ -72,12 +72,17 @@ $alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 
 $tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
 $tipoUsuarioAnalisis = strtolower((string) ($analisis['tipo_usuario'] ?? ''));
+$uiDanoComplementario = ml_admin_runtime_get('ui.dano_complementario', []);
+$uiEscenarioPreventivo = ml_admin_runtime_get('ui.escenario_preventivo', []);
+$preventivoAccentColor = (string) ($uiEscenarioPreventivo['accent_color'] ?? '#0f766e');
+$preventivoBadgeLabel = (string) ($uiEscenarioPreventivo['badge_label'] ?? 'Escenario preventivo');
+$preventivoClarification = (string) ($uiEscenarioPreventivo['clarification'] ?? '');
 
 $explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario): string {
     return match ($codigo) {
         'D' => $tipoUsuario === 'empleador'
-            ? 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.'
-            : 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.',
+            ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.')
+            : (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_general', 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.'),
         'A', 'B', 'C' => $tipoUsuario === 'empleador'
             ? 'Aquí el beneficio debe interpretarse como reducción o contención de exposición económica para la parte empleadora, no como ingreso nuevo. El costo refleja la inversión necesaria para cerrar, negociar o sostener la estrategia.'
             : 'Aquí el beneficio debe interpretarse como recupero potencial para la parte reclamante, no como monto garantizado. El costo refleja honorarios, gestión y fricción esperable de la vía elegida.',
@@ -520,7 +525,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <span class="ui-emoji" aria-hidden="true">💔</span>Daño Complementario (Art. 527 CCCN)
                             </h4>
                             <p style="margin: 0 0 0.75rem; font-size: 0.78rem; line-height: 1.45; color: #5b21b6;">
-                                Este cuadro refleja un <strong>extra potencial</strong> sobre la indemnización base por extinción y se desglosa en tres rubros para que el total no quede aislado ni sin contexto. Sirve para entender de dónde sale el monto complementario y qué parte responde a afectación personal, cuál a impacto económico indirecto y cuál a proyección reputacional.
+                                <?= htmlspecialchars((string) ($uiDanoComplementario['intro'] ?? 'Este cuadro refleja un extra potencial sobre la indemnización base por extinción y se desglosa en tres rubros para que el total no quede aislado ni sin contexto. Sirve para entender de dónde sale el monto complementario y qué parte responde a afectación personal, cuál a impacto económico indirecto y cuál a proyección reputacional.')) ?>
                             </p>
                             <div style="font-size: 0.85rem; color: #555;">
                                 <div style="display:flex; justify-content: space-between; margin-bottom: 4px;">
@@ -545,6 +550,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <div>• Moral: porcentaje orientativo sobre la indemnización base (aquí <?= htmlspecialchars($dnMoralMeta['porcentaje_indemnizacion'] ?? '—') ?>).</div>
                                 <div>• Patrimonial: lucro cesante estimado para <?= intval($dnPatMeta['meses_litigio'] ?? 0) ?> meses + costos de litigio.</div>
                                 <div>• Reputacional: porcentaje orientativo del salario promedio (aquí <?= htmlspecialchars($dnRepMeta['porcentaje_salario'] ?? '—') ?>).</div>
+                                <?php if (!empty($dnRepMeta['criterio'])): ?>
+                                <div>• Criterio reputacional: <?= htmlspecialchars((string) $dnRepMeta['criterio']) ?></div>
+                                <?php endif; ?>
                                 <?php if (!empty($dn['nota'])): ?>
                                 <div style="color:#6b7280;"><em><?= htmlspecialchars($dn['nota']) ?></em></div>
                                 <?php endif; ?>
@@ -890,6 +898,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <div>• <strong>Duración</strong> y <strong>Riesgo</strong>: permiten evaluar tiempo esperado, fricción institucional y probabilidad de desgaste procesal.</div>
                         <div>• El <strong>Índice Estratégico</strong> es orientativo y compara balance relativo entre retorno neto, costo, tiempo y riesgo.</div>
                         <div>• El escenario <strong>D</strong> representa una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.</div>
+                        <?php if ($preventivoClarification !== ''): ?>
+                        <div>• <strong><?= htmlspecialchars($preventivoBadgeLabel) ?>:</strong> <?= htmlspecialchars($preventivoClarification) ?></div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
@@ -900,17 +911,26 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
                     $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
-                    $beneficioLabel = ($letra === 'D' && $tipoUsuarioAnalisis === 'empleador')
+                    $esEscenarioPreventivo = $letra === 'D';
+                    $beneficioLabel = ($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'
                         : 'Beneficio';
                     ?>
-                    <div class="escenario-premium-card">
-                        <div class="escenario-premium-header">
+                    <div class="escenario-premium-card<?= $esEscenarioPreventivo ? ' escenario-premium-card--preventivo' : '' ?>" style="<?= $esEscenarioPreventivo ? '--escenario-preventivo-accent:' . htmlspecialchars($preventivoAccentColor, ENT_QUOTES, 'UTF-8') . ';' : '' ?>">
+                        <div class="escenario-premium-header<?= $esEscenarioPreventivo ? ' escenario-premium-header--preventivo' : '' ?>">
                             <h4>Escenario <?= $letra ?> <span
                                     style="font-weight: 300; opacity: 0.8;"><?= htmlspecialchars($esc['nombre'] ?? '') ?></span>
                             </h4>
                         </div>
                         <div class="escenario-premium-body">
+                            <?php if ($esEscenarioPreventivo): ?>
+                            <div class="escenario-preventivo-banner">
+                                <strong><?= htmlspecialchars($preventivoBadgeLabel) ?></strong>
+                                <?php if ($preventivoClarification !== ''): ?>
+                                <span><?= htmlspecialchars($preventivoClarification) ?></span>
+                                <?php endif; ?>
+                            </div>
+                            <?php endif; ?>
                             <p style="margin:0 0 .9rem; font-size:.82rem; color:#475569; line-height:1.45;">
                                 <?= htmlspecialchars($esc['descripcion'] ?? '') ?>
                             </p>
@@ -954,6 +974,11 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             <div style="margin-top:.65rem; padding-top:.65rem; border-top:1px dashed #dbeafe; font-size:.76rem; color:#475569; line-height:1.45;">
                                 <strong>Lectura económica:</strong> <?= htmlspecialchars($lecturaEconomica) ?>
                             </div>
+                            <?php if ($esEscenarioPreventivo && $preventivoClarification !== ''): ?>
+                            <div style="margin-top:.65rem; font-size:.75rem; color:#0f766e; line-height:1.45;">
+                                <strong>Condición de aplicación:</strong> <?= htmlspecialchars($preventivoClarification) ?>
+                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 <?php endforeach; ?>

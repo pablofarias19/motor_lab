@@ -283,11 +283,20 @@
     box-shadow: var(--premium-shadow-lg);
 }
 
+.escenario-premium-card--preventivo {
+    border: 2px solid var(--escenario-preventivo-accent, #0f766e);
+    box-shadow: 0 20px 44px rgba(15, 118, 110, 0.14);
+}
+
 .escenario-premium-header {
     background: var(--premium-blue-gradient);
     color: white;
     padding: 0.75rem 1.25rem;
     text-align: center;
+}
+
+.escenario-premium-header--preventivo {
+    background: linear-gradient(135deg, var(--escenario-preventivo-accent, #0f766e) 0%, #34d399 100%);
 }
 
 .escenario-premium-header h4 {
@@ -300,6 +309,19 @@
 .escenario-premium-body {
     padding: 1.5rem;
     flex-grow: 1;
+}
+
+.escenario-preventivo-banner {
+    display: grid;
+    gap: 0.2rem;
+    margin: 0 0 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(15, 118, 110, 0.08);
+    border: 1px solid rgba(15, 118, 110, 0.16);
+    color: var(--escenario-preventivo-accent, #0f766e);
+    font-size: 0.78rem;
+    line-height: 1.45;
 }
 
 .escenario-metric-list {

@@ -324,6 +324,12 @@ function mlAdminMenuActivo(string $segmento, string $uri): string {
                         <i class="bi bi-list-ul"></i> Análisis
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link<?php echo mlAdminMenuActivo('/admin/backend/index', $uriActual); ?>"
+                       href="<?php echo ML_BASE_URL; ?>/admin/backend/index.php">
+                        <i class="bi bi-sliders"></i> Backend editable
+                    </a>
+                </li>
             </ul>
 
             <hr class="mx-3">

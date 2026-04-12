@@ -212,6 +212,8 @@ define('ML_LOG_PATH', ML_ROOT . '/logs');
 // Ruta a FPDF (se reutiliza la librería del sistema /document sin copiarla)
 define('ML_FPDF_PATH', dirname(ML_ROOT) . '/document/fpdf.php');
 
+require_once __DIR__ . '/admin_runtime.php';
+
 if (!function_exists('ml_normalize_url_path')) {
     function ml_normalize_url_path(string $path): string
     {

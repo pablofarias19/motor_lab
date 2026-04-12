@@ -6,7 +6,8 @@
  * que el sistema utiliza para calcular los riesgos e indicadores de los escenarios.
  */
 
-return [
+return (static function (): array {
+    $parametros = [
     // ─────────────────────────────────────────────────────────────────────────
     // DIMENSIONES IRIL (Índice de Riesgo Institucional Laboral)
     // ─────────────────────────────────────────────────────────────────────────
@@ -170,4 +171,15 @@ return [
             'costas_judiciales_tasa' => 0.20, // Tasa estándar de costas (20%)
         ]
     ]
-];
+    ];
+
+    $overrides = function_exists('ml_admin_runtime_get')
+        ? ml_admin_runtime_get('calculation_rules.parametros_motor_overrides', [])
+        : [];
+
+    if (is_array($overrides) && !empty($overrides)) {
+        $parametros = ml_array_deep_merge($parametros, $overrides);
+    }
+
+    return $parametros;
+})();

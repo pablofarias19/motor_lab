@@ -1006,19 +1006,41 @@ function evaluar_dano_complementario(
     // 3. DAÑO REPUTACIONAL (5-15% salario promedio)
     // ─────────────────────────────────────────────────────────────────────────
     
-    $porcentaje_reputacional = match ($tipo_extincion) {
-        'despido' => 0.10,           // 10% — afecta CV
-        'renuncia_previa' => 0.05,   // 5% — menos impacto
-        'constructivo' => 0.15,      // 15% — destruye reputación bel
-        'suspensión' => 0.08,        // 8% — incertidumbre laboral
-        default => 0.10
-    };
-    
-    if ($fue_violenta) {
+    $criterioReputacional = function_exists('ml_admin_runtime_get')
+        ? ml_admin_runtime_get('calculation_rules.dano_complementario.reputacional', [])
+        : [];
+    $porcentajesReputacionales = is_array($criterioReputacional['percentages'] ?? null)
+        ? $criterioReputacional['percentages']
+        : [];
+    $tiposHabilitados = is_array($criterioReputacional['allowed_types'] ?? null)
+        ? $criterioReputacional['allowed_types']
+        : [];
+    $reputacionalHabilitado = ($criterioReputacional['enabled'] ?? true) !== false;
+    $reputacionalRequiereViolencia = ($criterioReputacional['requires_violence'] ?? false) === true;
+
+    $porcentaje_reputacional = floatval(
+        $porcentajesReputacionales[$tipo_extincion]
+        ?? $porcentajesReputacionales['default']
+        ?? 0
+    );
+
+    $aplicaReputacional = $reputacionalHabilitado
+        && (!$reputacionalRequiereViolencia || $fue_violenta)
+        && (empty($tiposHabilitados) || in_array($tipo_extincion, $tiposHabilitados, true))
+        && $porcentaje_reputacional > 0;
+
+    if ($aplicaReputacional && $fue_violenta) {
         $porcentaje_reputacional = min(0.20, $porcentaje_reputacional * 1.5);
     }
-    
+
+    if (!$aplicaReputacional) {
+        $porcentaje_reputacional = 0.0;
+    }
+
     $dano_reputacional = $salario_promedio * $porcentaje_reputacional;
+    $criterioReputacionalTexto = function_exists('ml_admin_runtime_get')
+        ? (string) ml_admin_runtime_get('ui.dano_complementario.reputacional_criterio', '')
+        : '';
     
     // ─────────────────────────────────────────────────────────────────────────
     // TOTAL DAÑO COMPLEMENTARIO
@@ -1048,7 +1070,9 @@ function evaluar_dano_complementario(
             'daño_reputacional' => [
                 'monto' => round($dano_reputacional, 2),
                 'porcentaje_salario' => round($porcentaje_reputacional * 100, 1) . '%',
-                'base_legal' => 'Art. 527 CCCN (Daño patrimonial futuro)'
+                'base_legal' => 'Art. 527 CCCN (Daño patrimonial futuro)',
+                'aplica' => $aplicaReputacional,
+                'criterio' => $criterioReputacionalTexto,
             ]
         ],
         
