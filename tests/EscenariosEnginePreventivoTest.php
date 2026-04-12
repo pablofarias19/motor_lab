@@ -30,7 +30,7 @@ final class EscenariosEnginePreventivoTest extends TestCase
         $this->assertSame('alta', $escenarioAudit['aplicabilidad'] ?? null);
         $this->assertSame(3000000.0, floatval($escenarioAudit['beneficio_estimado'] ?? 0));
         $this->assertSame(375000.0, floatval($escenarioAudit['costo_estimado'] ?? 0));
-        $this->assertTrue(!empty($escenarioAudit['definicion_sistema'] ?? null), 'El escenario preventivo debe explicar cómo se define.');
+        $this->assertTrue(!empty($escenarioAudit['definicion_sistema']), 'El escenario preventivo debe explicar cómo se define.');
         $this->assertTrue(count($escenarioAudit['criterios_definidos'] ?? []) >= 6, 'El escenario preventivo debe exponer criterios explícitos.');
 
         $noRegistrado = $engine->generarEscenarios(

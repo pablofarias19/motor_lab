@@ -657,6 +657,8 @@ class EscenariosEngine
         if (($situacion['principal_valida_cuil'] ?? 'no') === 'si') {
             $controles++;
         }
+        // Se mantiene la clave legacy `principal_verifica_aaportes` por compatibilidad
+        // con payloads históricos ya persistidos.
         if ((($situacion['principal_verifica_aportes'] ?? ($situacion['principal_verifica_aaportes'] ?? 'no'))) === 'si') {
             $controles++;
         }
