@@ -44,7 +44,7 @@ return (static function (): array {
                 'danio_vida_relacion_pct' => 0.15,            // Pérdida de chance / vida de relación
                 'interes_judicial_anual_orientativo' => 0.50, // Litigio largo 36-60 meses
                 'meses_litigio_default' => 48,
-                'piso_sobre_tarifa_art' => 1.00,              // Nunca mostrar civil por debajo de tarifa ART
+                'piso_sobre_tarifa_art' => 1.00,              // Nunca mostrar civil por debajo del umbral tarifado ART (>=)
             ],
 
             // ── Pesos IRIL específicos para ART (con tiene_art=si) ──

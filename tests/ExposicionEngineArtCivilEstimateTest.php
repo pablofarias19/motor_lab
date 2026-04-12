@@ -35,6 +35,9 @@ final class ExposicionEngineArtCivilEstimateTest extends TestCase
         $this->assertTrue($tarifaArt > 0, 'La tarifa ART debe calcularse');
         $this->assertTrue($montoCivil >= $tarifaArt, 'La estimación civil integral no debe quedar por debajo de la tarifa ART');
         $this->assertTrue(($civil['componentes']['capital_base'] ?? 0) > 0, 'La estimación civil debe informar capital base');
+        $this->assertTrue(($civil['componentes']['danio_moral'] ?? 0) > 0, 'La estimación civil debe informar daño moral');
+        $this->assertTrue(($civil['componentes']['danio_vida_relacion'] ?? 0) > 0, 'La estimación civil debe informar daño de vida de relación o pérdida de chance');
+        $this->assertTrue(($civil['componentes']['actualizacion_judicial'] ?? 0) > 0, 'La estimación civil debe informar actualización judicial orientativa');
         $this->assertTrue(array_key_exists('piso_aplicado', $civil['componentes'] ?? []), 'La estimación civil debe informar si aplicó piso comparativo');
         $this->assertEquals(
             round($montoCivil + floatval($resultado['conceptos']['multa_art80_lct']['monto'] ?? 0), 2),

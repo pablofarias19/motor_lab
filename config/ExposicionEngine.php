@@ -429,7 +429,7 @@ class ExposicionEngine
         $subtotalIntegral = $capitalBase + $danioMoral + $danioVidaRelacion;
         $tasaAnual = floatval($cfgCivil['interes_judicial_anual_orientativo'] ?? 0.50);
         $factorActualizacion = pow(1 + $tasaAnual, $mesesLitigio / 12) - 1;
-        $actualizacionJudicial = $subtotalIntegral * max(0, $factorActualizacion);
+        $actualizacionJudicial = $subtotalIntegral * $factorActualizacion;
 
         $montoIntegral = $subtotalIntegral + $actualizacionJudicial;
         $pisoCivil = $montoTarifaArt * floatval($cfgCivil['piso_sobre_tarifa_art'] ?? 1.0);
@@ -444,7 +444,7 @@ class ExposicionEngine
             ml_formato_moneda($actualizacionJudicial),
             $mesesLitigio,
             $pisoAplicado
-                ? 'Se aplicó piso comparativo equivalente a la tarifa ART para evitar una lectura civil por debajo del umbral tarifado.'
+                ? 'Se aplicó piso comparativo equivalente a la tarifa ART para evitar una estimación civil por debajo del umbral tarifado.'
                 : 'No fue necesario aplicar piso comparativo sobre la tarifa ART.'
         );
 
