@@ -676,7 +676,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
 
             if ($esArtConCobertura):
                 $montoTarifa = $exposicion['conceptos']['prestacion_art_tarifa']['monto'] ?? 0;
-                $montoCivil = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? 0;
+                $civilConcepto = $exposicion['conceptos']['estimacion_civil_mendez'] ?? [];
+                $montoCivil = $civilConcepto['monto'] ?? 0;
+                $notaCivil = $civilConcepto['nota'] ?? '';
                 $tipoContingencia = $situacion['tipo_contingencia'] ?? 'accidente_tipico';
                 $estadoCM = $situacion['comision_medica'] ?? 'no_iniciada';
                 $incapTipo = $situacion['incapacidad_tipo'] ?? 'permanente_definitiva';
@@ -761,7 +763,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             <tr style="background: var(--premium-blue); color: #fff;">
                                 <th style="padding: 8px; text-align: left;"></th>
                                 <th style="padding: 8px; text-align: right;">Tarifa ART (Ley 24.557)</th>
-                                <th style="padding: 8px; text-align: right;">Acción Civil (Méndez)</th>
+                                <th style="padding: 8px; text-align: right;">Acción Civil (Méndez integral)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -781,13 +783,20 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">Alto</td>
                             </tr>
                             <tr>
-                                <td style="padding: 6px 8px;">Diferencia</td>
+                                <td style="padding: 6px 8px;">Diferencia orientativa</td>
                                 <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil > $montoTarifa ? '#16a34a' : '#dc2626' ?>;">
                                     <?= $montoCivil > $montoTarifa ? '+' : '' ?><?= ml_formato_moneda($montoCivil - $montoTarifa) ?> vía civil
                                 </td>
                             </tr>
                         </tbody>
                     </table>
+
+                    <?php if (!empty($notaCivil)): ?>
+                    <div class="motor-aviso-legal" style="margin-top: 1rem; background: #eff6ff; border-color: #bfdbfe;">
+                        <i class="bi bi-info-circle-fill" style="color: #2563eb;"></i>
+                        <span><?= htmlspecialchars($notaCivil) ?></span>
+                    </div>
+                    <?php endif; ?>
 
                     <?php if ($estadoCM === 'homologado'): ?>
                     <div class="motor-aviso-legal" style="margin-top: 1rem; background: #fef2f2; border-color: #fecaca;">

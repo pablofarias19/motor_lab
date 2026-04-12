@@ -448,14 +448,16 @@ try {
 
         // Tabla comparativa ART vs Civil
         $montoTarifaPDF = $exposicion['conceptos']['prestacion_art_tarifa']['monto'] ?? 0;
-        $montoCivilPDF = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? 0;
+        $conceptoCivilPDF = $exposicion['conceptos']['estimacion_civil_mendez'] ?? [];
+        $montoCivilPDF = $conceptoCivilPDF['monto'] ?? 0;
+        $notaCivilPDF = $conceptoCivilPDF['nota'] ?? '';
 
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetFillColor(42, 100, 182);
         $pdf->SetTextColor(255, 255, 255);
         $pdf->Cell(60, 6, '', 1, 0, 'C', true);
         $pdf->Cell(50, 6, pdf_latin1('Tarifa ART (Ley 24.557)'), 1, 0, 'C', true);
-        $pdf->Cell(0, 6, pdf_latin1('Acción Civil (Méndez)'), 1, 1, 'C', true);
+        $pdf->Cell(0, 6, pdf_latin1('Acción Civil (Méndez integral)'), 1, 1, 'C', true);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetFont('Arial', '', 9);
 
@@ -473,11 +475,18 @@ try {
 
         $pdf->SetFont('Arial', 'B', 9);
         $diferenciaPDF = $montoCivilPDF - $montoTarifaPDF;
-        $pdf->Cell(60, 6, pdf_latin1('Diferencia'), 1, 0);
+        $pdf->Cell(60, 6, pdf_latin1('Diferencia orientativa'), 1, 0);
         $pdf->Cell(0, 6, ($diferenciaPDF > 0 ? '+' : '') . ml_formato_moneda($diferenciaPDF) . pdf_latin1(' vía civil'), 1, 1, 'R');
         $pdf->SetFont('Arial', '', 9);
 
         $pdf->Ln(3);
+        if ($notaCivilPDF !== '') {
+            $pdf->SetFont('Arial', '', 8);
+            $pdf->SetTextColor(37, 99, 235);
+            $pdf->MultiCell(0, 4, pdf_latin1($notaCivilPDF), 0, 'J');
+            $pdf->SetTextColor(0, 0, 0);
+            $pdf->Ln(1);
+        }
         $pdf->SetFont('Arial', 'I', 8);
         $pdf->SetTextColor(180, 60, 60);
         $pdf->MultiCell(0, 4, pdf_latin1('ADVERTENCIA: La opción civil (Art. 4 Ley 26.773) es EXCLUYENTE. Optar por la vía civil implica renunciar al cobro de la tarifa ART.'), 0, 'J');
