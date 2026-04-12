@@ -57,6 +57,10 @@ class ExposicionEngine
         $conflictosDespido = ['despido_sin_causa', 'despido_con_causa', 'trabajo_no_registrado', 'reclamo_indemnizatorio'];
         // Mes actual para SAC proporcional
         $mesActual = intval(date('n'));
+        // Cualquier indicio positivo de desvinculación activa estos conceptos.
+        // La normalización del payload limpia combinaciones incompatibles
+        // (por ejemplo, diferencias salariales con campos residuales de despido),
+        // y acá mantenemos un criterio defensivo para integraciones legacy.
         $hayDesvinculacion = in_array($tipoConflicto, $conflictosDespido, true)
             || (($situacion['ya_despedido'] ?? 'no') === 'si')
             || !empty($situacion['fecha_despido']);
