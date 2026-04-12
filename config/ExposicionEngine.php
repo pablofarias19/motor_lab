@@ -165,7 +165,9 @@ class ExposicionEngine
                 // ═══ VÍA CIVIL: estimación integral comparativa ═══
                 $montoCivilBase = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
                 $duracionCivilMeses = max(1, intval($p['escenarios_art']['civil_complementaria']['duracion_promedio'] ?? 48));
+                // Tasa pura de referencia usada por la documentación interna para litigios civiles cuando no hay tasa jurisdiccional específica cargada.
                 $tasaInteresCivil = 0.06;
+                // Piso orientativo de daño moral/extrapatrimonial según la documentación funcional vigente del motor (+20% mínimo en vía civil).
                 $danioMoral = $montoCivilBase * 0.20;
                 $subtotalCivil = $montoCivilBase + $danioMoral;
                 $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);

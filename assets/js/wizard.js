@@ -1342,7 +1342,7 @@ class WizardMotorLaboral {
             ['Provincia', payload.datos_laborales.provincia || 'Sin informar'],
             ['Urgencia', urgenciaLabel[payload.situacion.urgencia] || 'Sin definir'],
             ['Documentación útil', docs.length ? docs.join(', ') : 'Sin respaldo declarado'],
-            ['Email', payload.contacto.email || 'Pendiente de completar'],
+            ['Email', payload.contacto.email || 'Completá tu email para habilitar el envío'],
         ];
 
         contenedor.innerHTML = `

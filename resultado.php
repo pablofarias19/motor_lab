@@ -680,6 +680,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 $tipoContingencia = $situacion['tipo_contingencia'] ?? 'accidente_tipico';
                 $estadoCM = $situacion['comision_medica'] ?? 'no_iniciada';
                 $incapTipo = $situacion['incapacidad_tipo'] ?? 'permanente_definitiva';
+                $colorDiferenciaCivil = $montoCivil > $montoTarifa
+                    ? '#16a34a'
+                    : ($montoCivil === $montoTarifa ? 'var(--premium-blue)' : '#dc2626');
 
                 $etiquetasContingencia = [
                     'accidente_tipico' => 'Accidente de trabajo (típico)',
@@ -782,7 +785,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             </tr>
                             <tr>
                                 <td style="padding: 6px 8px;">Diferencia</td>
-                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil > $montoTarifa ? '#16a34a' : ($montoCivil === $montoTarifa ? 'var(--premium-blue)' : '#dc2626') ?>;">
+                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $colorDiferenciaCivil ?>;">
                                     <?= $montoCivil > $montoTarifa ? '+' : '' ?><?= ml_formato_moneda($montoCivil - $montoTarifa) ?> vía civil
                                 </td>
                             </tr>
