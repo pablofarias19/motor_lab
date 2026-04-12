@@ -1599,7 +1599,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                         <span class="ui-emoji" aria-hidden="true">💔</span> Abrir daño complementario (solo si hubo trabajo no registrado, registración deficiente o un agravamiento puntual)
                                     </summary>
                                     <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 16px 0 0; background-color: #f8fafb;">
-                                        <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
+                                        <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Arts. 1738, 1740 y 1741 CCCN)</legend>
                                         <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Abrilo cuando quieras medir daños adicionales por afectación moral/patrimonial vinculada al trabajo no registrado o a una extinción especialmente gravosa.</p>
                                         
                                         <div class="form-group">

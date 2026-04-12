@@ -37,6 +37,18 @@ final class ComplementaryLegalAnalysisBuilderTest extends TestCase
         $this->assertTrue($ley['fraude']['score'] > 0);
         $this->assertNotNull($ley['dano']);
         $this->assertTrue($ley['dano']['total_daño_complementario'] > 0);
+        $this->assertSame(
+            'Art. 1741 CCCN (Consecuencias no patrimoniales)',
+            $ley['dano']['desglose']['daño_moral']['base_legal'] ?? null
+        );
+        $this->assertSame(
+            'Arts. 1738 y 1740 CCCN (Lucro cesante y reparación plena)',
+            $ley['dano']['desglose']['daño_patrimonial']['base_legal'] ?? null
+        );
+        $this->assertSame(
+            'Adicional orientativo a la indemnización por extinción, bajo pauta de reparación plena (Arts. 1738, 1740 y 1741 CCCN; Art. 245 LCT)',
+            $ley['dano']['nota'] ?? null
+        );
 
         $analysisIrrelevante = ComplementaryLegalAnalysisBuilder::build(
             ['salario' => 500000, 'tipo_registro' => 'registrado'],

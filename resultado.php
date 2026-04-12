@@ -564,7 +564,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <!-- Daño Complementario -->
                         <div style="border: 2px solid #7c3aed; border-radius: 10px; padding: 1rem; background: #faf5ff;">
                             <h4 style="margin: 0 0 0.75rem; font-size: 0.9rem; color: #7c3aed;">
-                                <span class="ui-emoji" aria-hidden="true">💔</span>Daño Complementario (Art. 527 CCCN)
+                                <span class="ui-emoji" aria-hidden="true">💔</span>Daño Complementario (Arts. 1738, 1740 y 1741 CCCN)
                             </h4>
                             <p style="margin: 0 0 0.75rem; font-size: 0.78rem; line-height: 1.45; color: #5b21b6;">
                                 <?= htmlspecialchars((string) ($uiDanoComplementario['intro'] ?? 'Este cuadro refleja un extra potencial sobre la indemnización base por extinción y se desglosa en tres rubros para que el total no quede aislado ni sin contexto. Sirve para entender de dónde sale el monto complementario y qué parte responde a afectación personal, cuál a impacto económico indirecto y cuál a proyección reputacional.')) ?>
