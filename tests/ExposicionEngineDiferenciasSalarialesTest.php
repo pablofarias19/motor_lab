@@ -11,7 +11,7 @@ final class ExposicionEngineDiferenciasSalarialesTest extends TestCase
     {
         $engine = new ExposicionEngine();
 
-        $payload = AnalysisPayloadNormalizer::normalize([
+        $input = [
             'tipo_usuario' => 'empleado',
             'tipo_conflicto' => 'diferencias_salariales',
             'datos_laborales' => [
@@ -30,7 +30,12 @@ final class ExposicionEngineDiferenciasSalarialesTest extends TestCase
             'contacto' => [
                 'email' => 'diferencias@example.com',
             ],
-        ]);
+        ];
+
+        $this->assertSame('si', $input['situacion']['ya_despedido']);
+        $this->assertSame('2026-03-10', $input['situacion']['fecha_despido']);
+
+        $payload = AnalysisPayloadNormalizer::normalize($input);
 
         $resultado = $engine->calcularExposicion(
             $payload['datos_laborales'],
