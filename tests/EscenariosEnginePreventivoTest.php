@@ -24,7 +24,8 @@ final class EscenariosEnginePreventivoTest extends TestCase
             'CABA'
         );
 
-        $escenarioAudit = $auditoria['escenarios']['D'] ?? [];
+        $this->assertTrue(isset($auditoria['escenarios']['D']), 'La parte empleadora debe conservar el escenario preventivo.');
+        $escenarioAudit = $auditoria['escenarios']['D'];
         $this->assertSame('Beneficio (ahorro pot.)', $escenarioAudit['beneficio_label'] ?? null);
         $this->assertSame('Ahorro neto estimado', $escenarioAudit['vbp_label'] ?? null);
         $this->assertSame('alta', $escenarioAudit['aplicabilidad'] ?? null);
@@ -35,9 +36,9 @@ final class EscenariosEnginePreventivoTest extends TestCase
 
         $diferenciasEmpleado = $engine->generarEscenarios(
             [
-                'total_base' => 3691333.33,
-                'total_con_multas' => 5386333.33,
-                'salario_base' => 565000,
+                'total_base' => 3000000,
+                'total_con_multas' => 4200000,
+                'salario_base' => 500000,
             ],
             3.0,
             'diferencias_salariales',

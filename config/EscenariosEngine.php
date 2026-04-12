@@ -27,6 +27,7 @@ require_once __DIR__ . '/config.php';
 
 class EscenariosEngine
 {
+    private const TIPO_USUARIO_EMPLEADOR = 'empleador';
 
     // ─────────────────────────────────────────────────────────────────────────
     // MÉTODO PRINCIPAL
@@ -71,6 +72,7 @@ class EscenariosEngine
         string $provincia = 'CABA'
     ): array {
 
+        $tipoUsuarioNormalizado = strtolower(trim($tipoUsuario));
         $totalBase = $exposicion['total_base'] ?? 0;
         $totalConMultas = $exposicion['total_con_multas'] ?? 0;
         $salario = $exposicion['salario_base'] ?? 0;
@@ -104,7 +106,7 @@ class EscenariosEngine
         $c = $this->escenarioMixto($totalBase, $totalConMultas, $honorariosJudiciales, $irilScore, $tipoUsuario, $provincia);
 
         $escenarios = ['A' => $a, 'B' => $b, 'C' => $c];
-        if (strtolower(trim($tipoUsuario)) === 'empleador') {
+        if ($tipoUsuarioNormalizado === self::TIPO_USUARIO_EMPLEADOR) {
             // ── Escenario D — Reconfiguración Preventiva ──────────────────────
             $escenarios['D'] = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
         }
