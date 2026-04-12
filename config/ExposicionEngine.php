@@ -11,6 +11,9 @@ require_once __DIR__ . '/ripte_functions.php';
 
 class ExposicionEngine
 {
+    private const CIVIL_PROBABLE_THRESHOLD_MULTIPLIER = 1.35;
+    private const CIVIL_AGGRESSIVE_THRESHOLD_MULTIPLIER = 1.75;
+    private const MIN_APERTURA_CIVIL_FOR_RECOMMENDATION = 0.58;
     /**
      * Tasa pura anual de referencia para la proyección civil integral cuando
      * el motor no discrimina una tasa jurisdiccional específica.
@@ -55,6 +58,8 @@ class ExposicionEngine
         $mesActual = intval(date('n'));
 
         $conceptos = [];
+        $modeloDominio = [];
+        $alertasCriticas = [];
 
         // ─────────────────────────────────────────────────────────────────────
         // 1. CASOS DE DESVINCULACIÓN (LCT pura)
@@ -129,6 +134,9 @@ class ExposicionEngine
             $incapacidad = floatval($situacion['porcentaje_incapacidad'] ?? 0);
             $tieneArt = ($situacion['tiene_art'] ?? 'no') === 'si';
             $p = $ce['accidentes'];
+            $provincia = (string) ($datosLaborales['provincia'] ?? 'CABA');
+            $perfilJurisdiccional = $this->resolvePerfilJurisdiccional($provincia, $p);
+            $alertasCriticas = $this->buildAlertasCriticasAccidente($documentacion, $situacion, $tieneArt);
 
             if ($incapacidad > 0 && $tieneArt) {
                 $motorArt = new \App\Engines\ArtCalculationEngine();
@@ -157,28 +165,22 @@ class ExposicionEngine
                     'detalle_calculo' => $analisisArt,
                 ];
 
-                // ═══ VÍA CIVIL: estimación integral comparativa ═══
-                $montoCivilBase = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
-                $duracionCivilMeses = max(1, intval($p['escenarios_art']['civil_complementaria']['duracion_promedio'] ?? 48));
-                // Tasa pura de referencia estándar que usa hoy esta estimación civil integral en ausencia de un cálculo jurisdiccional específico.
-                $tasaInteresCivil = self::TASA_CIVIL_REFERENCIA_ANUAL;
-                // Piso orientativo de daño moral/extrapatrimonial según la documentación funcional vigente del motor (+20% mínimo en vía civil).
-                $danioMoral = $montoCivilBase * self::DANIO_MORAL_CIVIL_PORCENTAJE;
-                $subtotalCivil = $montoCivilBase + $danioMoral;
-                $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
-                $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;
-                $civilBelowArtFloor = $montoCivilIntegral <= $montoLRT;
-                $montoCivil = $civilBelowArtFloor ? $montoLRT : $montoCivilIntegral;
-                $notaCivil = "Estimación integral de vía civil: capital base Méndez {$p['meses_año']} meses + daño moral 20% + intereses judiciales estimados al 6% anual por {$duracionCivilMeses} meses.";
-                if ($civilBelowArtFloor) {
-                    $notaCivil .= " Se aplica como piso comparativo la tarifa ART para no subestimar la reparación integral.";
-                }
+                $analisisCivil = $this->buildCivilScenarios(
+                    $salario,
+                    $edad,
+                    $incapacidad,
+                    $montoLRT,
+                    $p,
+                    $perfilJurisdiccional,
+                    true
+                );
+                $montoCivil = floatval($analisisCivil['escenarios']['probable']['monto_total'] ?? $montoLRT);
 
                 $conceptos['estimacion_civil_mendez'] = [
-                    'descripcion' => "Estimación acción civil integral (Méndez + daño moral + intereses)",
+                    'descripcion' => "Estimación acción civil integral — escenario probable",
                     'monto' => round($montoCivil, 2),
                     'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente + criterio de reparación integral',
-                    'nota' => $notaCivil
+                    'nota' => (string) ($analisisCivil['escenarios']['probable']['nota'] ?? '')
                 ];
 
                 // Adicional gran invalidez
@@ -205,6 +207,16 @@ class ExposicionEngine
                     'detalle_calculo' => $analisisArt,
                 ];
 
+                $modeloDominio = $this->buildAccidentDomainModel(
+                    true,
+                    $montoLRT,
+                    $analisisArt,
+                    $analisisCivil,
+                    $perfilJurisdiccional,
+                    $alertasCriticas,
+                    $situacion
+                );
+
             } elseif ($incapacidad > 0 && !$tieneArt) {
                 // ═══ SIN ART: Mantener lógica original (acción civil directa) ═══
                 $expoAccidente = ($salario * $p['meses_año'] * ($incapacidad / 100) * $p['factor_edad_limite']) / $edad;
@@ -221,6 +233,27 @@ class ExposicionEngine
                     'base_legal' => 'Responsabilidad Civil / Art. 28 LRT',
                     'nota' => 'El empleador responde con su patrimonio personal al no tener seguro activo.'
                 ];
+
+                $analisisCivil = $this->buildCivilScenarios(
+                    $salario,
+                    $edad,
+                    $incapacidad,
+                    0.0,
+                    $p,
+                    $perfilJurisdiccional,
+                    false,
+                    $recargo
+                );
+
+                $modeloDominio = $this->buildAccidentDomainModel(
+                    false,
+                    0.0,
+                    [],
+                    $analisisCivil,
+                    $perfilJurisdiccional,
+                    $alertasCriticas,
+                    $situacion
+                );
             } else {
                 // Sin datos de incapacidad — estimación estructural genérica
                 $expoAccidente = $salario * 45;
@@ -238,6 +271,26 @@ class ExposicionEngine
                         'nota' => 'El empleador responde con su patrimonio personal al no tener seguro activo.'
                     ];
                 }
+
+                $analisisCivil = $this->buildCivilScenarios(
+                    $salario,
+                    $edad,
+                    $incapacidad,
+                    0.0,
+                    $p,
+                    $perfilJurisdiccional,
+                    $tieneArt
+                );
+
+                $modeloDominio = $this->buildAccidentDomainModel(
+                    $tieneArt,
+                    0.0,
+                    [],
+                    $analisisCivil,
+                    $perfilJurisdiccional,
+                    $alertasCriticas,
+                    $situacion
+                );
             }
         }
 
@@ -406,14 +459,283 @@ class ExposicionEngine
             }
         }
 
-        return [
+        if ($tipoConflicto === 'accidente_laboral' && $modeloDominio !== []) {
+            $resumenAccidente = $this->buildLegacyTotalsFromAccidentModel($modeloDominio);
+            $totalBase = $resumenAccidente['total_base'];
+            $totalConMultas = $resumenAccidente['total_con_multas'];
+        }
+
+        $resultado = [
             'conceptos' => $conceptos,
             'total_base' => round($totalBase, 2),
             'total_con_multas' => round($totalConMultas, 2),
             'total' => round($totalConMultas, 2),
             'salario_base' => $salario,
             'antiguedad_anos' => round($antiguedadA, 1),
-            'nota_legal' => 'Estimación estructural bajo LCT. No garantiza resultado. Sujeto a variables procesales y negociación.'
+            'nota_legal' => $tipoConflicto === 'accidente_laboral' && $modeloDominio !== []
+                ? 'Modelo de decisión por accidente laboral con vías ART/civil excluyentes. Los montos se comparan por escenario; no se acumulan.'
+                : 'Estimación estructural bajo LCT. No garantiza resultado. Sujeto a variables procesales y negociación.'
+        ];
+
+        if ($modeloDominio !== []) {
+            $resultado += $modeloDominio;
+        }
+
+        if ($alertasCriticas !== []) {
+            $resultado['alertas_criticas'] = $alertasCriticas;
+        }
+
+        return $resultado;
+    }
+
+    private function resolvePerfilJurisdiccional(string $provincia, array $accidentesConfig): array
+    {
+        $perfiles = $accidentesConfig['perfiles_jurisdiccionales'] ?? [];
+        $perfil = $perfiles[$provincia] ?? ($perfiles['default'] ?? []);
+
+        return [
+            'jurisdiccion' => $provincia,
+            'tendencia_danio_moral' => (string) ($perfil['tendencia_danio_moral'] ?? 'media'),
+            'danio_moral_factor' => floatval($perfil['danio_moral_factor'] ?? 1.0),
+            'interes_anual_base' => floatval($perfil['interes_anual_base'] ?? self::TASA_CIVIL_REFERENCIA_ANUAL),
+            'apertura_accion_civil' => floatval($perfil['apertura_accion_civil'] ?? 0.55),
+            'severidad_costas' => floatval($perfil['severidad_costas'] ?? 1.0),
+        ];
+    }
+
+    private function buildCivilScenarios(
+        float $salario,
+        int $edad,
+        float $incapacidad,
+        float $pisoArtComparativo,
+        array $accidentesConfig,
+        array $perfilJurisdiccional,
+        bool $tieneArt,
+        float $recargoSinArt = 0.0
+    ): array {
+        $edadSegura = max($edad, 16);
+        $capitalBase = ($salario * floatval($accidentesConfig['meses_año'] ?? 13) * ($incapacidad / 100) * floatval($accidentesConfig['factor_edad_limite'] ?? 65)) / $edadSegura;
+        $civilConfig = $accidentesConfig['civil'] ?? [];
+        $escenariosConfig = $civilConfig['escenarios'] ?? [];
+        $costasConfig = $civilConfig['costas'] ?? [];
+        $honorariosConfig = $civilConfig['honorarios'] ?? [];
+        $temeridadTasa = max(0.0, floatval($civilConfig['temeridad_tasa'] ?? 0.0));
+        $escenarios = [];
+
+        foreach ($escenariosConfig as $nombre => $config) {
+            $danioMoralPct = floatval($config['danio_moral'] ?? self::DANIO_MORAL_CIVIL_PORCENTAJE)
+                * floatval($perfilJurisdiccional['danio_moral_factor'] ?? 1.0);
+            $interesAnual = max(
+                floatval($config['interes_anual'] ?? self::TASA_CIVIL_REFERENCIA_ANUAL),
+                floatval($perfilJurisdiccional['interes_anual_base'] ?? self::TASA_CIVIL_REFERENCIA_ANUAL)
+            );
+            $duracionMeses = max(1, intval($config['duracion_meses'] ?? 48));
+            $factorProbatorio = max(0.5, floatval($config['factor_probatorio'] ?? 1.0));
+            $subtotalBase = $capitalBase * $factorProbatorio;
+            $danioMoral = $subtotalBase * $danioMoralPct;
+            $factorInteres = pow(1 + $interesAnual, $duracionMeses / 12);
+            $montoSinCostas = ($subtotalBase + $danioMoral) * $factorInteres;
+            $recargoFaltaArt = !$tieneArt && $recargoSinArt > 0 ? $montoSinCostas * $recargoSinArt : 0.0;
+            $montoSinCostas += $recargoFaltaArt;
+
+            if ($tieneArt && $montoSinCostas <= $pisoArtComparativo) {
+                $montoSinCostas = $pisoArtComparativo;
+            }
+
+            $claveCostas = match ($nombre) {
+                'conservador' => 'min',
+                'agresivo' => 'max',
+                default => 'probable',
+            };
+            $costasTasa = floatval($costasConfig[$claveCostas] ?? 0.20) * floatval($perfilJurisdiccional['severidad_costas'] ?? 1.0);
+            $honorariosTasa = floatval($honorariosConfig[$claveCostas] ?? 0.22);
+            $costas = $montoSinCostas * $costasTasa;
+            $honorarios = $montoSinCostas * $honorariosTasa;
+            $temeridad = !$tieneArt && $nombre === 'agresivo' ? $montoSinCostas * $temeridadTasa : 0.0;
+
+            $escenarios[$nombre] = [
+                'capital_base' => round($capitalBase, 2),
+                'monto_sin_costas' => round($montoSinCostas, 2),
+                'monto_total' => round($montoSinCostas + $costas + $honorarios + $temeridad, 2),
+                'danio_moral_porcentaje' => round($danioMoralPct, 4),
+                'interes_anual' => round($interesAnual, 4),
+                'duracion_meses' => $duracionMeses,
+                'factor_probatorio' => round($factorProbatorio, 2),
+                'costas' => round($costas, 2),
+                'honorarios' => round($honorarios, 2),
+                'temeridad' => round($temeridad, 2),
+                'recargo_falta_art' => round($recargoFaltaArt, 2),
+                'apertura_accion_civil' => round(floatval($perfilJurisdiccional['apertura_accion_civil'] ?? 0.55), 2),
+                'nota' => sprintf(
+                    'Escenario %s: capital Méndez + daño moral %.0f%% + intereses %.0f%% anual por %d meses%s.',
+                    $nombre,
+                    $danioMoralPct * 100,
+                    $interesAnual * 100,
+                    $duracionMeses,
+                    !$tieneArt && $recargoFaltaArt > 0 ? ' + recargo por falta de ART' : ''
+                ),
+            ];
+        }
+
+        return [
+            'capital_base' => round($capitalBase, 2),
+            'escenarios' => $escenarios,
+            'costas_estimadas' => [
+                'min' => round(($escenarios['conservador']['costas'] ?? 0) + ($escenarios['conservador']['honorarios'] ?? 0), 2),
+                'probable' => round(($escenarios['probable']['costas'] ?? 0) + ($escenarios['probable']['honorarios'] ?? 0), 2),
+                'max' => round(($escenarios['agresivo']['costas'] ?? 0) + ($escenarios['agresivo']['honorarios'] ?? 0) + ($escenarios['agresivo']['temeridad'] ?? 0), 2),
+            ],
+        ];
+    }
+
+    private function buildAccidentDomainModel(
+        bool $tieneArt,
+        float $montoArt,
+        array $analisisArt,
+        array $analisisCivil,
+        array $perfilJurisdiccional,
+        array $alertasCriticas,
+        array $situacion
+    ): array {
+        $escenariosCiviles = $analisisCivil['escenarios'] ?? [];
+        $civilConservador = floatval($escenariosCiviles['conservador']['monto_total'] ?? 0);
+        $civilProbable = floatval($escenariosCiviles['probable']['monto_total'] ?? 0);
+        $civilAgresivo = floatval($escenariosCiviles['agresivo']['monto_total'] ?? 0);
+        $maximoReal = max($montoArt, $civilAgresivo);
+        $viaRecomendada = $this->resolveViaRecomendada(
+            $tieneArt,
+            $montoArt,
+            $civilProbable,
+            $civilAgresivo,
+            $perfilJurisdiccional,
+            $alertasCriticas,
+            $situacion
+        );
+
+        return [
+            'perfil_jurisdiccional' => $perfilJurisdiccional,
+            'scoring_juridico' => [
+                'jurisdiccion' => $perfilJurisdiccional['jurisdiccion'],
+                'apertura_accion_civil' => round(floatval($perfilJurisdiccional['apertura_accion_civil'] ?? 0.55), 2),
+                'tendencia_danio_moral' => $perfilJurisdiccional['tendencia_danio_moral'],
+                'alertas' => $alertasCriticas,
+            ],
+            'cuantificacion_economica' => [
+                'via_art' => [
+                    'disponible' => $tieneArt,
+                    'tipo' => 'tarifado',
+                    'monto_seguro' => round($montoArt, 2),
+                    'riesgo_empresa' => $tieneArt ? 'bajo' : 'alto',
+                    'detalle_calculo' => $analisisArt,
+                ],
+                'via_civil' => [
+                    'disponible' => true,
+                    'tipo' => 'integral_excluyente',
+                    'escenarios' => [
+                        'conservador' => round($civilConservador, 2),
+                        'probable' => round($civilProbable, 2),
+                        'agresivo' => round($civilAgresivo, 2),
+                    ],
+                    'detalle_escenarios' => $escenariosCiviles,
+                    'riesgo_empresa' => 'alto',
+                ],
+                'comparativa' => [
+                    'opcion_excluyente' => true,
+                    'via_recomendada' => $viaRecomendada,
+                    'diferencia_probable_vs_art' => round($civilProbable - $montoArt, 2),
+                    'estrategia_sugerida' => $viaRecomendada === 'art'
+                        ? 'Priorizar tarifa ART y reservar la vía civil para supuestos con prueba reforzada.'
+                        : 'Analizar la vía civil porque la exposición probable supera materialmente a la tarifa ART y hay contexto jurídico favorable.',
+                ],
+                'costas' => $analisisCivil['costas_estimadas'] ?? ['min' => 0, 'probable' => 0, 'max' => 0],
+                'resultado_final' => [
+                    'exposicion_maxima_real' => round($maximoReal, 2),
+                    'tipo' => $civilAgresivo >= $montoArt
+                        ? 'escenario_civil_agresivo_con_costas'
+                        : 'escenario_art_tarifado',
+                ],
+            ],
+            'resultados_clave' => [
+                'exposicion_art_segura' => round($montoArt, 2),
+                'exposicion_civil_conservadora' => round($civilConservador, 2),
+                'exposicion_civil_probable' => round($civilProbable, 2),
+                'exposicion_civil_agresiva' => round($civilAgresivo, 2),
+                'exposicion_maxima_real_con_costas' => round($maximoReal, 2),
+                'estrategia_sugerida' => $viaRecomendada,
+            ],
+        ];
+    }
+
+    private function resolveViaRecomendada(
+        bool $tieneArt,
+        float $montoArt,
+        float $civilProbable,
+        float $civilAgresivo,
+        array $perfilJurisdiccional,
+        array $alertasCriticas,
+        array $situacion
+    ): string {
+        if (!$tieneArt) {
+            return 'civil';
+        }
+
+        $estadoCm = (string) ($situacion['comision_medica'] ?? 'no_iniciada');
+        if ($estadoCm === 'homologado') {
+            return 'civil';
+        }
+
+        $aperturaCivil = floatval($perfilJurisdiccional['apertura_accion_civil'] ?? 0.55);
+        $hayNexoFuerte = in_array('alta_probabilidad_nexo', array_column($alertasCriticas, 'codigo'), true);
+        $documentacionDeficitaria = in_array('documentacion_insuficiente_empresa', array_column($alertasCriticas, 'codigo'), true);
+
+        if (($civilProbable > ($montoArt * self::CIVIL_PROBABLE_THRESHOLD_MULTIPLIER)
+                || $civilAgresivo > ($montoArt * self::CIVIL_AGGRESSIVE_THRESHOLD_MULTIPLIER))
+            && $aperturaCivil >= self::MIN_APERTURA_CIVIL_FOR_RECOMMENDATION
+            && ($hayNexoFuerte || $documentacionDeficitaria)) {
+            return 'civil';
+        }
+
+        return 'art';
+    }
+
+    private function buildAlertasCriticasAccidente(array $documentacion, array $situacion, bool $tieneArt): array
+    {
+        $alertas = [];
+
+        if (!$tieneArt) {
+            $alertas[] = ['codigo' => 'falta_art', 'nivel' => 'critico'];
+        }
+
+        if (($situacion['comision_medica'] ?? 'no_iniciada') === 'no_iniciada') {
+            $alertas[] = ['codigo' => 'dictamen_cm_ausente', 'nivel' => 'alto'];
+        }
+
+        if (($situacion['denuncia_art'] ?? 'no') === 'si' && ($situacion['rechazo_art'] ?? 'no') === 'no') {
+            $alertas[] = ['codigo' => 'alta_probabilidad_nexo', 'nivel' => 'alto'];
+        }
+
+        if (($documentacion['registrado_afip'] ?? 'no') === 'no' || ($documentacion['tiene_recibos'] ?? 'no') === 'no') {
+            $alertas[] = ['codigo' => 'documentacion_insuficiente_empresa', 'nivel' => 'alto'];
+        }
+
+        if (intval($situacion['cantidad_empleados'] ?? 1) > 1) {
+            $alertas[] = ['codigo' => 'riesgo_cascada', 'nivel' => 'medio'];
+        }
+
+        if (($situacion['rechazo_art'] ?? 'no') === 'si' || ($situacion['culpa_grave'] ?? 'no') === 'si') {
+            $alertas[] = ['codigo' => 'via_civil_viable', 'nivel' => 'alto'];
+        }
+
+        return $alertas;
+    }
+
+    private function buildLegacyTotalsFromAccidentModel(array $modeloDominio): array
+    {
+        $resultadosClave = $modeloDominio['resultados_clave'] ?? [];
+
+        return [
+            'total_base' => floatval($resultadosClave['exposicion_art_segura'] ?? 0),
+            'total_con_multas' => floatval($resultadosClave['exposicion_maxima_real_con_costas'] ?? 0),
         ];
     }
 }

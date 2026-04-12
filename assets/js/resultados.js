@@ -845,6 +845,41 @@ function _renderTablaExposicion(exposicion) {
         `;
     }).join('');
 
+    const resultadosClave = exposicion.resultados_clave || {};
+    const estrategiaSugerida = String(resultadosClave.estrategia_sugerida || 'art').toLowerCase();
+    const estrategiaSugeridaHtml = estrategiaSugerida === 'art'
+        ? '<abbr title="Aseguradora de Riesgos del Trabajo">ART</abbr>'
+        : 'CIVIL';
+    const resumenFooter = resultadosClave.exposicion_maxima_real_con_costas
+        ? `
+            <tr class="total-base">
+                <td colspan="2"><strong>Exposición ART segura</strong></td>
+                <td><strong>${_formatearMoneda(resultadosClave.exposicion_art_segura || 0)}</strong></td>
+            </tr>
+            <tr class="total-base">
+                <td colspan="2"><strong>Exposición civil probable</strong></td>
+                <td><strong>${_formatearMoneda(resultadosClave.exposicion_civil_probable || 0)}</strong></td>
+            </tr>
+            <tr class="total-multas">
+                <td colspan="2"><strong>Exposición máxima real con costas</strong></td>
+                <td><strong>${_formatearMoneda(resultadosClave.exposicion_maxima_real_con_costas || 0)}</strong></td>
+            </tr>
+            <tr class="total-base">
+                <td colspan="2"><strong>Estrategia sugerida</strong></td>
+                <td aria-label="Estrategia sugerida: ${_escaparHTML(estrategiaSugerida === 'art' ? 'ART' : 'Civil')}"><strong>${estrategiaSugeridaHtml}</strong></td>
+            </tr>
+        `
+        : `
+            <tr class="total-base">
+                <td colspan="2"><strong>Total Base (sin multas)</strong></td>
+                <td><strong>${_formatearMoneda(exposicion.total_base || 0)}</strong></td>
+            </tr>
+            <tr class="total-multas">
+                <td colspan="2"><strong>Total con Multas Posibles</strong></td>
+                <td><strong>${_formatearMoneda(exposicion.total_con_multas || 0)}</strong></td>
+            </tr>
+        `;
+
     const html = `
         <table class="exposicion-table"
                role="table"
@@ -860,14 +895,7 @@ function _renderTablaExposicion(exposicion) {
                 ${filas}
             </tbody>
             <tfoot>
-                <tr class="total-base">
-                    <td colspan="2"><strong>Total Base (sin multas)</strong></td>
-                    <td><strong>${_formatearMoneda(exposicion.total_base || 0)}</strong></td>
-                </tr>
-                <tr class="total-multas">
-                    <td colspan="2"><strong>Total con Multas Posibles</strong></td>
-                    <td><strong>${_formatearMoneda(exposicion.total_con_multas || 0)}</strong></td>
-                </tr>
+                ${resumenFooter}
             </tfoot>
         </table>
         <p class="exposicion-nota-legal">
