@@ -149,6 +149,8 @@ final class AnalysisPayloadNormalizer
             'meses_litigio' => self::int($situacionInput['meses_litigio'] ?? 36, 36),
         ]);
 
+        $situacion = self::normalizeSituationConsistency($tipoUsuario, $tipoConflicto, $situacion);
+
         if (!in_array($tipoUsuario, self::TIPOS_USUARIO, true)) {
             $errors['tipo_usuario'] = 'Seleccioná un perfil válido.';
         }
@@ -311,5 +313,104 @@ final class AnalysisPayloadNormalizer
         }
 
         return [$datosLaborales, $documentacion];
+    }
+
+    private static function normalizeSituationConsistency(string $tipoUsuario, string $tipoConflicto, array $situacion): array
+    {
+        $esAccidente = $tipoConflicto === 'accidente_laboral';
+        $esDiferencia = $tipoConflicto === 'diferencias_salariales';
+        $esPrevencion = in_array($tipoConflicto, ['responsabilidad_solidaria', 'riesgo_inspeccion', 'auditoria_preventiva'], true);
+        $esAuditoria = in_array($tipoConflicto, ['auditoria_preventiva', 'riesgo_inspeccion'], true);
+        $esSolidaridad = $tipoConflicto === 'responsabilidad_solidaria';
+        $usaCamposDespido = !$esAccidente && !$esDiferencia && !$esPrevencion;
+
+        if (($situacion['hay_intercambio'] ?? 'no') !== 'si') {
+            $situacion['fecha_ultimo_telegrama'] = '';
+        }
+
+        if (($situacion['ya_despedido'] ?? 'no') !== 'si' || !$usaCamposDespido) {
+            $situacion['ya_despedido'] = 'no';
+            $situacion['fecha_despido'] = '';
+            $situacion['check_inconstitucionalidad'] = 'no';
+            $situacion['dia_despido'] = 15;
+        }
+
+        if (!$esAccidente) {
+            $situacion['tipo_contingencia'] = 'accidente_tipico';
+            $situacion['fecha_siniestro'] = '';
+            $situacion['porcentaje_incapacidad'] = 0.0;
+            $situacion['incapacidad_tipo'] = 'permanente_definitiva';
+            $situacion['estado_art'] = 'activa_valida';
+            $situacion['culpa_grave'] = 'no';
+            $situacion['via_civil'] = 'no';
+            $situacion['denuncia_art'] = 'no';
+            $situacion['rechazo_art'] = 'no';
+            $situacion['comision_medica'] = 'no_iniciada';
+            $situacion['dictamen_porcentaje'] = 0.0;
+            $situacion['via_administrativa_agotada'] = 'no';
+            $situacion['tiene_preexistencia'] = 'no';
+            $situacion['preexistencia_porcentaje'] = 0.0;
+            $situacion['licencia_activa'] = 'no';
+        } else {
+            if (($situacion['tiene_preexistencia'] ?? 'no') !== 'si') {
+                $situacion['preexistencia_porcentaje'] = 0.0;
+            }
+
+            if (!in_array($situacion['comision_medica'] ?? 'no_iniciada', ['dictamen_emitido', 'homologado'], true)) {
+                $situacion['dictamen_porcentaje'] = 0.0;
+            }
+
+            $tieneArt = self::flag(
+                $tipoUsuario === 'empleador'
+                    ? (($situacion['estado_art'] ?? 'activa_valida') === 'inexistente' ? 'no' : 'si')
+                    : ($situacion['tiene_art'] ?? 'no')
+            );
+
+            if ($tieneArt !== 'si') {
+                $situacion['denuncia_art'] = 'no';
+                $situacion['rechazo_art'] = 'no';
+                $situacion['comision_medica'] = 'no_iniciada';
+                $situacion['dictamen_porcentaje'] = 0.0;
+                $situacion['via_administrativa_agotada'] = 'no';
+            }
+        }
+
+        if (!$esDiferencia) {
+            $situacion['motivo_diferencia'] = 'mala_categorizacion';
+            $situacion['meses_adeudados'] = 0;
+        }
+
+        if (!$esPrevencion) {
+            $situacion['inspeccion_previa'] = 'no';
+            $situacion['cantidad_subcontratistas'] = 1;
+        }
+
+        if (!$esAuditoria) {
+            $situacion['meses_no_registrados'] = 0;
+            $situacion['meses_en_mora'] = 0;
+            $situacion['aplica_blanco_laboral'] = 'no';
+            $situacion['probabilidad_condena'] = 0.5;
+            $situacion['chk_alta_sipa'] = 'no';
+            $situacion['chk_libro_art52'] = 'no';
+            $situacion['chk_recibos_cct'] = 'no';
+            $situacion['chk_art_vigente'] = 'no';
+            $situacion['chk_examenes'] = 'no';
+            $situacion['chk_epp_rgrl'] = 'no';
+        }
+
+        if ($tipoConflicto !== 'auditoria_preventiva') {
+            $situacion['nivel_cumplimiento'] = 'desconocido';
+        }
+
+        if (!$esSolidaridad) {
+            $situacion['actividad_esencial'] = 'no';
+            $situacion['control_documental'] = 'no';
+            $situacion['control_operativo'] = 'no';
+            $situacion['integracion_estructura'] = 'no';
+            $situacion['contrato_formal'] = 'no';
+            $situacion['falta_f931_art'] = 'no';
+        }
+
+        return $situacion;
     }
 }
