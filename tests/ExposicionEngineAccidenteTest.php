@@ -32,7 +32,6 @@ final class ExposicionEngineAccidenteTest extends TestCase
             [
                 'salario' => 500000,
                 'antiguedad_meses' => 24,
-                'edad' => 35,
             ],
             [],
             [
