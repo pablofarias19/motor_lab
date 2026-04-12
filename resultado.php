@@ -108,7 +108,11 @@ if (empty($analisisComplementario)) {
         $analisisComplementario = \App\Support\ComplementaryLegalAnalysisBuilder::build(
             $datosLaborales,
             $situacion,
-            $exposicion
+            $exposicion,
+            [
+                'tipo_conflicto' => (string) ($analisis['tipo_conflicto'] ?? ''),
+                'documentacion' => $documentacion,
+            ]
         );
     } catch (Exception $e) {
         ml_logear("[resultado.php] Error generando análisis complementario: " . $e->getMessage(), 'warning', 'analisis.log');
@@ -117,6 +121,8 @@ if (empty($analisisComplementario)) {
 }
 
 $ley27802 = $analisisComplementario['ley_27802'] ?? ['presuncion' => null, 'solidaria' => null, 'fraude' => null, 'dano' => null];
+$salariosHistoricosArt = is_array($situacion['salarios_historicos'] ?? null) ? $situacion['salarios_historicos'] : [];
+$cantidadSalariosArt = count($salariosHistoricosArt);
 // ─── Lógica adicional para el dashboard premium ──────────────────────────────
 
 // Resumen de documentación disponible
@@ -321,6 +327,23 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 </div>
             </div>
 
+            <div class="premium-card">
+                <div class="premium-card-header">
+                    <h3><i class="bi bi-person-plus"></i> Registro de usuario y consulta ampliada</h3>
+                </div>
+                <div class="premium-card-body" style="display:grid;gap:0.9rem;">
+                    <p style="margin:0;color:#374151;">Si querés una lectura con mayor personalización, datos estratégicos adicionales y seguimiento del caso, podés solicitar tu registro de usuario directamente con el estudio.</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:0.75rem;">
+                        <a href="mailto:estudio@fariasortiz.com.ar" class="btn-wizard btn-siguiente" style="text-decoration:none;">
+                            <i class="bi bi-envelope-fill"></i> estudio@fariasortiz.com.ar
+                        </a>
+                        <a href="https://wa.me/5491168480793" class="btn-wizard btn-anterior" style="text-decoration:none;" target="_blank" rel="noopener noreferrer">
+                            <i class="bi bi-whatsapp"></i> WhatsApp de referencia
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <!-- Card: Resumen del Caso -->
             <div class="premium-card">
                 <div class="premium-card-header">
@@ -407,6 +430,25 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     </div>
                 </div>
             </div>
+
+            <?php if (($analisis['tipo_conflicto'] ?? '') === 'accidente_laboral'): ?>
+            <div class="premium-card" style="border:1px solid #bfdbfe; background:#eff6ff;">
+                <div class="premium-card-header">
+                    <h3><i class="bi bi-bandaid"></i> Base ART / ingreso base</h3>
+                </div>
+                <div class="premium-card-body" style="display:grid;gap:0.65rem;color:#1e3a8a;">
+                    <p style="margin:0;">Para contingencias ART, el sistema toma como referencia el promedio de las remuneraciones sujetas a aportes de <strong>hasta los 12 meses previos</strong> al accidente o primera manifestación invalidante.</p>
+                    <p style="margin:0;">
+                        <?php if ($cantidadSalariosArt > 0): ?>
+                            Se informaron <strong><?= $cantidadSalariosArt ?></strong> remuneraciones para la base ART. Si la antigüedad era menor a 12 meses, se promedian solo los meses trabajados.
+                        <?php else: ?>
+                            No se informaron remuneraciones históricas: el resultado quedó estimado con el salario base cargado. Para una lectura ART más precisa conviene completar los salarios previos.
+                        <?php endif; ?>
+                    </p>
+                    <p style="margin:0;">Si hubo registración deficiente o salario subdeclarado, la base real puede requerir reconstrucción probatoria y actualización por RIPTE.</p>
+                </div>
+            </div>
+            <?php endif; ?>
 
             <?php 
             // ── SECCIÓN LEY 27.802 ── Solo mostrar si hay datos ──

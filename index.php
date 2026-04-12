@@ -1160,6 +1160,39 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                     </label>
                                 </div>
                             </div>
+
+                            <div class="form-group" style="margin-top: 1.5rem;">
+                                <label for="salarios_historicos">
+                                    <span class="form-label-main">
+                                        <i class="bi bi-graph-up"></i> Remuneraciones previas al accidente (hasta 12 meses)
+                                    </span>
+                                    <span class="req">*</span>
+                                </label>
+                                <textarea id="salarios_historicos" name="salarios_historicos"
+                                    rows="5"
+                                    placeholder='Un salario por línea (números sin puntos):'
+                                    spellcheck="false"
+                                    data-tooltip="Remuneraciones sujetas a aportes previas al accidente"></textarea>
+                                <small class="form-ayuda">
+                                    <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de hasta los <strong>12 meses previos</strong> al accidente o primera manifestación invalidante.
+                                    <br>Si trabajaste menos de 12 meses, cargá solo los meses efectivamente trabajados. Si hubo registración deficiente, luego puede reconstruirse el salario real con prueba.
+                                </small>
+                                <div class="form-example" id="ej-salarios-art">
+                                    <strong><span class="ui-emoji" aria-hidden="true">📋</span>Cómo cargar la base ART:</strong><br><br>
+                                    1. Tomá tus recibos o la constancia de ARCA del período previo al accidente.<br>
+                                    2. Pegá un salario por línea, sin $ ni puntos.<br>
+                                    3. Si no llegás a 12 meses, cargá solo los meses efectivamente trabajados.<br><br>
+                                    <code style="background:#f0f0f0; padding:0.8rem; display:block; border-radius:4px; font-size:0.8rem; font-family:monospace;">
+950000<br>
+965000<br>
+980000<br>
+995000
+                                    </code>
+                                </div>
+                                <span class="form-example-toggle" onclick="document.getElementById('ej-salarios-art').classList.toggle('active')">
+                                    <span class="ui-emoji" aria-hidden="true">📋</span>Mostrar cómo ingresar la base ART
+                                </span>
+                            </div>
                         </div>
 
                         <!-- DETALLES ESPECÍFICOS DE DIFERENCIAS SALARIALES -->
@@ -1244,7 +1277,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         <!-- ═════════════════════════════════════════════════════════════════
                              RIPTE v2.1 — Cálculos especiales para Ley Bases 27.742
                         ════════════════════════════════════════════════════════════════ -->
-                        <div class="form-section seccion-condicional" 
+                        <div class="form-section seccion-condicional no-accidente" 
                             style="border-left: 3px solid var(--primary); background:var(--primary-xlight); padding: 1.5rem; margin-top: 1.5rem;">
                             
                             <!-- Header con explicación -->
@@ -1253,8 +1286,8 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                     <i class="bi bi-calculator"></i>
                                 </div>
                                 <div class="paso-info-card-content">
-                                    <h4>Datos especiales para cálculos avanzados (v2.1)</h4>
-                                    <p>El motor ahora puede aplicar la Ley Bases y calcular intereses por provincia. Estos datos son completamente opcionales.</p>
+                                    <h4>Datos especiales para despido e intereses (v2.1)</h4>
+                                    <p>Este bloque solo se usa en conflictos donde importa la fecha de despido, la Ley Bases o la jurisdicción de demanda. En accidentes ART se reemplaza por la base salarial de hasta 12 meses.</p>
                                 </div>
                             </div>
 
@@ -1332,138 +1365,97 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </small>
                             </div>
 
-                            <!-- Salarios históricos (IBM preciso) -->
-                            <div class="form-group" style="margin-top: 1.5rem;">
-                                <label for="salarios_historicos">
-                                    <span class="form-label-main">
-                                        <i class="bi bi-graph-up"></i> Tus últimos 12 salarios mensuales
-                                    </span>
-                                    <span class="opcional-badge">MUY Opcional</span>
-                                </label>
-                                <textarea id="salarios_historicos" name="salarios_historicos" 
-                                    rows="5" 
-                                    placeholder='Un salario por línea (números sin puntos):'
-                                    spellcheck="false"
-                                    data-tooltip="Últimos 12 salarios"></textarea>
-                                <small class="form-ayuda">
-                                    <strong>Podés dejar VACÍO sin problema.</strong> El motor usa el salario del Paso 2.
-                                    <br>Si querés mayor precisión, pegá tus últimos 12 salarios (de ARCA o recibos).
-                                </small>
-                                <div class="form-example" id="ej-salarios">
-                                    <strong><span class="ui-emoji" aria-hidden="true">📋</span>Cómo si querés ser preciso:</strong><br><br>
-                                    1. Abrí tu ARCA o descargá 12 recibos<br>
-                                    2. Anotá cada salario mensual<br>
-                                    3. Pegá acá, cada uno en una línea (sin $, sin puntos)<br><br>
-                                    <code style="background:#f0f0f0; padding:0.8rem; display:block; border-radius:4px; font-size:0.8rem; font-family:monospace;">
-100000<br>
-101500<br>
-102000<br>
-103200<br>
-102800<br>
-105000<br>
-106200<br>
-107500<br>
-108100<br>
-109500<br>
-110800<br>
-115000
-                                    </code>
-                                    <br>
-                                    <span class="ui-emoji" aria-hidden="true">💡</span><strong>Si NO lo haces:</strong> El motor asume que todos los meses cobró lo mismo que en el Paso 2. Funciona igual, solo es menos preciso.
-                                </div>
-                                <span class="form-example-toggle" onclick="document.getElementById('ej-salarios').classList.toggle('active')">
-                                    <span class="ui-emoji" aria-hidden="true">📋</span>Mostrar cómo ingresar (si quiero ser exacto)
-                                </span>
-                            </div>
                         </div>
 
                         <!-- ═════════════════════════════════════════════════════════════════
                              LEY 27.802 — Campos de análisis avanzado (Marzo 2026)
                         ════════════════════════════════════════════════════════════════ -->
-                        <div class="form-section seccion-condicional" 
+                        <details class="form-section seccion-condicional"
                             style="border-left: 3px solid #1a5276; background: linear-gradient(135deg, #f0f7fb 0%, #e8f4f8 100%); padding: 1.5rem; margin-top: 1.5rem; border-radius: 0 8px 8px 0;">
-                            
-                            <!-- Header con explicación -->
-                            <div class="paso-info-card">
-                                <div class="paso-info-card-icon">
-                                    <i class="bi bi-shield-check"></i>
+                            <summary style="cursor:pointer; font-weight:700; color:#1a5276; list-style:none;">
+                                <i class="bi bi-shield-check"></i> Ley 27.802 — Abrir análisis de presunción, solidaria, fraude y daño
+                            </summary>
+                            <div style="margin-top: 1rem;">
+                                <div class="paso-info-card">
+                                    <div class="paso-info-card-icon">
+                                        <i class="bi bi-shield-check"></i>
+                                    </div>
+                                    <div class="paso-info-card-content">
+                                        <h4>Ley 27.802 — Cargar solo si realmente corresponde</h4>
+                                        <p>Usá este bloque cuando haya <strong>trabajo no registrado, registración deficiente, tercerización/solidaria o indicios concretos de fraude</strong>. Si la relación estuvo correctamente registrada y no querés profundizar este frente, dejalo cerrado.</p>
+                                    </div>
                                 </div>
-                                <div class="paso-info-card-content">
-                                    <h4>Ley 27.802 — Análisis de Presunción, Solidaria, Fraude y Daño</h4>
-                                    <p>Estos campos permiten al motor evaluar presunción laboral (Art. 23), responsabilidad solidaria (Art. 30), indicadores de fraude y daño complementario. <strong>Son opcionales</strong> — si no sabés, dejá los valores por defecto.</p>
-                                </div>
-                            </div>
 
-                            <!-- ─── ART. 23 LCT: Presunción Laboral ─── -->
-                            <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">🔍</span><strong>Art. 23 LCT (Ley 27.802)</strong> — ¿Presunción de Relación Laboral?</legend>
-                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">La presunción NO OPERA si coexisten los 3 elementos:</p>
-                                
-                                <div class="form-group form-group-si-no">
-                                    <label>¿Tiene facturación de servicios/productos?</label>
-                                    <div class="opcion-si-no">
-                                        <label class="opcion-pill" for="fact-si">
-                                            <input type="radio" name="tiene_facturacion" id="fact-si" value="si">
-                                            <span>Sí</span>
-                                        </label>
-                                        <label class="opcion-pill" for="fact-no">
-                                            <input type="radio" name="tiene_facturacion" id="fact-no" value="no" checked>
-                                            <span>No</span>
-                                        </label>
+                                <!-- ─── ART. 23 LCT: Presunción Laboral ─── -->
+                                <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
+                                    <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">🔍</span><strong>Art. 23 LCT (Ley 27.802)</strong> — ¿Presunción de Relación Laboral?</legend>
+                                    <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">La presunción NO OPERA si coexisten los 3 elementos:</p>
+                                    
+                                    <div class="form-group form-group-si-no">
+                                        <label>¿Tiene facturación de servicios/productos?</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="fact-si">
+                                                <input type="radio" name="tiene_facturacion" id="fact-si" value="si">
+                                                <span>Sí</span>
+                                            </label>
+                                            <label class="opcion-pill" for="fact-no">
+                                                <input type="radio" name="tiene_facturacion" id="fact-no" value="no" checked>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <small class="form-ayuda">Comprobantes de servicios o productos emitidos</small>
                                     </div>
-                                    <small class="form-ayuda">Comprobantes de servicios o productos emitidos</small>
-                                </div>
-                                
-                                <div class="form-group form-group-si-no">
-                                    <label>¿Hay pagos bancarios (no efectivo)?</label>
-                                    <div class="opcion-si-no">
-                                        <label class="opcion-pill" for="pagob-si">
-                                            <input type="radio" name="tiene_pago_bancario" id="pagob-si" value="si">
-                                            <span>Sí</span>
-                                        </label>
-                                        <label class="opcion-pill" for="pagob-no">
-                                            <input type="radio" name="tiene_pago_bancario" id="pagob-no" value="no" checked>
-                                            <span>No</span>
-                                        </label>
+                                    
+                                    <div class="form-group form-group-si-no">
+                                        <label>¿Hay pagos bancarios (no efectivo)?</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="pagob-si">
+                                                <input type="radio" name="tiene_pago_bancario" id="pagob-si" value="si">
+                                                <span>Sí</span>
+                                            </label>
+                                            <label class="opcion-pill" for="pagob-no">
+                                                <input type="radio" name="tiene_pago_bancario" id="pagob-no" value="no" checked>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <small class="form-ayuda">Transferencias, depósitos, cheques (no efectivo)</small>
                                     </div>
-                                    <small class="form-ayuda">Transferencias, depósitos, cheques (no efectivo)</small>
-                                </div>
-                                
-                                <div class="form-group form-group-si-no">
-                                    <label>¿Existe contrato escrito formal?</label>
-                                    <div class="opcion-si-no">
-                                        <label class="opcion-pill" for="contesc-si">
-                                            <input type="radio" name="tiene_contrato_escrito" id="contesc-si" value="si">
-                                            <span>Sí</span>
-                                        </label>
-                                        <label class="opcion-pill" for="contesc-no">
-                                            <input type="radio" name="tiene_contrato_escrito" id="contesc-no" value="no" checked>
-                                            <span>No</span>
-                                        </label>
+                                    
+                                    <div class="form-group form-group-si-no">
+                                        <label>¿Existe contrato escrito formal?</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="contesc-si">
+                                                <input type="radio" name="tiene_contrato_escrito" id="contesc-si" value="si">
+                                                <span>Sí</span>
+                                            </label>
+                                            <label class="opcion-pill" for="contesc-no">
+                                                <input type="radio" name="tiene_contrato_escrito" id="contesc-no" value="no" checked>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <small class="form-ayuda">Acuerdo formalizado, orden de compra o documento equivalente</small>
                                     </div>
-                                    <small class="form-ayuda">Acuerdo formalizado, orden de compra o documento equivalente</small>
-                                </div>
-                            </fieldset>
+                                </fieldset>
 
-                            <!-- ─── ART. 30 LCT: Responsabilidad Solidaria ─── -->
-                            <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">⚖️</span><strong>Art. 30 LCT (Ley 27.802)</strong> — Controles Exención Solidaria</legend>
-                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Principal es EXENTO si valida los 5 controles:</p>
-                                
-                                <div class="form-group form-group-si-no">
-                                    <label>✓ CUIL registrado y actualizado</label>
-                                    <div class="opcion-si-no">
-                                        <label class="opcion-pill" for="vcuil-si">
-                                            <input type="radio" name="valida_cuil" id="vcuil-si" value="si">
-                                            <span>Sí</span>
-                                        </label>
-                                        <label class="opcion-pill" for="vcuil-no">
-                                            <input type="radio" name="valida_cuil" id="vcuil-no" value="no" checked>
-                                            <span>No</span>
-                                        </label>
+                                <!-- ─── ART. 30 LCT: Responsabilidad Solidaria ─── -->
+                                <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
+                                    <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">⚖️</span><strong>Art. 30 LCT (Ley 27.802)</strong> — Controles Exención Solidaria</legend>
+                                    <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Principal es EXENTO si valida los 5 controles:</p>
+                                    
+                                    <div class="form-group form-group-si-no">
+                                        <label>✓ CUIL registrado y actualizado</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="vcuil-si">
+                                                <input type="radio" name="valida_cuil" id="vcuil-si" value="si">
+                                                <span>Sí</span>
+                                            </label>
+                                            <label class="opcion-pill" for="vcuil-no">
+                                                <input type="radio" name="valida_cuil" id="vcuil-no" value="no" checked>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
+                                        <small class="form-ayuda">Verificación en AFIP (C.U.I.L. activo)</small>
                                     </div>
-                                    <small class="form-ayuda">Verificación en AFIP (C.U.I.L. activo)</small>
-                                </div>
                                 
                                 <div class="form-group form-group-si-no">
                                     <label>✓ Aportes SRT pagados regularmente</label>
@@ -1524,26 +1516,26 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                     </div>
                                     <small class="form-ayuda">Cobertura de ART actualmente en vigencia</small>
                                 </div>
-                            </fieldset>
+                                </fieldset>
 
-                            <!-- ─── FRAUDE LABORAL: Indicadores ─── -->
-                            <fieldset class="fieldset-ley27802 fieldset-fraude" style="border: 2px solid #e8f4f8; border-left: 4px solid #dc3545; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fff8f8;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #dc3545; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">⚠️</span><strong>Fraude Laboral</strong> — Indicadores de Riesgo</legend>
-                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Seleccionar si los siguientes patrones están presentes:</p>
-                                
-                                <div class="form-group form-group-si-no">
-                                    <label>Facturación desproporcionada vs. servicios</label>
-                                    <div class="opcion-si-no">
-                                        <label class="opcion-pill" for="fr-factdesp-si">
-                                            <input type="radio" name="fraude_facturacion_desproporcionada" id="fr-factdesp-si" value="si">
-                                            <span>Sí</span>
-                                        </label>
-                                        <label class="opcion-pill" for="fr-factdesp-no">
-                                            <input type="radio" name="fraude_facturacion_desproporcionada" id="fr-factdesp-no" value="no" checked>
-                                            <span>No</span>
-                                        </label>
+                                <!-- ─── FRAUDE LABORAL: Indicadores ─── -->
+                                <fieldset class="fieldset-ley27802 fieldset-fraude" style="border: 2px solid #e8f4f8; border-left: 4px solid #dc3545; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #fff8f8;">
+                                    <legend style="font-size: 1rem; font-weight: 600; color: #dc3545; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">⚠️</span><strong>Fraude Laboral</strong> — Indicadores de Riesgo</legend>
+                                    <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Seleccionar si los siguientes patrones están presentes:</p>
+                                    
+                                    <div class="form-group form-group-si-no">
+                                        <label>Facturación desproporcionada vs. servicios</label>
+                                        <div class="opcion-si-no">
+                                            <label class="opcion-pill" for="fr-factdesp-si">
+                                                <input type="radio" name="fraude_facturacion_desproporcionada" id="fr-factdesp-si" value="si">
+                                                <span>Sí</span>
+                                            </label>
+                                            <label class="opcion-pill" for="fr-factdesp-no">
+                                                <input type="radio" name="fraude_facturacion_desproporcionada" id="fr-factdesp-no" value="no" checked>
+                                                <span>No</span>
+                                            </label>
+                                        </div>
                                     </div>
-                                </div>
                                 
                                 <div class="form-group form-group-si-no">
                                     <label>Intermitencia sospechosa (pausa-reanudación anómala)</label>
@@ -1600,47 +1592,52 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                         </label>
                                     </div>
                                 </div>
-                            </fieldset>
+                                </fieldset>
 
-                            <!-- ─── DAÑO COMPLEMENTARIO (Art. 527 CCCN) ─── -->
-                            <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 20px 0; background-color: #f8fafb;">
-                                <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
-                                <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Para evaluar daños morales, patrimoniales y, si se cumplen criterios específicos, reputacionales.</p>
-                                
-                                <div class="form-group">
-                                    <label for="tipo_extincion">Tipo de terminación de la relación:</label>
-                                    <select id="tipo_extincion" name="tipo_extincion">
-                                        <option value="despido" selected>Despido directo</option>
-                                        <option value="renuncia_previa">Renuncia previa (coercitiva)</option>
-                                        <option value="constructivo">Terminación constructiva (opresiva)</option>
-                                        <option value="suspensión">Suspensión (incertidumbre laboral)</option>
-                                    </select>
-                                    <small class="form-ayuda">Afecta el cálculo del daño moral y patrimonial</small>
-                                </div>
-                                
-                                <div class="form-group form-group-si-no">
-                                    <label>¿Fue violenta? (discriminación, acoso, violencia)</label>
-                                    <div class="opcion-si-no">
-                                        <label class="opcion-pill" for="violenta-si">
-                                            <input type="radio" name="fue_violenta" id="violenta-si" value="si">
-                                            <span>Sí</span>
-                                        </label>
-                                        <label class="opcion-pill" for="violenta-no">
-                                            <input type="radio" name="fue_violenta" id="violenta-no" value="no" checked>
-                                            <span>No</span>
-                                        </label>
-                                    </div>
-                                    <small class="form-ayuda">Además puede habilitar el rubro reputacional cuando la configuración del backend así lo exige.</small>
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="meses_litigio">Duración estimada del litigio (meses):</label>
-                                    <input type="number" id="meses_litigio" name="meses_litigio" min="12" max="120" value="36"
-                                        data-tooltip="Meses estimados de proceso judicial">
-                                    <small class="form-ayuda">Default: 36 meses. Afecta cálculo de lucro cesante</small>
-                                </div>
-                            </fieldset>
-                        </div>
+                                <details style="margin-top: 1rem;">
+                                    <summary style="cursor:pointer; font-weight:600; color:#7c3aed;">
+                                        <span class="ui-emoji" aria-hidden="true">💔</span> Abrir daño complementario (solo si hubo trabajo no registrado, registración deficiente o un agravamiento puntual)
+                                    </summary>
+                                    <fieldset class="fieldset-ley27802" style="border: 2px solid #e8f4f8; border-radius: 8px; padding: 20px; margin: 16px 0 0; background-color: #f8fafb;">
+                                        <legend style="font-size: 1rem; font-weight: 600; color: #1a5276; padding: 0 10px;"><span class="ui-emoji" aria-hidden="true">💔</span><strong>Daño Complementario</strong> (Art. 527 CCCN)</legend>
+                                        <p style="color: #555; font-size: 0.85rem; margin: 5px 0 15px 0; font-style: italic;">Abrilo cuando quieras medir un plus por afectación moral/patrimonial vinculada al trabajo no registrado o a una extinción especialmente gravosa.</p>
+                                        
+                                        <div class="form-group">
+                                            <label for="tipo_extincion">Tipo de terminación de la relación:</label>
+                                            <select id="tipo_extincion" name="tipo_extincion">
+                                                <option value="despido" selected>Despido directo</option>
+                                                <option value="renuncia_previa">Renuncia previa (coercitiva)</option>
+                                                <option value="constructivo">Terminación constructiva (opresiva)</option>
+                                                <option value="suspensión">Suspensión (incertidumbre laboral)</option>
+                                            </select>
+                                            <small class="form-ayuda">Afecta el cálculo del daño moral y patrimonial</small>
+                                        </div>
+                                        
+                                        <div class="form-group form-group-si-no">
+                                            <label>¿Fue violenta? (discriminación, acoso, violencia)</label>
+                                            <div class="opcion-si-no">
+                                                <label class="opcion-pill" for="violenta-si">
+                                                    <input type="radio" name="fue_violenta" id="violenta-si" value="si">
+                                                    <span>Sí</span>
+                                                </label>
+                                                <label class="opcion-pill" for="violenta-no">
+                                                    <input type="radio" name="fue_violenta" id="violenta-no" value="no" checked>
+                                                    <span>No</span>
+                                                </label>
+                                            </div>
+                                            <small class="form-ayuda">Además puede habilitar el rubro reputacional cuando la configuración del backend así lo exige.</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="meses_litigio">Duración estimada del litigio (meses):</label>
+                                            <input type="number" id="meses_litigio" name="meses_litigio" min="12" max="120" value="36"
+                                                data-tooltip="Meses estimados de proceso judicial">
+                                            <small class="form-ayuda">Default: 36 meses. Afecta cálculo de lucro cesante</small>
+                                        </div>
+                                    </fieldset>
+                                </details>
+                            </div>
+                        </details>
                     </div>
                 </div>
 
@@ -1657,6 +1654,14 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     </p>
 
                     <div class="form-section">
+                        <div class="aviso-importante" style="margin-bottom: 1.25rem;">
+                            <div class="aviso-importante-icono"><i class="bi bi-person-plus-fill"></i></div>
+                            <div class="aviso-importante-content">
+                                <strong>¿Querés registro de usuario y lectura ampliada?</strong>
+                                <p>Para consultas con mayor personalización, seguimiento y datos estratégicos adicionales, solicitá el registro al <a href="mailto:estudio@fariasortiz.com.ar">email estudio@fariasortiz.com.ar</a> o al WhatsApp de referencia del estudio.</p>
+                            </div>
+                        </div>
+
                         <div class="form-group">
                             <label for="email">Correo electrónico <span class="opcional">(opcional)</span></label>
                             <input type="email" id="email" name="email" placeholder="tucorreo@ejemplo.com"

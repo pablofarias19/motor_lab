@@ -5,20 +5,62 @@ final class ComplementaryLegalAnalysisBuilder
 {
     private static bool $loaded = false;
 
-    public static function build(array $datosLaborales, array $situacion, array $exposicion): array
+    public static function build(array $datosLaborales, array $situacion, array $exposicion, array $context = []): array
     {
         self::loadFunctions();
 
+        $tipoConflicto = (string) ($context['tipo_conflicto'] ?? '');
+        $documentacion = is_array($context['documentacion'] ?? null) ? $context['documentacion'] : [];
+        $aplicabilidad = self::resolveApplicability($tipoConflicto, $datosLaborales, $situacion, $documentacion);
+
         $ley27802 = [
-            'presuncion' => self::buildPresuncion($situacion),
-            'solidaria' => self::buildSolidaria($situacion),
-            'fraude' => self::buildFraude($situacion),
-            'dano' => self::buildDano($datosLaborales, $situacion, $exposicion),
+            'presuncion' => $aplicabilidad['presuncion'] ? self::buildPresuncion($situacion) : null,
+            'solidaria' => $aplicabilidad['solidaria'] ? self::buildSolidaria($situacion) : null,
+            'fraude' => $aplicabilidad['fraude'] ? self::buildFraude($situacion) : null,
+            'dano' => $aplicabilidad['dano'] ? self::buildDano($datosLaborales, $situacion, $exposicion) : null,
         ];
 
         return [
             'ley_27802' => $ley27802,
             'generado_en' => date('c'),
+        ];
+    }
+
+    private static function resolveApplicability(
+        string $tipoConflicto,
+        array $datosLaborales,
+        array $situacion,
+        array $documentacion
+    ): array {
+        $registroIrregular = self::isRegistroIrregular($datosLaborales, $documentacion);
+        $presuncionConDatos = self::anyPositive([
+            $situacion['tiene_facturacion'] ?? 'no',
+            $situacion['tiene_pago_bancario'] ?? 'no',
+            $situacion['tiene_contrato_escrito'] ?? 'no',
+        ]);
+        $solidariaConDatos = self::anyPositive([
+            $situacion['valida_cuil'] ?? 'no',
+            $situacion['valida_aportes'] ?? 'no',
+            $situacion['valida_pago_directo'] ?? 'no',
+            $situacion['valida_cbu'] ?? 'no',
+            $situacion['valida_art'] ?? 'no',
+        ]);
+        $fraudeConDatos = self::anyPositive([
+            $situacion['fraude_facturacion_desproporcionada'] ?? 'no',
+            $situacion['fraude_intermitencia_sospechosa'] ?? 'no',
+            $situacion['fraude_evasion_sistematica'] ?? 'no',
+            $situacion['fraude_sobre_facturacion'] ?? 'no',
+            $situacion['fraude_estructura_opaca'] ?? 'no',
+        ]);
+        $danoConDatos = self::hasMeaningfulDamageContext($situacion);
+
+        return [
+            'presuncion' => $registroIrregular
+                || $presuncionConDatos
+                || in_array($tipoConflicto, ['trabajo_no_registrado', 'despido_sin_causa', 'despido_con_causa'], true),
+            'solidaria' => $solidariaConDatos || $tipoConflicto === 'responsabilidad_solidaria',
+            'fraude' => $registroIrregular || $fraudeConDatos,
+            'dano' => $registroIrregular || $danoConDatos,
         ];
     }
 
@@ -82,5 +124,39 @@ final class ComplementaryLegalAnalysisBuilder
         $root = dirname(__DIR__, 2);
         require_once $root . '/config/ripte_functions.php';
         self::$loaded = true;
+    }
+
+    private static function isRegistroIrregular(array $datosLaborales, array $documentacion): bool
+    {
+        $tipoRegistro = (string) ($datosLaborales['tipo_registro'] ?? 'registrado');
+        if ($tipoRegistro !== 'registrado') {
+            return true;
+        }
+
+        return ($documentacion['registrado_afip'] ?? 'si') === 'no';
+    }
+
+    private static function anyPositive(array $values): bool
+    {
+        foreach ($values as $value) {
+            if (ml_boolish($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function hasMeaningfulDamageContext(array $situacion): bool
+    {
+        if (ml_boolish($situacion['fue_violenta'] ?? false)) {
+            return true;
+        }
+
+        if (($situacion['tipo_extincion'] ?? 'despido') !== 'despido') {
+            return true;
+        }
+
+        return intval($situacion['meses_litigio'] ?? 36) !== 36;
     }
 }
