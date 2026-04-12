@@ -33,32 +33,24 @@ final class EscenariosEnginePreventivoTest extends TestCase
         $this->assertTrue(!empty($escenarioAudit['definicion_sistema']), 'El escenario preventivo debe explicar cómo se define.');
         $this->assertTrue(count($escenarioAudit['criterios_definidos'] ?? []) >= 6, 'El escenario preventivo debe exponer criterios explícitos.');
 
-        $noRegistrado = $engine->generarEscenarios(
+        $diferenciasEmpleado = $engine->generarEscenarios(
             [
-                'total_base' => 12000000,
-                'total_con_multas' => 18000000,
-                'salario_base' => 600000,
+                'total_base' => 3691333.33,
+                'total_con_multas' => 5386333.33,
+                'salario_base' => 565000,
             ],
-            3.6,
-            'trabajo_no_registrado',
+            3.0,
+            'diferencias_salariales',
             'empleado',
             [
-                'hay_intercambio' => 'si',
-                'ya_despedido' => 'si',
+                'meses_adeudados' => 6,
             ],
-            'Buenos Aires'
+            'Córdoba'
         );
 
-        $escenarioNoReg = $noRegistrado['escenarios']['D'] ?? [];
-        $this->assertSame('referencial', $escenarioNoReg['aplicabilidad'] ?? null);
-        $this->assertSame('Beneficio (referencial)', $escenarioNoReg['beneficio_label'] ?? null);
         $this->assertTrue(
-            floatval($escenarioNoReg['beneficio_estimado'] ?? 0) < 18000000,
-            'Con conflicto ya escalado, el beneficio preventivo debe reducirse frente al pasivo total.'
-        );
-        $this->assertTrue(
-            str_contains((string) ($escenarioNoReg['definicion_sistema'] ?? ''), 'pasivo por registración omitida'),
-            'La definición del sistema debe explicar la base específica del caso.'
+            !isset($diferenciasEmpleado['escenarios']['D']),
+            'La parte reclamante no debe ver un escenario preventivo exclusivo del empleador.'
         );
     }
 }

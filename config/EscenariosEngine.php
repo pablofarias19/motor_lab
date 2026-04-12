@@ -2,7 +2,7 @@
 /**
  * EscenariosEngine.php — Generador de escenarios estratégicos comparativos
  *
- * Genera los 4 escenarios estratégicos del Motor de Riesgo Laboral:
+ * Genera los escenarios estratégicos del Motor de Riesgo Laboral:
  *
  *   A — Negociación Temprana:  cierre anticipado, costo controlado
  *   B — Litigio Completo:      mayor impacto potencial, mayor duración
@@ -52,7 +52,7 @@ class EscenariosEngine
     ];
 
     /**
-     * generarEscenarios() — Genera los 4 escenarios comparativos.
+     * generarEscenarios() — Genera los escenarios comparativos aplicables.
      *
      * @param array  $exposicion     Resultado de IrilEngine::calcularExposicion()
      * @param float  $irilScore      Puntaje IRIL
@@ -103,10 +103,11 @@ class EscenariosEngine
         // ── Escenario C — Estrategia Mixta ────────────────────────────────────
         $c = $this->escenarioMixto($totalBase, $totalConMultas, $honorariosJudiciales, $irilScore, $tipoUsuario, $provincia);
 
-        // ── Escenario D — Reconfiguración Preventiva ──────────────────────────
-        $d = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
-
-        $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
+        $escenarios = ['A' => $a, 'B' => $b, 'C' => $c];
+        if (strtolower(trim($tipoUsuario)) === 'empleador') {
+            // ── Escenario D — Reconfiguración Preventiva ──────────────────────
+            $escenarios['D'] = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
+        }
         $escenarios = $this->agregarIndicesEstrategicos($escenarios);
         $recomendado = $this->determinarRecomendado($escenarios, $tipoUsuario, $irilScore, $tipoConflicto);
 
