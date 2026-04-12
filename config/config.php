@@ -185,12 +185,14 @@ if (ML_DEBUG) {
 }
 
 // ─── Base de datos exclusiva del módulo ──────────────────────────────────────
-define('ML_DB_HOST', ml_env('ML_DB_HOST', 'localhost'));
-define('ML_DB_USER', ml_env('ML_DB_USER', 'root'));
-define('ML_DB_PASS', ml_env('ML_DB_PASS', ''));
-define('ML_DB_NAME', ml_env('ML_DB_NAME', 'u580580751_motor_laboral'));
-define('ML_DB_CHARSET', ml_env('ML_DB_CHARSET', 'utf8mb4'));
-define('ML_DB_PORT', intval(ml_env('ML_DB_PORT', 3306)));
+$mlDatabaseConfig = require __DIR__ . '/database.php';
+
+define('ML_DB_HOST', (string) ($mlDatabaseConfig['host'] ?? '193.203.175.97'));
+define('ML_DB_USER', (string) ($mlDatabaseConfig['user'] ?? ''));
+define('ML_DB_PASS', (string) ($mlDatabaseConfig['password'] ?? ''));
+define('ML_DB_NAME', (string) ($mlDatabaseConfig['database'] ?? 'u580580751_motor_laboral'));
+define('ML_DB_CHARSET', (string) ($mlDatabaseConfig['charset'] ?? 'utf8mb4'));
+define('ML_DB_PORT', intval($mlDatabaseConfig['port'] ?? 3306));
 
 // ─── Email (mismo servidor que el resto del proyecto) ────────────────────────
 define('ML_SMTP_FROM', ml_env('ML_SMTP_FROM', 'estudio@fariasortiz.com.ar'));
