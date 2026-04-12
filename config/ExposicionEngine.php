@@ -14,7 +14,7 @@ class ExposicionEngine
     // Tasa pura anual de referencia para la proyección civil integral cuando el motor no discrimina una tasa jurisdiccional específica.
     private const TASA_CIVIL_REFERENCIA_ANUAL = 0.06;
     // Piso funcional de daño moral/extrapatrimonial que la documentación vigente del motor aplica a la vía civil.
-    private const DANIO_MORAL_CIVIL_MINIMO = 0.20;
+    private const DANIO_MORAL_CIVIL_PORCENTAJE = 0.20;
 
     /**
      * calcularExposicion() — Estima el impacto económico estructural del conflicto
@@ -173,7 +173,7 @@ class ExposicionEngine
                 // Tasa pura de referencia estándar que usa hoy esta estimación civil integral en ausencia de un cálculo jurisdiccional específico.
                 $tasaInteresCivil = self::TASA_CIVIL_REFERENCIA_ANUAL;
                 // Piso orientativo de daño moral/extrapatrimonial según la documentación funcional vigente del motor (+20% mínimo en vía civil).
-                $danioMoral = $montoCivilBase * self::DANIO_MORAL_CIVIL_MINIMO;
+                $danioMoral = $montoCivilBase * self::DANIO_MORAL_CIVIL_PORCENTAJE;
                 $subtotalCivil = $montoCivilBase + $danioMoral;
                 $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
                 $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;

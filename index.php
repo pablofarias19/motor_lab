@@ -10,7 +10,7 @@
  *   2. Datos laborales:  salario, antigüedad, provincia, categoría, CCT
  *   3. Documentación:    telegramas, recibos, ARCA, testigos, contrato
  *   4. Situación actual: urgencia, intercambio epistolar, plazos
- *   5. Contacto:         email obligatorio para recibir informe
+ *   5. Contacto:         Email obligatorio para recibir el informe
  *
  * El formulario envía JSON al endpoint api/procesar_analisis.php
  * y redirige a resultado.php?uuid=XXX
