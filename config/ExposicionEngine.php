@@ -170,7 +170,7 @@ class ExposicionEngine
                 $subtotalCivil = $montoCivilBase + $danioMoral;
                 $factorInteresCivil = pow(1 + $tasaInteresCivil, $duracionCivilMeses / 12);
                 $montoCivilIntegral = $subtotalCivil * $factorInteresCivil;
-                $aplicaPisoComparativo = $montoCivilIntegral < $montoLRT;
+                $aplicaPisoComparativo = $montoCivilIntegral <= $montoLRT;
                 $montoCivil = $aplicaPisoComparativo ? $montoLRT : $montoCivilIntegral;
                 $notaCivil = "Estimación integral de vía civil: capital base Méndez {$p['meses_año']} meses + daño moral 20% + intereses judiciales estimados al 6% anual por {$duracionCivilMeses} meses.";
                 if ($aplicaPisoComparativo) {

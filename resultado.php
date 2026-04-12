@@ -782,7 +782,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             </tr>
                             <tr>
                                 <td style="padding: 6px 8px;">Diferencia</td>
-                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil >= $montoTarifa ? '#16a34a' : '#dc2626' ?>;">
+                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil > $montoTarifa ? '#16a34a' : ($montoCivil === $montoTarifa ? 'var(--premium-blue)' : '#dc2626') ?>;">
                                     <?= $montoCivil > $montoTarifa ? '+' : '' ?><?= ml_formato_moneda($montoCivil - $montoTarifa) ?> vía civil
                                 </td>
                             </tr>
