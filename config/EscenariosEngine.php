@@ -441,6 +441,7 @@ class EscenariosEngine
         return [
             'codigo' => 'D',
             'nombre' => 'Reconfiguración Preventiva',
+            'es_preventivo' => true,
             'descripcion' => $perfil['descripcion'],
             'beneficio_estimado' => round($ahorroEstimado, 2),
             'costo_estimado' => round($costoRegularizacion, 2),
@@ -860,6 +861,7 @@ class EscenariosEngine
         $d = [
             'codigo' => 'D',
             'nombre' => 'Acción Civil Complementaria',
+            'es_preventivo' => false,
             'descripcion' => 'Opción del Art. 4 Ley 26.773: renunciar a la prestación ART tarifada y accionar por la vía civil buscando reparación integral (fórmulas Méndez/Vuotto). ADVERTENCIA: Esta opción es EXCLUYENTE — no se puede cobrar tarifa ART y acción civil simultáneamente.',
             'beneficio_estimado' => round($benefD, 2),
             'costo_estimado' => round($costoD, 2),
