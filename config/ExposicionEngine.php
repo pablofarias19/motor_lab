@@ -208,6 +208,16 @@ class ExposicionEngine
                     'detalle_calculo' => $analisisArt,
                 ];
 
+                $analisisCivil = $this->buildCivilScenarios(
+                    $salario,
+                    $edad,
+                    $incapacidad,
+                    $montoLRT,
+                    $p,
+                    $perfilJurisdiccional,
+                    true
+                );
+
                 $modeloDominio = $this->buildAccidentDomainModel(
                     true,
                     $montoLRT,
