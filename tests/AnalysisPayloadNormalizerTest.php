@@ -79,6 +79,135 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame(0, $payloadPreventivo['datos_laborales']['antiguedad_meses']);
         $this->assertSame(25, $payloadPreventivo['datos_laborales']['cantidad_empleados']);
 
+        $payloadRegistroNoCorrespondiente = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+                'tipo_registro' => 'no_registrado',
+                'salario_recibo' => '500000',
+                'antiguedad_recibo' => '18',
+            ],
+            'documentacion' => [
+                'tiene_recibos' => 'si',
+                'registrado_afip' => 'si',
+            ],
+        ]);
+
+        $this->assertSame(0.0, $payloadRegistroNoCorrespondiente['datos_laborales']['salario_recibo']);
+        $this->assertSame(0, $payloadRegistroNoCorrespondiente['datos_laborales']['antiguedad_recibo']);
+        $this->assertSame('no', $payloadRegistroNoCorrespondiente['documentacion']['tiene_recibos']);
+        $this->assertSame('no', $payloadRegistroNoCorrespondiente['documentacion']['registrado_afip']);
+
+        $payloadFechaDeficiente = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+                'tipo_registro' => 'deficiente_fecha',
+                'salario_recibo' => '500000',
+                'antiguedad_recibo' => '18',
+            ],
+        ]);
+
+        $this->assertSame(0.0, $payloadFechaDeficiente['datos_laborales']['salario_recibo']);
+        $this->assertSame(18, $payloadFechaDeficiente['datos_laborales']['antiguedad_recibo']);
+
+        $payloadSalarioDeficiente = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+                'tipo_registro' => 'deficiente_salario',
+                'salario_recibo' => '500000',
+                'antiguedad_recibo' => '18',
+            ],
+        ]);
+
+        $this->assertSame(500000.0, $payloadSalarioDeficiente['datos_laborales']['salario_recibo']);
+        $this->assertSame(0, $payloadSalarioDeficiente['datos_laborales']['antiguedad_recibo']);
+
+        $payloadOcultoPorConflicto = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'diferencias_salariales',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+            ],
+            'situacion' => [
+                'ya_despedido' => 'si',
+                'fecha_despido' => '2026-03-10',
+                'check_inconstitucionalidad' => 'si',
+                'dia_despido' => '9',
+                'fecha_siniestro' => '2026-01-10',
+                'porcentaje_incapacidad' => '15',
+                'meses_no_registrados' => '8',
+                'actividad_esencial' => 'si',
+                'motivo_diferencia' => 'horas_extras',
+                'meses_adeudados' => '6',
+            ],
+        ]);
+
+        $this->assertSame('', $payloadOcultoPorConflicto['situacion']['fecha_siniestro']);
+        $this->assertSame(0.0, $payloadOcultoPorConflicto['situacion']['porcentaje_incapacidad']);
+        $this->assertSame(0, $payloadOcultoPorConflicto['situacion']['meses_no_registrados']);
+        $this->assertSame('no', $payloadOcultoPorConflicto['situacion']['actividad_esencial']);
+        $this->assertSame('horas_extras', $payloadOcultoPorConflicto['situacion']['motivo_diferencia']);
+        $this->assertSame(6, $payloadOcultoPorConflicto['situacion']['meses_adeudados']);
+
+        $payloadTelegramaNo = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'despido_sin_causa',
+            'datos_laborales' => [
+                'salario' => '950000',
+                'antiguedad_meses' => '36',
+                'provincia' => 'CABA',
+            ],
+            'situacion' => [
+                'hay_intercambio' => 'no',
+                'fecha_ultimo_telegrama' => '2026-03-15',
+                'ya_despedido' => 'si',
+                'fecha_despido' => '2026-03-10',
+            ],
+        ]);
+
+        $this->assertSame('', $payloadTelegramaNo['situacion']['fecha_ultimo_telegrama']);
+
+        $payloadAccidenteSinArt = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'accidente_laboral',
+            'datos_laborales' => [
+                'salario' => '900000',
+                'antiguedad_meses' => '12',
+                'provincia' => 'Buenos Aires',
+                'edad' => 30,
+            ],
+            'situacion' => [
+                'tiene_art' => 'no',
+                'denuncia_art' => 'si',
+                'rechazo_art' => 'si',
+                'comision_medica' => 'dictamen_emitido',
+                'dictamen_porcentaje' => '18',
+                'via_administrativa_agotada' => 'si',
+                'tiene_preexistencia' => 'no',
+                'preexistencia_porcentaje' => '12',
+            ],
+        ]);
+
+        $this->assertSame('no', $payloadAccidenteSinArt['situacion']['denuncia_art']);
+        $this->assertSame('no', $payloadAccidenteSinArt['situacion']['rechazo_art']);
+        $this->assertSame('no_iniciada', $payloadAccidenteSinArt['situacion']['comision_medica']);
+        $this->assertSame(0.0, $payloadAccidenteSinArt['situacion']['dictamen_porcentaje']);
+        $this->assertSame('no', $payloadAccidenteSinArt['situacion']['via_administrativa_agotada']);
+        $this->assertSame(0.0, $payloadAccidenteSinArt['situacion']['preexistencia_porcentaje']);
+
         $payloadAccidenteValido = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleador',
             'tipo_conflicto' => 'accidente_laboral',

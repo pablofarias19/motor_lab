@@ -4,6 +4,7 @@ namespace App\Support;
 final class AnalysisPayloadNormalizer
 {
     private const TIPOS_USUARIO = ['empleado', 'empleador'];
+    private const TIPOS_REGISTRO = ['registrado', 'no_registrado', 'deficiente_fecha', 'deficiente_salario'];
     private const TIPOS_CONFLICTO = [
         'despido_sin_causa',
         'despido_con_causa',
@@ -71,6 +72,8 @@ final class AnalysisPayloadNormalizer
             $documentacion[$flag] = self::flag($documentacion[$flag] ?? 'no');
         }
 
+        [$datosLaborales, $documentacion] = self::normalizeRegistrationConsistency($datosLaborales, $documentacion);
+
         $salariosHistoricos = $situacionInput['salarios_historicos'] ?? [];
         if (!is_array($salariosHistoricos)) {
             $salariosHistoricos = [];
@@ -95,6 +98,7 @@ final class AnalysisPayloadNormalizer
             'porcentaje_incapacidad' => self::float($situacionInput['porcentaje_incapacidad'] ?? 0),
             'incapacidad_tipo' => self::string($situacionInput['incapacidad_tipo'] ?? 'permanente_definitiva', 'permanente_definitiva'),
             'estado_art' => self::string($situacionInput['estado_art'] ?? 'activa_valida', 'activa_valida'),
+            'tiene_art' => self::flag($situacionInput['tiene_art'] ?? 'no'),
             'culpa_grave' => self::flag($situacionInput['culpa_grave'] ?? 'no'),
             'via_civil' => self::flag($situacionInput['via_civil'] ?? 'no'),
             'denuncia_art' => self::flag($situacionInput['denuncia_art'] ?? 'no'),
@@ -145,6 +149,8 @@ final class AnalysisPayloadNormalizer
             'fue_violenta' => self::flag($situacionInput['fue_violenta'] ?? 'no'),
             'meses_litigio' => self::int($situacionInput['meses_litigio'] ?? 36, 36),
         ]);
+
+        $situacion = self::normalizeSituationConsistency($tipoUsuario, $tipoConflicto, $situacion);
 
         if (!in_array($tipoUsuario, self::TIPOS_USUARIO, true)) {
             $errors['tipo_usuario'] = 'Seleccioná un perfil válido.';
@@ -271,5 +277,128 @@ final class AnalysisPayloadNormalizer
 
         $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
         return $date !== false && $date->format('Y-m-d') === $value;
+    }
+
+    private static function normalizeRegistrationConsistency(array $datosLaborales, array $documentacion): array
+    {
+        $tipoRegistro = self::string($datosLaborales['tipo_registro'] ?? 'registrado', 'registrado');
+        if (!in_array($tipoRegistro, self::TIPOS_REGISTRO, true)) {
+            $tipoRegistro = 'registrado';
+        }
+
+        $datosLaborales['tipo_registro'] = $tipoRegistro;
+
+        switch ($tipoRegistro) {
+            case 'no_registrado':
+                $datosLaborales['salario_recibo'] = 0.0;
+                $datosLaborales['antiguedad_recibo'] = 0;
+                $documentacion['tiene_recibos'] = 'no';
+                $documentacion['registrado_afip'] = 'no';
+                break;
+
+            case 'deficiente_fecha':
+                $datosLaborales['salario_recibo'] = 0.0;
+                break;
+
+            case 'deficiente_salario':
+                $datosLaborales['antiguedad_recibo'] = 0;
+                break;
+
+            case 'registrado':
+                $datosLaborales['salario_recibo'] = 0.0;
+                $datosLaborales['antiguedad_recibo'] = 0;
+                break;
+        }
+
+        return [$datosLaborales, $documentacion];
+    }
+
+    private static function normalizeSituationConsistency(string $tipoUsuario, string $tipoConflicto, array $situacion): array
+    {
+        $esAccidente = $tipoConflicto === 'accidente_laboral';
+        $esDiferencia = $tipoConflicto === 'diferencias_salariales';
+        $esPrevencion = in_array($tipoConflicto, ['responsabilidad_solidaria', 'riesgo_inspeccion', 'auditoria_preventiva'], true);
+        $esAuditoria = in_array($tipoConflicto, ['auditoria_preventiva', 'riesgo_inspeccion'], true);
+        $esSolidaridad = $tipoConflicto === 'responsabilidad_solidaria';
+
+        if (($situacion['hay_intercambio'] ?? 'no') !== 'si') {
+            $situacion['fecha_ultimo_telegrama'] = '';
+        }
+
+        if (!$esAccidente) {
+            $situacion['tipo_contingencia'] = 'accidente_tipico';
+            $situacion['fecha_siniestro'] = '';
+            $situacion['porcentaje_incapacidad'] = 0.0;
+            $situacion['incapacidad_tipo'] = 'permanente_definitiva';
+            $situacion['culpa_grave'] = 'no';
+            $situacion['via_civil'] = 'no';
+            $situacion['denuncia_art'] = 'no';
+            $situacion['rechazo_art'] = 'no';
+            $situacion['comision_medica'] = 'no_iniciada';
+            $situacion['dictamen_porcentaje'] = 0.0;
+            $situacion['via_administrativa_agotada'] = 'no';
+            $situacion['tiene_preexistencia'] = 'no';
+            $situacion['preexistencia_porcentaje'] = 0.0;
+            $situacion['licencia_activa'] = 'no';
+        } else {
+            if (($situacion['tiene_preexistencia'] ?? 'no') !== 'si') {
+                $situacion['preexistencia_porcentaje'] = 0.0;
+            }
+
+            if (!in_array($situacion['comision_medica'] ?? 'no_iniciada', ['dictamen_emitido', 'homologado'], true)) {
+                $situacion['dictamen_porcentaje'] = 0.0;
+            }
+
+            $tieneArt = self::flag(
+                $tipoUsuario === 'empleador'
+                    ? (($situacion['estado_art'] ?? 'activa_valida') === 'inexistente' ? 'no' : 'si')
+                    : ($situacion['tiene_art'] ?? 'no')
+            );
+
+            if ($tieneArt !== 'si') {
+                $situacion['denuncia_art'] = 'no';
+                $situacion['rechazo_art'] = 'no';
+                $situacion['comision_medica'] = 'no_iniciada';
+                $situacion['dictamen_porcentaje'] = 0.0;
+                $situacion['via_administrativa_agotada'] = 'no';
+            }
+        }
+
+        if (!$esDiferencia) {
+            $situacion['motivo_diferencia'] = 'mala_categorizacion';
+            $situacion['meses_adeudados'] = 0;
+        }
+
+        if (!$esPrevencion) {
+            $situacion['inspeccion_previa'] = 'no';
+            $situacion['cantidad_subcontratistas'] = 1;
+        }
+
+        if (!$esAuditoria) {
+            $situacion['meses_no_registrados'] = 0;
+            $situacion['meses_en_mora'] = 0;
+            $situacion['aplica_blanco_laboral'] = 'no';
+            $situacion['chk_alta_sipa'] = 'no';
+            $situacion['chk_libro_art52'] = 'no';
+            $situacion['chk_recibos_cct'] = 'no';
+            $situacion['chk_art_vigente'] = 'no';
+            $situacion['chk_examenes'] = 'no';
+            $situacion['chk_epp_rgrl'] = 'no';
+        }
+
+        if ($tipoConflicto !== 'auditoria_preventiva') {
+            $situacion['nivel_cumplimiento'] = 'desconocido';
+        }
+
+        if (!$esSolidaridad) {
+            $situacion['actividad_esencial'] = 'no';
+            $situacion['control_documental'] = 'no';
+            $situacion['control_operativo'] = 'no';
+            $situacion['integracion_estructura'] = 'no';
+            $situacion['contrato_formal'] = 'no';
+            $situacion['falta_f931_art'] = 'no';
+        }
+
+        return $situacion;
     }
 }

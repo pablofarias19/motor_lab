@@ -2114,12 +2114,53 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
             actualizarVisibilidadGruposConflicto();
             actualizarCopyContextual('', '');
 
+            const resetFieldToDefault = function (field) {
+                if (!field) {
+                    return;
+                }
+
+                if (field.type === 'radio' || field.type === 'checkbox') {
+                    field.checked = field.defaultChecked;
+                    return;
+                }
+
+                if (field.tagName === 'SELECT') {
+                    Array.from(field.options).forEach(option => {
+                        option.selected = option.defaultSelected;
+                    });
+                    if (field.selectedIndex < 0 && field.options.length > 0) {
+                        field.selectedIndex = 0;
+                    }
+                    return;
+                }
+
+                field.value = field.defaultValue || '';
+            };
+
+            const resetFields = function (fieldsOrIds) {
+                fieldsOrIds.forEach(entry => {
+                    const field = typeof entry === 'string' ? document.getElementById(entry) : entry;
+                    resetFieldToDefault(field);
+                });
+            };
+
+            const resetFieldsInContainer = function (container) {
+                if (!container) {
+                    return;
+                }
+
+                container.querySelectorAll('input, select, textarea').forEach(resetFieldToDefault);
+            };
+
             // Mostrar/ocultar campo de fecha del último telegrama según intercambio
             document.querySelectorAll('input[name="hay_intercambio"]').forEach(function (radio) {
                 radio.addEventListener('change', function () {
                     const campoFecha = document.getElementById('campo-fecha-telegrama');
                     if (campoFecha) {
                         campoFecha.style.display = this.value === 'si' ? 'block' : 'none';
+                        if (this.value !== 'si') {
+                            resetFields(['fecha_ultimo_telegrama']);
+                        }
                     }
                 });
             });
@@ -2224,6 +2265,21 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     // 1. Campos SOLO ACCIDENTE
                     document.querySelectorAll('.solo-accidente').forEach(el => {
                         el.style.display = esAccidente ? 'block' : 'none';
+                        if (!esAccidente) {
+                            resetFieldsInContainer(el);
+                            document.querySelectorAll('.solo-tiene-art').forEach(subEl => {
+                                subEl.style.display = 'none';
+                                resetFieldsInContainer(subEl);
+                            });
+                            const campoDictamen = document.getElementById('campo-dictamen-porcentaje');
+                            if (campoDictamen) {
+                                campoDictamen.style.display = 'none';
+                            }
+                            const campoPreex = document.getElementById('campo-preexistencia-porcentaje');
+                            if (campoPreex) {
+                                campoPreex.style.display = 'none';
+                            }
+                        }
                         el.querySelectorAll('input, select').forEach(input => {
                             if (esAccidente && input.id !== 'porcentaje_incapacidad') {
                                 input.setAttribute('required', 'required');
@@ -2236,6 +2292,9 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     // 2. Campos SOLO DIFERENCIAS
                     document.querySelectorAll('.solo-diferencias').forEach(el => {
                         el.style.display = esDiferencia ? 'block' : 'none';
+                        if (!esDiferencia) {
+                            resetFieldsInContainer(el);
+                        }
                         el.querySelectorAll('input, select').forEach(input => {
                             if (esDiferencia) {
                                 input.setAttribute('required', 'required');
@@ -2248,15 +2307,24 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     // 3. Campos SOLO PREVENCIÓN / AUDITORÍA / SOLIDARIDAD
                     document.querySelectorAll('.solo-prevencion').forEach(el => {
                         el.style.display = esPrevencion ? 'block' : 'none';
+                        if (!esPrevencion) {
+                            resetFieldsInContainer(el);
+                        }
                     });
                     
                     const esAuditoria = val === 'auditoria_preventiva' || val === 'riesgo_inspeccion';
                     document.querySelectorAll('.solo-auditoria').forEach(el => {
                         el.style.display = esAuditoria ? 'block' : 'none';
+                        if (!esAuditoria) {
+                            resetFieldsInContainer(el);
+                        }
                     });
                     const esSolidaridad = val === 'responsabilidad_solidaria';
                     document.querySelectorAll('.solo-solidaridad').forEach(el => {
                         el.style.display = esSolidaridad ? 'block' : 'none';
+                        if (!esSolidaridad) {
+                            resetFieldsInContainer(el);
+                        }
                     });
 
                     const perfilActual = document.getElementById('tipo_usuario')?.value || '';
@@ -2268,6 +2336,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         if (esAuditoria || esSolidaridad) {
                             grpAntiguedad.style.display = 'none';
                             document.getElementById('antiguedad_meses').removeAttribute('required');
+                            resetFields(['antiguedad_meses']);
                         } else {
                             grpAntiguedad.style.display = 'block';
                             document.getElementById('antiguedad_meses').setAttribute('required', 'required');
@@ -2277,6 +2346,12 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     // 4. Campos registro irregular
                     document.querySelectorAll('.solo-registro-irregular').forEach(el => {
                         el.style.display = esRegistroIrregular ? 'block' : 'none';
+                        if (!esRegistroIrregular) {
+                            resetFields(['tipo_registro', 'salario_recibo', 'antiguedad_recibo']);
+                            document.querySelectorAll('.solo-registro-deficiente').forEach(detalle => {
+                                detalle.style.display = 'none';
+                            });
+                        }
                     });
 
                     // 5. Ocultar campos de DESPIDO que no aplican
@@ -2285,6 +2360,7 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                         
                         if (esCasoEspecial) {
                             el.style.display = 'none';
+                            resetFieldsInContainer(el);
                             el.querySelectorAll('input, select').forEach(i => i.removeAttribute('required'));
                         } else {
                             // Mostrar a todos si no es un caso especial
@@ -2326,7 +2402,16 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     const soloArt = document.querySelectorAll('.solo-tiene-art');
                     soloArt.forEach(el => {
                         el.style.display = this.value === 'si' ? 'block' : 'none';
+                        if (this.value !== 'si') {
+                            resetFieldsInContainer(el);
+                        }
                     });
+                    if (this.value !== 'si') {
+                        const campoDictamen = document.getElementById('campo-dictamen-porcentaje');
+                        if (campoDictamen) {
+                            campoDictamen.style.display = 'none';
+                        }
+                    }
                 });
             });
 
@@ -2337,6 +2422,9 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     const campoDictamen = document.getElementById('campo-dictamen-porcentaje');
                     if (campoDictamen) {
                         campoDictamen.style.display = ['dictamen_emitido', 'homologado'].includes(this.value) ? 'block' : 'none';
+                        if (!['dictamen_emitido', 'homologado'].includes(this.value)) {
+                            resetFields(['dictamen_porcentaje']);
+                        }
                     }
                 });
             }
@@ -2347,19 +2435,48 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                     const campoPreex = document.getElementById('campo-preexistencia-porcentaje');
                     if (campoPreex) {
                         campoPreex.style.display = this.value === 'si' ? 'block' : 'none';
+                        if (this.value !== 'si') {
+                            resetFields(['preexistencia_porcentaje']);
+                        }
                     }
                 });
             });
 
             // Lógica interna para registro deficiente (sueldo/fecha)
             const selectTipoRegistro = document.getElementById('tipo_registro');
-            if (selectTipoRegistro) {
-                selectTipoRegistro.addEventListener('change', function () {
-                    const esDeficiente = ['no_registrado', 'deficiente_fecha', 'deficiente_salario'].includes(this.value);
-                    document.querySelectorAll('.solo-registro-deficiente').forEach(el => {
-                        el.style.display = esDeficiente ? 'grid' : 'none';
-                    });
+            const TIPOS_REGISTRO_DEFICIENTE = ['deficiente_fecha', 'deficiente_salario'];
+            const CAMPOS_REGISTRO_DEFICIENTE = {
+                deficiente_fecha: ['antiguedad_recibo'],
+                deficiente_salario: ['salario_recibo']
+            };
+            const syncCamposRegistroDeficiente = function () {
+                if (!selectTipoRegistro) {
+                    return;
+                }
+
+                const tipoRegistro = selectTipoRegistro.value;
+                const esDeficiente = TIPOS_REGISTRO_DEFICIENTE.includes(tipoRegistro);
+                document.querySelectorAll('.solo-registro-deficiente').forEach(el => {
+                    el.style.display = esDeficiente ? 'grid' : 'none';
                 });
+
+                const camposVisibles = new Set(CAMPOS_REGISTRO_DEFICIENTE[tipoRegistro] || []);
+                ['salario_recibo', 'antiguedad_recibo'].forEach(id => {
+                    const input = document.getElementById(id);
+                    const grupo = input?.closest('.form-group');
+                    const visible = esDeficiente && camposVisibles.has(id);
+                    if (grupo) {
+                        grupo.style.display = visible ? 'block' : 'none';
+                    }
+                    if (!visible) {
+                        resetFields([id]);
+                    }
+                });
+            };
+
+            if (selectTipoRegistro) {
+                selectTipoRegistro.addEventListener('change', syncCamposRegistroDeficiente);
+                syncCamposRegistroDeficiente();
             }
         });
     </script>
