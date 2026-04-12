@@ -476,6 +476,7 @@ try {
         // Tabla comparativa ART vs Civil
         $montoTarifaPDF = $exposicion['conceptos']['prestacion_art_tarifa']['monto'] ?? 0;
         $montoCivilPDF = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? 0;
+        $detalleArtPDF = $exposicion['conceptos']['prestacion_art_tarifa']['detalle_calculo'] ?? [];
 
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetFillColor(42, 100, 182);
@@ -505,6 +506,19 @@ try {
         $pdf->SetFont('Arial', '', 9);
 
         $pdf->Ln(3);
+        if (!empty($detalleArtPDF)) {
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(0, 6, pdf_latin1('Trazabilidad del cálculo ART'), 0, 1);
+            $pdf->SetFont('Arial', '', 9);
+            $pdf->fila('IBM / VIB', ml_formato_moneda(floatval($detalleArtPDF['ibm'] ?? 0)));
+            $pdf->fila('Piso legal', ml_formato_moneda(floatval($detalleArtPDF['piso_minimo'] ?? 0)) . (!empty($detalleArtPDF['piso_aplicado']) ? ' aplicado' : ' controlado'));
+            $pdf->fila('RIPTE', (string) ($detalleArtPDF['fuente_ripte'] ?? 'no_disponible'));
+            $pdf->fila('Cálculo', !empty($detalleArtPDF['calculo_estimado']) ? 'Estimado' : 'Completo');
+            $pdf->fila('Tratamiento', ucfirst(str_replace('_', ' ', (string) ($detalleArtPDF['tratamiento'] ?? 'pago_unico'))));
+            $pdf->fila('Salarios considerados', (string) intval($detalleArtPDF['cantidad_salarios'] ?? 0));
+            $pdf->Ln(2);
+        }
+
         $notaCivilPDF = $exposicion['conceptos']['estimacion_civil_mendez']['nota'] ?? '';
         if ($notaCivilPDF !== '') {
             $pdf->SetFont('Arial', 'I', 8);

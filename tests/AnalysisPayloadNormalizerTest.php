@@ -41,6 +41,37 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame(31, $payload['situacion']['dia_despido']);
         $this->assertSame('estudio@example.com', $payload['contacto']['email']);
 
+        $payloadArtMeses = AnalysisPayloadNormalizer::normalize([
+            'tipo_usuario' => 'empleado',
+            'tipo_conflicto' => 'accidente_laboral',
+            'datos_laborales' => [
+                'salario' => '900000',
+                'antiguedad_meses' => '18',
+                'edad' => '38',
+                'provincia' => 'Buenos Aires',
+            ],
+            'situacion' => [
+                'fecha_siniestro' => '2026-02-10',
+                'porcentaje_incapacidad' => '18',
+                'salarios_historicos' => [
+                    '2025-11' => '800000',
+                    '2025-12' => '820000',
+                    '2026-01' => '840000',
+                    'invalido' => 'abc',
+                ],
+                'tiene_art' => 'si',
+            ],
+            'contacto' => [
+                'email' => 'art@example.com',
+            ],
+        ]);
+
+        $this->assertSame([
+            '2025-11' => 800000.0,
+            '2025-12' => 820000.0,
+            '2026-01' => 840000.0,
+        ], $payloadArtMeses['situacion']['salarios_historicos']);
+
         $payloadConFechas = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleado',
             'tipo_conflicto' => 'diferencias_salariales',

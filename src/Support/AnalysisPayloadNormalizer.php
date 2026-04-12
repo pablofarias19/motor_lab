@@ -76,10 +76,7 @@ final class AnalysisPayloadNormalizer
 
         [$datosLaborales, $documentacion] = self::normalizeRegistrationConsistency($datosLaborales, $documentacion);
 
-        $salariosHistoricos = $situacionInput['salarios_historicos'] ?? [];
-        if (!is_array($salariosHistoricos)) {
-            $salariosHistoricos = [];
-        }
+        $salariosHistoricos = self::normalizeHistoricalSalaries($situacionInput['salarios_historicos'] ?? []);
 
         $situacion = array_merge($situacionInput, [
             'hay_intercambio' => self::flag($situacionInput['hay_intercambio'] ?? 'no'),
@@ -94,7 +91,7 @@ final class AnalysisPayloadNormalizer
             'dia_despido' => max(1, min(31, self::int($situacionInput['dia_despido'] ?? 15, 15))),
             'check_inconstitucionalidad' => self::flag($situacionInput['check_inconstitucionalidad'] ?? 'no'),
             'jurisdiccion' => self::string($situacionInput['jurisdiccion'] ?? 'CABA', 'CABA'),
-            'salarios_historicos' => array_values(array_map('floatval', array_filter($salariosHistoricos, 'is_numeric'))),
+            'salarios_historicos' => $salariosHistoricos,
             'tipo_contingencia' => self::string($situacionInput['tipo_contingencia'] ?? 'accidente_tipico', 'accidente_tipico'),
             'fecha_siniestro' => self::string($situacionInput['fecha_siniestro'] ?? ''),
             'porcentaje_incapacidad' => self::float($situacionInput['porcentaje_incapacidad'] ?? 0),
@@ -279,6 +276,34 @@ final class AnalysisPayloadNormalizer
 
         $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
         return $date !== false && $date->format('Y-m-d') === $value;
+    }
+
+    private static function normalizeHistoricalSalaries($salariosHistoricos): array
+    {
+        if (!is_array($salariosHistoricos)) {
+            return [];
+        }
+
+        $normalizados = [];
+        foreach ($salariosHistoricos as $mes => $monto) {
+            if (!is_numeric($monto)) {
+                continue;
+            }
+
+            $valor = floatval($monto);
+            if ($valor <= 0) {
+                continue;
+            }
+
+            if (is_string($mes) && preg_match('/^\d{4}-\d{2}$/', $mes)) {
+                $normalizados[$mes] = $valor;
+                continue;
+            }
+
+            $normalizados[] = $valor;
+        }
+
+        return $normalizados;
     }
 
     private static function normalizeRegistrationConsistency(array $datosLaborales, array $documentacion): array

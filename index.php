@@ -1170,18 +1170,20 @@ $shareImageAlt = 'Vista previa profesional del Motor de Riesgo Laboral de Estudi
                                 </label>
                                 <textarea id="salarios_historicos" name="salarios_historicos"
                                     rows="5"
-                                    placeholder='Un salario por línea (números sin puntos):'
+                                    placeholder='Un salario por línea, del más antiguo al más reciente. Opcional: YYYY-MM: monto'
                                     spellcheck="false"
                                     data-tooltip="Remuneraciones sujetas a aportes previas al accidente"></textarea>
                                 <small class="form-ayuda">
                                     <strong>Dato clave para ART.</strong> El ingreso base se calcula con el promedio de las remuneraciones sujetas a aportes de los <strong>últimos 12 meses anteriores</strong> al accidente o primera manifestación invalidante.
+                                    <br>Cargalas del <strong>mes más antiguo al más reciente</strong>. Si querés máxima precisión, podés usar el formato <code>YYYY-MM: monto</code>.
                                     <br>Si trabajaste menos de 12 meses, cargá solo los meses efectivamente trabajados. Si hubo registración deficiente, luego puede reconstruirse el salario real con prueba.
                                 </small>
                                 <div class="form-example" id="ej-salarios-art">
                                     <strong><span class="ui-emoji" aria-hidden="true">📋</span>Cómo cargar la base ART:</strong><br><br>
                                     1. Tomá tus recibos o la constancia de ARCA del período previo al accidente.<br>
-                                    2. Pegá un salario por línea, sin $ ni puntos.<br>
-                                    3. Si no llegás a 12 meses, cargá solo los meses efectivamente trabajados.<br><br>
+                                    2. Pegá un salario por línea, sin $ ni puntos, del más antiguo al más reciente.<br>
+                                    3. Si preferís, indicá el mes: <code>2025-11: 950000</code>.<br>
+                                    4. Si no llegás a 12 meses, cargá solo los meses efectivamente trabajados.<br><br>
                                     <code style="background:#f0f0f0; padding:0.8rem; display:block; border-radius:4px; font-size:0.8rem; font-family:monospace;">
 950000<br>
 965000<br>
