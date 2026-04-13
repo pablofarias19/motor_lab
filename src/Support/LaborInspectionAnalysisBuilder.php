@@ -138,16 +138,15 @@ final class LaborInspectionAnalysisBuilder
             $observaciones[] = 'La registración declarada presenta inconsistencias frente al estándar de alta completa.';
         }
         if (!$checks['categoria_correcta']) {
-            $puntaje += 0.5;
+            $puntaje += 1.0;
             $observaciones[] = 'No se informó categoría/CCT suficiente para validar encuadre convencional.';
         }
         if (!$checks['jornada_real_declarada']) {
-            $puntaje += 1.0;
+            $puntaje += 1.5;
             $observaciones[] = 'La fecha o modalidad registral declarada exige revisión específica.';
         }
         if (intval($situacion['meses_no_registrados'] ?? 0) > 0) {
-            $mesesNoRegistrados = floatval($situacion['meses_no_registrados'] ?? 0);
-            $puntaje += min(1.5, $mesesNoRegistrados / 24.0);
+            $puntaje += 2.0;
             $observaciones[] = 'Se declaró un período pendiente de regularización registral.';
         }
 
@@ -214,8 +213,12 @@ final class LaborInspectionAnalysisBuilder
             $observaciones[] = 'Existe brecha entre salario declarado y salario de recibo informado.';
         }
         if (($documentacion['pago_bancario'] ?? 'no') !== 'si') {
-            $puntaje += 0.5;
+            $puntaje += 1.0;
             $observaciones[] = 'No hay dato afirmativo de pagos bancarizados para neutralizar observación inspectiva.';
+        }
+        if (($datos['tipo_registro'] ?? 'registrado') !== 'registrado' || ($documentacion['registrado_afip'] ?? 'no') !== 'si') {
+            $puntaje += 2.0;
+            $observaciones[] = 'Se detectan indicios de pagos marginales o registración salarial no íntegra.';
         }
 
         return self::makeBlock($puntaje, $checks, $observaciones);
@@ -235,7 +238,7 @@ final class LaborInspectionAnalysisBuilder
         $observaciones = [];
 
         if (!$checks['recibos_firmados']) {
-            $puntaje += 1.5;
+            $puntaje += 1.0;
             $observaciones[] = 'No se informaron recibos firmados suficientes para respaldo integral.';
         }
         if (!$checks['libro_de_sueldos']) {
@@ -273,7 +276,7 @@ final class LaborInspectionAnalysisBuilder
             $observaciones[] = 'Existe antecedente de inspección previa con efecto agravante.';
         }
         if ($checks['juicios_o_intimaciones_activas']) {
-            $puntaje += 1.0;
+            $puntaje += 1.5;
             $observaciones[] = 'Ya existe conflictividad formal o intimación previa.';
         }
         if ($checks['indicios_fraude']) {
@@ -283,9 +286,6 @@ final class LaborInspectionAnalysisBuilder
         if ($cantidad >= 20) {
             $puntaje += 1.0;
             $observaciones[] = 'La dotación declarada amplifica el impacto institucional de una inspección.';
-        } elseif ($cantidad >= 5) {
-            $puntaje += 0.5;
-            $observaciones[] = 'La cantidad de trabajadores incrementa el efecto multiplicador del caso.';
         }
         if (empty($observaciones)) {
             $observaciones[] = 'No se advirtieron agravantes estructurales relevantes con los datos cargados.';

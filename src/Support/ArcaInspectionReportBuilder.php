@@ -18,15 +18,19 @@ final class ArcaInspectionReportBuilder
         $salarioReal = floatval($datos['salario'] ?? 0);
         $salarioDeclarado = floatval($datos['salario_recibo'] ?? 0);
         $tipoRegistro = (string) ($datos['tipo_registro'] ?? 'registrado');
+        $regularizacionActiva = self::boolish($situacion['aplica_blanco_laboral'] ?? 'no');
         $inspeccionPrevia = self::boolish($situacion['inspeccion_previa'] ?? 'no')
             || self::boolish($documentacion['auditoria_previa'] ?? 'no');
         $senalesFraude = self::hasFraudSignals($situacion);
+        $regularizacion = is_array($inspeccion['regularizacion'] ?? null) ? $inspeccion['regularizacion'] : [];
+        $alertasPenales = is_array($inspeccion['alertas_penales'] ?? null) ? $inspeccion['alertas_penales'] : [];
+        $valuacionActivos = is_array($inspeccion['valuacion_activos'] ?? null) ? $inspeccion['valuacion_activos'] : [];
 
         $matriz = [
             'registral' => self::buildRegistralRisk($datos, $documentacion, $situacion, $mesesNoRegistrados, $tipoRegistro),
             'contributivo' => self::buildContributiveRisk($datos, $documentacion, $situacion, $mesesNoRegistrados, $tipoRegistro),
             'documental' => self::buildDocumentalRisk($documentacion, $situacion),
-            'conductual' => self::buildConductualRisk($situacion, $documentacion, $inspeccionPrevia, $senalesFraude),
+            'conductual' => self::buildConductualRisk($situacion, $documentacion, $inspeccionPrevia, $senalesFraude, $regularizacionActiva, $regularizacion),
         ];
 
         $overall = self::resolveOverallRisk($matriz, $inspeccion, $inspeccionPrevia, $senalesFraude);
@@ -51,23 +55,26 @@ final class ArcaInspectionReportBuilder
                 'Medir la exposición fiscal y previsional a partir de los datos cargados.',
                 'Detectar contingencias documentales, registrales y conductuales.',
                 'Priorizar acciones preventivas, correctivas o defensivas.',
+                'Separar el análisis de moratoria (flujo) del eventual blanqueo/valuación de activos (stock).',
             ],
             'matriz_riesgo' => $matriz,
             'cuantificacion_contingencia' => [
                 'base_calculo' => [
-                    'formula' => 'Base = (Salario real - Salario declarado) x Cantidad de meses',
+                    'formula' => 'Capital omitido = remuneración base imponible x (17% aportes + contribuciones patronales) x meses adeudados',
                     'salario_real' => round($salarioReal, 2),
                     'salario_declarado' => round($salarioDeclarado, 2),
                     'diferencia_mensual' => round(max(0, $salarioReal - $salarioDeclarado), 2),
                     'meses' => $mesesNoRegistrados,
+                    'remuneracion_base_imponible' => round(floatval($inspeccion['desglose']['remuneracion_base_imponible'] ?? $salarioReal), 2),
                 ],
                 'aportes_omitidos' => [
                     'trabajador' => '~17%',
-                    'empleador' => '~24%',
+                    'empleador' => (string) ($inspeccion['desglose']['tasa_contrib_empleador'] ?? '~24%'),
                 ],
                 'intereses' => [
                     'regimen' => 'Ley 11.683',
                     'tasa_referencia' => 'Actualización ARCA / modelo preventivo interno',
+                    'metodo' => 'Interés simple sobre capital original, sin capitalización.',
                 ],
                 'multas_posibles' => [
                     'Art. 38 Ley 11.683 - Omisión',
@@ -81,6 +88,10 @@ final class ArcaInspectionReportBuilder
                     'exposicion_total' => round(floatval($inspeccion['deuda_total'] ?? 0), 2),
                 ],
             ],
+            'moratoria_ley_27743' => self::buildMoratoriaSection($regularizacion, $situacion),
+            'valuacion_regularizacion' => self::buildAssetRegularizationSection($valuacionActivos),
+            'beneficios_bloqueo_fiscal' => self::buildFiscalShieldBenefits($regularizacion, $situacion),
+            'alertas_penales' => self::buildPenalRiskSection($alertasPenales),
             'iril' => [
                 'valor' => $irilScore,
                 'nivel' => $irilNivel['nivel'] ?? 'Moderado',
@@ -96,6 +107,7 @@ final class ArcaInspectionReportBuilder
                 'riesgo_sancion_administrativa' => floatval($inspeccion['multas'] ?? 0) > 0
                     ? 'Existe riesgo cierto de sanción administrativa y multas accesorias.'
                     : 'Riesgo sancionatorio bajo en el escenario informado.',
+                'riesgo_penal' => (string) ($alertasPenales['detalle'] ?? 'Sin alertas penales relevantes.'),
                 'riesgo_conflicto_laboral' => $irilScore >= 3
                     ? 'El IRIL refuerza una potencial escalada del conflicto laboral.'
                     : 'La conflictividad laboral luce contenida, aunque requiere control documental.',
@@ -108,6 +120,7 @@ final class ArcaInspectionReportBuilder
                 'probabilidad_inspeccion' => $probabilidadInspeccion,
                 'exposicion_economica' => round(floatval($inspeccion['deuda_total'] ?? 0), 2),
                 'recomendacion_principal' => $recomendacion['label'],
+                'riesgo_penal' => (string) ($alertasPenales['nivel'] ?? 'bajo'),
             ],
             'modelo_salida' => [
                 'riesgo_arca' => [
@@ -121,6 +134,15 @@ final class ArcaInspectionReportBuilder
                     'intereses' => round(floatval($inspeccion['intereses'] ?? 0), 2),
                     'multas' => round(floatval($inspeccion['multas'] ?? 0), 2),
                 ],
+                'moratoria' => [
+                    'condonacion_intereses_pct' => intval($regularizacion['condonacion_intereses_pct'] ?? 0),
+                    'condonacion_multas_pct' => intval($regularizacion['condonacion_multas_pct'] ?? 0),
+                    'accion_penal' => (string) ($regularizacion['accion_penal'] ?? 'sin_movimiento'),
+                ],
+                'penal' => [
+                    'nivel' => (string) ($alertasPenales['nivel'] ?? 'bajo'),
+                    'tipologias' => array_values($alertasPenales['tipologias'] ?? []),
+                ],
                 'iril' => $irilScore,
                 'nivel' => strtolower($overall['label']),
                 'recomendacion' => $recomendacion['code'],
@@ -128,6 +150,7 @@ final class ArcaInspectionReportBuilder
             'detalle_motor' => [
                 'detalle' => (string) ($inspeccion['detalle'] ?? ''),
                 'escenario_recomendado' => (string) ($escenariosResult['recomendado'] ?? 'D'),
+                'regularizacion' => $regularizacion,
             ],
         ];
     }
@@ -212,7 +235,14 @@ final class ArcaInspectionReportBuilder
         ]);
     }
 
-    private static function buildConductualRisk(array $situacion, array $documentacion, bool $inspeccionPrevia, bool $senalesFraude): array
+    private static function buildConductualRisk(
+        array $situacion,
+        array $documentacion,
+        bool $inspeccionPrevia,
+        bool $senalesFraude,
+        bool $regularizacionActiva,
+        array $regularizacion
+    ): array
     {
         $items = [
             self::stateItem('Sin antecedentes sancionatorios', self::state(!$inspeccionPrevia && !$senalesFraude, $senalesFraude ? 'no_cumple' : 'sin_dato')),
@@ -226,7 +256,69 @@ final class ArcaInspectionReportBuilder
         return self::compileRiskBlock($items, [
             $inspeccionPrevia ? 'La empresa declaró inspecciones/auditorías previas, lo que incrementa exposición conductual.' : null,
             $senalesFraude ? 'Se activaron señales internas compatibles con evasión o maniobras irregulares.' : null,
+            $regularizacionActiva ? 'La adhesión a Ley 27.743 no debe computarse como antecedente negativo autónomo.' : null,
+            self::boolish($regularizacion['plan_caducado'] ?? false)
+                ? 'La caducidad del plan reabre contingencia penal y prescriptiva.'
+                : null,
+            self::boolish($situacion['obligaciones_aduaneras'] ?? 'no')
+                ? 'Si hay deuda aduanera, la novación exige pesificación previa a la regularización.'
+                : null,
         ]);
+    }
+
+    private static function buildMoratoriaSection(array $regularizacion, array $situacion): array
+    {
+        return [
+            'aplica' => self::boolish($regularizacion['aplica_regimen'] ?? false),
+            'dias_desde_reglamentacion' => intval($regularizacion['dias_desde_reglamentacion'] ?? 0),
+            'modalidad_pago' => (string) ($regularizacion['modalidad_pago'] ?? 'no_informada'),
+            'cuotas' => intval($regularizacion['cuotas'] ?? 0),
+            'condonacion_intereses_pct' => intval($regularizacion['condonacion_intereses_pct'] ?? 0),
+            'condonacion_multas_pct' => intval($regularizacion['condonacion_multas_pct'] ?? 0),
+            'accion_penal' => (string) ($regularizacion['accion_penal'] ?? 'sin_movimiento'),
+            'riesgo_caducidad' => (string) ($regularizacion['riesgo_caducidad'] ?? 'No informado'),
+            'conceptos_excluidos' => array_values($regularizacion['conceptos_excluidos_moratoria'] ?? []),
+            'aclaracion' => self::boolish($situacion['obligacion_cancelada_antes_2024_03_31'] ?? 'no')
+                ? 'Las obligaciones canceladas antes del 31/03/2024 pueden acceder a condonación plena de intereses.'
+                : 'La condonación depende de tiempo de adhesión y modalidad de pago.',
+        ];
+    }
+
+    private static function buildAssetRegularizationSection(array $valuacion): array
+    {
+        return [
+            'activos_valorizados' => array_values($valuacion['activos'] ?? []),
+            'tipo_cambio_regularizacion' => round(floatval($valuacion['tipo_cambio_regularizacion'] ?? 0), 4),
+            'base_imponible_usd' => round(floatval($valuacion['base_imponible_usd'] ?? 0), 2),
+            'franquicia_usd' => round(floatval($valuacion['franquicia_usd'] ?? 100000), 2),
+            'excedente_gravado_usd' => round(floatval($valuacion['excedente_gravado_usd'] ?? 0), 2),
+            'alicuota' => round(floatval($valuacion['alicuota'] ?? 0), 4),
+            'impuesto_especial_usd' => round(floatval($valuacion['impuesto_especial_usd'] ?? 0), 2),
+            'nota' => 'La valuación de stock se expresa en USD y queda separada de la moratoria previsional en pesos.',
+        ];
+    }
+
+    private static function buildFiscalShieldBenefits(array $regularizacion, array $situacion): array
+    {
+        return [
+            'liberacion_ganancias' => true,
+            'liberacion_iva' => true,
+            'liberacion_impuestos_internos' => true,
+            'condonacion_intereses_obligaciones_canceladas_antes_31_03_2024' => self::boolish($situacion['obligacion_cancelada_antes_2024_03_31'] ?? 'no'),
+            'condonacion_multas_pct' => intval($regularizacion['condonacion_multas_pct'] ?? 0),
+            'antecedente_negativo' => false,
+        ];
+    }
+
+    private static function buildPenalRiskSection(array $alertasPenales): array
+    {
+        return [
+            'nivel' => (string) ($alertasPenales['nivel'] ?? 'bajo'),
+            'tipologias' => array_values($alertasPenales['tipologias'] ?? []),
+            'aporte_retenido_mensual' => round(floatval($alertasPenales['aporte_retenido_mensual'] ?? 0), 2),
+            'capital_evadido_mensual' => round(floatval($alertasPenales['capital_evadido_mensual'] ?? 0), 2),
+            'detalle' => (string) ($alertasPenales['detalle'] ?? 'Sin alertas relevantes.'),
+        ];
     }
 
     private static function compileRiskBlock(array $items, array $observaciones = []): array
