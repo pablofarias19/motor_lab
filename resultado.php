@@ -1172,6 +1172,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     onclick="window.open('https://fariasortiz.com.ar', '_blank')">
                     Agendar Consulta
                 </button>
+                <div class="premium-pdf-notice">
+                    <strong><i class="bi bi-info-circle"></i> Para más información, mayor detalle y explicación de este análisis, descargá el informe en PDF.</strong>
+                    El dashboard resume los datos principales y el informe amplía fundamentos, observaciones y variables relevantes del caso.
+                </div>
             </div>
         </div>
     </main>
