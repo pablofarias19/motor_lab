@@ -431,8 +431,24 @@ try {
                 $matriz = is_array($laboral['matriz_riesgo'] ?? null) ? $laboral['matriz_riesgo'] : [];
                 $checklist = is_array($laboral['checklist'] ?? null) ? $laboral['checklist'] : [];
                 $conclusion = is_array($laboral['conclusion_estrategica'] ?? null) ? $laboral['conclusion_estrategica'] : [];
+                $contextoInspectivo = is_array($laboral['contexto_inspectivo'] ?? null) ? $laboral['contexto_inspectivo'] : [];
+                $escenariosLaborales = is_array($laboral['escenarios'] ?? null) ? $laboral['escenarios'] : [];
+
+                if (!empty($contextoInspectivo)) {
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Enfoque inspectivo laboral'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+                    $pdf->MultiCell(0, 4, pdf_latin1(pdf_safe_text((string) ($contextoInspectivo['titulo'] ?? ''))), 0, 'L');
+                    if (!empty($contextoInspectivo['descripcion'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('  Descripción: ' . pdf_safe_text((string) $contextoInspectivo['descripcion'])), 0, 'L');
+                    }
+                    if (!empty($contextoInspectivo['foco_probatorio'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('  Foco probatorio: ' . pdf_safe_text((string) $contextoInspectivo['foco_probatorio'])), 0, 'L');
+                    }
+                }
 
                 if (!empty($matriz)) {
+                    $pdf->Ln(1);
                     $pdf->SetFont('Arial', 'B', 8);
                     $pdf->Cell(0, 5, pdf_latin1('Matriz de riesgo laboral'), 0, 1);
                     $pdf->SetFont('Arial', '', 8);
@@ -480,6 +496,30 @@ try {
                         }
 
                         $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . (string) $valor), 0, 'L');
+                    }
+                }
+
+                if (!empty($escenariosLaborales)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Escenarios estratégicos laborales'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($escenariosLaborales as $escenario) {
+                        if (!is_array($escenario) || empty($escenario['aplica'])) {
+                            continue;
+                        }
+
+                        $pdf->MultiCell(0, 4, pdf_latin1('- ' . pdf_safe_text((string) ($escenario['titulo'] ?? 'Escenario'))), 0, 'L');
+                        if (!empty($escenario['descripcion'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Descripción: ' . pdf_safe_text((string) $escenario['descripcion'])), 0, 'L');
+                        }
+                        if (!empty($escenario['gatillo'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Cuándo aplica: ' . pdf_safe_text((string) $escenario['gatillo'])), 0, 'L');
+                        }
+                        foreach (($escenario['acciones'] ?? []) as $accion) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Acción: ' . pdf_safe_text((string) $accion)), 0, 'L');
+                        }
                     }
                 }
 

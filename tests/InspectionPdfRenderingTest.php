@@ -66,8 +66,13 @@ final class InspectionPdfRenderingTest extends TestCase
         $this->assertTrue(str_contains($inspectionSearch, 'recomendacion final: defensa estructurada'), 'El PDF de riesgo de inspección debe exponer la recomendación laboral final.');
         $this->assertTrue(str_contains($inspectionSearch, 'recomendacion principal: regularizacion inmediata'), 'El PDF de riesgo de inspección debe exponer la recomendación ARCA principal.');
         $this->assertTrue(str_contains($inspectionSearch, 'probabilidad inspeccion: critico'), 'El PDF de riesgo de inspección debe exponer la probabilidad crítica laboral.');
+        $this->assertTrue(str_contains($inspectionSearch, 'enfoque inspectivo laboral'), 'El PDF de riesgo de inspección debe incluir el enfoque inspectivo específico.');
+        $this->assertTrue(str_contains($inspectionSearch, 'escenarios estrategicos laborales'), 'El PDF de riesgo de inspección debe incluir escenarios laborales adaptados.');
+        $this->assertTrue(str_contains($inspectionSearch, 'descargo tecnico con enfoque laboral-fiscal'), 'El PDF de riesgo de inspección debe mostrar escenarios no genéricos.');
         $this->assertTrue(str_contains($inspectionSearch, 'fundamentos de los montos laborales'), 'El PDF de riesgo de inspección debe explicar los motivos de los montos laborales.');
         $this->assertTrue(str_contains($inspectionSearch, 'consideraciones legales relevantes (laboral)'), 'El PDF de riesgo de inspección debe incluir consideraciones legales laborales.');
+        $this->assertTrue(str_contains($inspectionSearch, 'ley 25.212'), 'El PDF de riesgo de inspección debe indicar el marco laboral específico.');
+        $this->assertTrue(str_contains($inspectionSearch, 'arts. 35 y 39 ley 11.683'), 'El PDF de riesgo de inspección debe incluir instrucción fiscal específica.');
         $this->assertTrue(str_contains($inspectionSearch, 'ley bases no 27.742: aplica'), 'El PDF de riesgo de inspección debe indicar aplicabilidad legal en el bloque ARCA.');
 
         $auditPdf = $this->renderPdf([

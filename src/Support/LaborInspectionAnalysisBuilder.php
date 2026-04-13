@@ -61,6 +61,7 @@ final class LaborInspectionAnalysisBuilder
             $situacion,
             $sancionAdministrativa
         );
+        $contextoInspectivo = self::buildInspectionContext($datos, $documentacion, $situacion);
 
         return [
             'infraccion_laboral' => $infraccion,
@@ -85,6 +86,8 @@ final class LaborInspectionAnalysisBuilder
                     'contingencias_legales' => true,
                     'estrategias_preventivas_y_correctivas' => true,
                 ],
+                'objeto_detallado' => self::buildObjectDetail($contextoInspectivo),
+                'contexto_inspectivo' => $contextoInspectivo,
                 'matriz_riesgo' => $matriz,
                 'tipificacion' => [
                     'infraccion' => $infraccion,
@@ -206,6 +209,8 @@ final class LaborInspectionAnalysisBuilder
     {
         $salarioReal = floatval($datos['salario'] ?? 0);
         $salarioRecibo = floatval($datos['salario_recibo'] ?? 0);
+        $hayFacturacionParalela = self::hasParallelBillingSignals($documentacion, $situacion);
+        $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
 
         $checks = [
             'salario_conforme_cct' => ($situacion['chk_recibos_cct'] ?? 'no') === 'si',
@@ -236,6 +241,12 @@ final class LaborInspectionAnalysisBuilder
         if (($datos['tipo_registro'] ?? 'registrado') !== 'registrado' || ($documentacion['registrado_afip'] ?? 'no') !== 'si') {
             $puntaje += 2.0;
             $observaciones[] = 'Se detectan indicios de pagos marginales o registración salarial no íntegra.';
+        }
+        if ($hayFacturacionParalela) {
+            $observaciones[] = 'La coexistencia de salario y facturación paralela exige blindar la trazabilidad para evitar que ARCA recaratule ingresos ajenos como remuneración no registrada.';
+        }
+        if ($hayRiesgoEstructuraOpaca) {
+            $observaciones[] = 'Los indicadores de estructura opaca o sobrefacturación aumentan el riesgo de que la inspección fiscal proyecte la maniobra sobre la nómina de la empresa.';
         }
 
         return self::makeBlock($puntaje, $checks, $observaciones);
@@ -277,6 +288,8 @@ final class LaborInspectionAnalysisBuilder
     private static function buildEstructural(array $datos, array $situacion): array
     {
         $cantidad = max(1, intval($datos['cantidad_empleados'] ?? 1));
+        $hayFacturacionParalela = self::hasParallelBillingSignals([], $situacion);
+        $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
         $checks = [
             'antecedentes_inspecciones' => ($situacion['inspeccion_previa'] ?? 'no') === 'si',
             'juicios_o_intimaciones_activas' => ($situacion['hay_intercambio'] ?? 'no') === 'si' || ($situacion['fue_intimado'] ?? 'no') === 'si',
@@ -304,6 +317,12 @@ final class LaborInspectionAnalysisBuilder
             $puntaje += 1.0;
             $observaciones[] = 'La dotación declarada amplifica el impacto institucional de una inspección.';
         }
+        if ($hayFacturacionParalela) {
+            $observaciones[] = 'La existencia de una operatoria paralela con facturación o cobros por fuera del recibo vuelve probable la recepción de oficios y pedidos de informes a RR.HH. y Legales.';
+        }
+        if ($hayRiesgoEstructuraOpaca) {
+            $observaciones[] = 'Los indicadores de interposición o estructura opaca incrementan el riesgo de contagio fiscal y de medidas cautelares sobre haberes.';
+        }
         if (empty($observaciones)) {
             $observaciones[] = 'No se advirtieron agravantes estructurales relevantes con los datos cargados.';
         }
@@ -329,22 +348,67 @@ final class LaborInspectionAnalysisBuilder
 
     private static function buildEscenarios(string $recommendation, array $situacion): array
     {
+        $hayFacturacionParalela = self::hasParallelBillingSignals([], $situacion);
+        $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
+        $hayRequerimientoActivo = ($situacion['hay_intercambio'] ?? 'no') === 'si'
+            || ($situacion['fue_intimado'] ?? 'no') === 'si';
+        $hayInspeccionPrevia = ($situacion['inspeccion_previa'] ?? 'no') === 'si';
+
         return [
             'regularizacion_inmediata' => [
                 'aplica' => $recommendation === 'regularizacion_inmediata',
-                'descripcion' => 'Corrección de registración, adecuación salarial y baja de contingencia administrativa.',
+                'titulo' => 'Regularización y blindaje de trazabilidad',
+                'descripcion' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
+                    ? 'Corregir registración, salario y F.931, y separar documentalmente la operatoria comercial o bancaria ajena a la relación laboral para impedir que la inspección la trate como salario marginal.'
+                    : 'Corregir registración, adecuar salario y completar F.931/libro sueldo para bajar la contingencia administrativa antes de una constatación.',
+                'gatillo' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
+                    ? 'Aplica cuando hay facturación paralela, depósitos o señales de interposición que pueden contaminar el análisis laboral.'
+                    : 'Aplica cuando existen meses sin registrar, brecha salarial o inconsistencias formales relevantes.',
+                'acciones' => array_values(array_filter([
+                    'Auditar alta temprana, libro Art. 52 LCT, recibos y trazabilidad bancaria.',
+                    $hayFacturacionParalela ? 'Documentar por escrito que la empresa no participa en la facturación ni en los cobros externos del dependiente.' : null,
+                    $hayRiesgoEstructuraOpaca ? 'Separar accesos, herramientas y circuitos internos para evitar que se infiera una maniobra simulada desde la empresa.' : null,
+                ])),
             ],
             'inspeccion_en_curso' => [
-                'aplica' => ($situacion['inspeccion_previa'] ?? 'no') === 'si',
-                'descripcion' => 'Puede existir acta previa o reiteración de inspección con multa potencial.',
+                'aplica' => $hayInspeccionPrevia,
+                'titulo' => 'Inspección o reinspección con cruce fiscal',
+                'descripcion' => $hayFacturacionParalela
+                    ? 'La reinspección puede requerir no solo documentación laboral sino también explicación sobre depósitos, clientes o facturación externa del dependiente.'
+                    : 'Puede existir acta previa o reiteración inspectiva con foco en registración, jornada, ART y F.931.',
+                'gatillo' => 'Se activa frente a visitas previas, actas abiertas o reincidencia ante Ministerio de Trabajo/ARCA.',
+                'acciones' => array_values(array_filter([
+                    'Centralizar la respuesta en RR.HH./Legales y preservar legajo, recibos, libro sueldo y constancias de pago.',
+                    $hayFacturacionParalela ? 'Preparar carpeta de deslinde para demostrar que los ingresos extra salariales no provienen del empleador.' : null,
+                ])),
             ],
             'defensa_administrativa' => [
-                'aplica' => ($situacion['hay_intercambio'] ?? 'no') === 'si' || ($situacion['fue_intimado'] ?? 'no') === 'si',
-                'descripcion' => 'Conviene preparar descargo, prueba documental y estrategia de reducción de sanción.',
+                'aplica' => $hayRequerimientoActivo || $recommendation === 'defensa_estructurada',
+                'titulo' => 'Descargo técnico con enfoque laboral-fiscal',
+                'descripcion' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
+                    ? 'El descargo debe desvincular la nómina del circuito comercial investigado, exhibiendo que la única contraprestación del empleador es la remuneración registrada.'
+                    : 'Conviene preparar un descargo con respaldo registral, documental y previsional para reducir sanciones.',
+                'gatillo' => $hayRequerimientoActivo
+                    ? 'Existe requerimiento, intercambio formal u orden de informar.'
+                    : 'Se recomienda cuando el riesgo estructural obliga a preparar defensa antes del acto administrativo.',
+                'acciones' => array_values(array_filter([
+                    'Acompañar F.931, transferencias, libro Art. 52 LCT, altas y recibos firmados.',
+                    $hayFacturacionParalela ? 'Pedir que cualquier análisis sobre facturación externa se circunscriba al dependiente o a terceros y no se traslade automáticamente al salario.' : null,
+                    $hayRiesgoEstructuraOpaca ? 'Responder de inmediato oficios, embargos o pedidos de información para evitar multas por obstrucción o incumplimiento.' : null,
+                ])),
             ],
             'estrategia_preventiva' => [
                 'aplica' => $recommendation === 'auditoria_preventiva',
-                'descripcion' => 'Auditoría interna y ordenamiento de compliance laboral antes de una visita de inspección.',
+                'titulo' => 'Auditoría preventiva con instrucción fiscal mínima',
+                'descripcion' => $hayFacturacionParalela
+                    ? 'La auditoría debe revisar legajo y pagos, pero también el riesgo de que una facturación externa del dependiente genere presunciones de salario no registrado o pedidos de informes.'
+                    : 'Auditoría interna y ordenamiento de compliance laboral antes de una visita de inspección.',
+                'gatillo' => 'Se sugiere cuando aún no existe acta, pero sí una exposición potencial que conviene ordenar.',
+                'acciones' => array_values(array_filter([
+                    'Verificar consistencia entre recibos, transferencias, cargas sociales y legajo.',
+                    $hayFacturacionParalela ? 'Emitir política interna que prohíba usar medios o tiempo de trabajo para actividades facturadas ajenas al empleador.' : null,
+                    'Definir protocolo para contestar requerimientos del Ministerio de Trabajo, ARCA u oficios judiciales.',
+                ])),
             ],
         ];
     }
@@ -369,6 +433,8 @@ final class LaborInspectionAnalysisBuilder
 
     private static function buildConclusion(string $infraccion, array $observaciones, array $situacion): string
     {
+        $hayFacturacionParalela = self::hasParallelBillingSignals([], $situacion);
+        $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
         $base = match ($infraccion) {
             'muy_grave' => 'El caso exhibe desvíos con aptitud sancionatoria severa y exige regularización prioritaria.',
             'grave' => 'Se observan incumplimientos materiales que elevan el riesgo de acta y multa administrativa.',
@@ -377,6 +443,12 @@ final class LaborInspectionAnalysisBuilder
 
         if (($situacion['inspeccion_previa'] ?? 'no') === 'si') {
             $base .= ' Los antecedentes de inspección aumentan la exposición por reincidencia.';
+        }
+        if ($hayFacturacionParalela) {
+            $base .= ' Además, la coexistencia de salario y facturación externa exige preparar una defensa de trazabilidad para evitar recaracterizaciones fiscales.';
+        }
+        if ($hayRiesgoEstructuraOpaca) {
+            $base .= ' La presencia de indicadores de interposición o estructura opaca justifica un enfoque coordinado entre laboral, contable y fiscal.';
         }
 
         if (!empty($observaciones)) {
@@ -440,40 +512,100 @@ final class LaborInspectionAnalysisBuilder
         $hayDeficienciaRegistral = ($datos['tipo_registro'] ?? 'registrado') !== 'registrado'
             || ($documentacion['registrado_afip'] ?? 'no') !== 'si'
             || max(0, intval($situacion['meses_no_registrados'] ?? 0)) > 0;
+        $hayFacturacionParalela = self::hasParallelBillingSignals($documentacion, $situacion);
+        $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
 
         return [
             [
-                'titulo' => 'Ley Bases Nº 27.742',
-                'aplica' => false,
-                'estado' => 'No aplica directamente',
-                'motivo' => 'Este análisis estima contingencia inspectiva y sancionatoria, no multas indemnizatorias por despido posterior al 09/07/2024.',
-                'impacto_en_montos' => 'No se adicionaron multas laborales suspendidas por Ley Bases en este bloque; solo se conserva la sanción administrativa ya cuantificada si existe.',
+                'titulo' => 'Ley 25.212 — Pacto Federal del Trabajo',
+                'aplica' => true,
+                'estado' => 'Marco sancionatorio principal',
+                'motivo' => 'Ordena la tipificación de infracciones leves, graves y muy graves ante falencias registrales, salariales, documentales o de seguridad.',
+                'impacto_en_montos' => 'Las multas laborales del informe se leen dentro de esta matriz y se agravan si hay reiteración o pluralidad de trabajadores afectados.',
+            ],
+            [
+                'titulo' => 'Arts. 35 y 39 Ley 11.683',
+                'aplica' => true,
+                'estado' => 'Deber de colaboración con ARCA',
+                'motivo' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
+                    ? 'Si aparecen depósitos, facturación o señales de interposición, la empresa debe responder requerimientos sin mezclar la operatoria ajena con su nómina.'
+                    : 'La empresa debe conservar y exhibir documentación registral, salarial y previsional ante requerimientos del Fisco.',
+                'impacto_en_montos' => 'La falta de respuesta, la entrega incompleta o la obstrucción inspectiva pueden abrir multas autónomas aunque el fondo del reclamo siga en discusión.',
+            ],
+            [
+                'titulo' => 'Art. 52 LCT y Libro Sueldo Digital',
+                'aplica' => true,
+                'estado' => 'Prueba central de defensa',
+                'motivo' => 'La congruencia entre libro de sueldos, F.931, recibos firmados y cuenta sueldo es la pieza clave para rechazar presunciones de salario no registrado.',
+                'impacto_en_montos' => 'Si la trazabilidad es consistente, ayuda a contener multas y a discutir la extensión de cualquier ajuste inspectivo.',
             ],
             [
                 'titulo' => 'Art. 132 bis LCT',
                 'aplica' => $hayDeficienciaRegistral,
-                'estado' => $hayDeficienciaRegistral ? 'Aplica / requiere revisión' : 'No surge aplicación directa',
+                'estado' => $hayDeficienciaRegistral ? 'Alerta complementaria' : 'Sin activación aparente',
                 'motivo' => $hayDeficienciaRegistral
-                    ? 'Se observaron indicios de falta o deficiencia registral que pueden sostener contingencia administrativa autónoma.'
-                    : 'No se detectó un dato fuerte de falta registral que justifique activar esta contingencia administrativa adicional.',
+                    ? 'La existencia de registración deficiente o meses omitidos obliga a revisar retenciones y aportes para evitar reclamos adicionales.'
+                    : 'No surge un dato fuerte de apropiación o retención indebida que active esta vía en forma inmediata.',
                 'impacto_en_montos' => $hayDeficienciaRegistral && $sancionAdministrativa > 0
-                    ? 'El monto de multas administrativas se mantiene visible porque esta vía puede coexistir con la suspensión de otras multas.'
-                    : 'Se consigna solo como alerta legal y no como monto adicional autónomo cuando no hay cuantificación expresa.',
+                    ? 'Puede coexistir con sanciones administrativas ya cuantificadas si además se verifica incumplimiento previsional.'
+                    : 'Se mantiene como alerta legal sin adicionar monto autónomo cuando no hay cuantificación expresa.',
             ],
             [
-                'titulo' => 'Jurisprudencia Ackerman (Marzo 2026)',
-                'aplica' => false,
-                'estado' => 'No aplica directamente',
-                'motivo' => 'La doctrina Ackerman opera sobre bases indemnizatorias ajustadas por RIPTE/IPC, no sobre esta matriz inspectiva.',
-                'impacto_en_montos' => 'No modificó los importes de sanción ni el riesgo económico indirecto de este análisis.',
+                'titulo' => 'Oficios, embargos y deber de retención',
+                'aplica' => ($situacion['hay_intercambio'] ?? 'no') === 'si'
+                    || ($situacion['fue_intimado'] ?? 'no') === 'si'
+                    || ($situacion['inspeccion_previa'] ?? 'no') === 'si'
+                    || $hayFacturacionParalela
+                    || $hayRiesgoEstructuraOpaca,
+                'estado' => 'Contingencia procedimental relevante',
+                'motivo' => 'Ante investigaciones paralelas o maniobras atribuidas a terceros, la empresa puede quedar alcanzada por pedidos de informes y embargos sobre haberes dentro de los límites legales.',
+                'impacto_en_montos' => 'No cambia por sí solo la base salarial, pero sí puede generar costos de cumplimiento, astreintes o responsabilidad por incumplimiento de órdenes judiciales.',
             ],
-            [
-                'titulo' => 'Baremo Lois (Marzo 2026)',
-                'aplica' => false,
-                'estado' => 'No aplica directamente',
-                'motivo' => 'El Baremo Lois se vincula con daño moral y vía civil; no integra esta cuantificación administrativa-preventiva.',
-                'impacto_en_montos' => 'No se adicionó agravamiento por daño moral ni topes superados dentro de este análisis.',
-            ],
+        ];
+    }
+
+    private static function buildInspectionContext(array $datos, array $documentacion, array $situacion): array
+    {
+        $hayFacturacionParalela = self::hasParallelBillingSignals($documentacion, $situacion);
+        $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
+        $hayDeficienciaRegistral = ($datos['tipo_registro'] ?? 'registrado') !== 'registrado'
+            || ($documentacion['registrado_afip'] ?? 'no') !== 'si'
+            || max(0, intval($situacion['meses_no_registrados'] ?? 0)) > 0;
+
+        if ($hayFacturacionParalela || $hayRiesgoEstructuraOpaca) {
+            return [
+                'codigo' => 'contagio_fiscal_por_operatoria_paralela',
+                'titulo' => 'Contagio fiscal por operatoria paralela del dependiente',
+                'descripcion' => 'El análisis no se limita a la registración laboral: también debe prever que ARCA o la autoridad laboral intenten vincular depósitos, facturación o estructuras opacas del dependiente con salario no registrado o con pagos marginales del empleador.',
+                'foco_probatorio' => 'Desvincular la nómina, las transferencias salariales y la infraestructura de la empresa de cualquier flujo comercial o bancario ajeno al contrato de trabajo.',
+            ];
+        }
+
+        if ($hayDeficienciaRegistral) {
+            return [
+                'codigo' => 'subregistracion_con_derrame_previsional',
+                'titulo' => 'Subregistración con proyección previsional',
+                'descripcion' => 'La contingencia principal nace de la registración o remuneración deficiente y puede escalar hacia determinaciones previsionales, multas administrativas y mayores exigencias documentales.',
+                'foco_probatorio' => 'Alinear alta, recibos, F.931, libro sueldo y jornada con la realidad del vínculo.',
+            ];
+        }
+
+        return [
+            'codigo' => 'cumplimiento_preventivo_con_vigilancia_fiscal',
+            'titulo' => 'Cumplimiento preventivo con vigilancia fiscal mínima',
+            'descripcion' => 'Aun cuando la documentación laboral no exhiba un incumplimiento grave, conviene mantener una defensa preparada frente a cruces sistémicos y pedidos de informes del Ministerio de Trabajo o ARCA.',
+            'foco_probatorio' => 'Sostener trazabilidad íntegra entre legajo, cuenta sueldo, cargas sociales y políticas internas de uso de recursos.',
+        ];
+    }
+
+    private static function buildObjectDetail(array $contextoInspectivo): array
+    {
+        return [
+            'Evaluar la exposición laboral y previsional específica del empleador según el foco inspectivo detectado.',
+            'Determinar qué documentación y qué trazabilidad probatoria debe preservarse para responder a Ministerio de Trabajo y ARCA.',
+            'Medir el riesgo de que hechos externos al recibo de sueldo sean reetiquetados como pagos no registrados o maniobras simuladas.',
+            'Priorizar acciones preventivas, correctivas o defensivas con criterio laboral-fiscal.',
+            'Hipótesis principal del caso: ' . ($contextoInspectivo['titulo'] ?? 'Sin foco específico'),
         ];
     }
 
@@ -572,6 +704,39 @@ final class LaborInspectionAnalysisBuilder
             $score >= 2.0 => 'medio',
             default => 'bajo',
         };
+    }
+
+    private static function hasParallelBillingSignals(array $documentacion, array $situacion): bool
+    {
+        return self::flag($situacion['tiene_facturacion'] ?? ($documentacion['tiene_facturacion'] ?? 'no'))
+            || self::flag($situacion['tiene_pago_bancario'] ?? ($documentacion['pago_bancario'] ?? 'no'))
+            || self::flag($situacion['tiene_contrato_escrito'] ?? ($documentacion['contrato_escrito'] ?? 'no'));
+    }
+
+    private static function hasOpaqueStructureSignals(array $situacion): bool
+    {
+        foreach ([
+            'fraude_facturacion_desproporcionada',
+            'fraude_intermitencia_sospechosa',
+            'fraude_evasion_sistematica',
+            'fraude_sobre_facturacion',
+            'fraude_estructura_opaca',
+        ] as $flag) {
+            if (self::flag($situacion[$flag] ?? 'no')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function flag($value): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        return in_array(strtolower(trim((string) $value)), ['si', 'sí', 'true', '1', 'yes', 'on'], true);
     }
 
     private static function makeBlock(float $puntaje, array $checks, array $observaciones): array
