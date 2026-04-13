@@ -6,6 +6,7 @@ use App\Engines\ArcaEngine;
 use App\Engines\ArtEmpresaEngine;
 use App\Engines\AuditoriaEngine;
 use App\Engines\SolidaridadEngine;
+use App\Support\ArcaInspectionReportBuilder;
 use App\Support\AnalysisPayloadNormalizer;
 use App\Support\AnalysisSessionStore;
 use App\Support\ComplementaryLegalAnalysisBuilder;
@@ -75,6 +76,16 @@ class AnalysisService
             $payload['situacion'],
             $payload['datos_laborales']['provincia']
         );
+
+        if (($payload['tipo_conflicto'] ?? '') === 'riesgo_inspeccion' && !empty($exposicion['analisis_empresa']['inspeccion'])) {
+            $exposicion['analisis_empresa']['inspeccion']['informe_preventivo'] = ArcaInspectionReportBuilder::build(
+                $payload,
+                $irilResult,
+                $exposicion,
+                $escenariosResult,
+                $exposicion['analisis_empresa']['inspeccion']
+            );
+        }
 
         AnalysisSessionStore::remember(
             AnalysisSessionStore::buildRecord($uuid, $payload, $irilResult, $exposicion, $escenariosResult)
