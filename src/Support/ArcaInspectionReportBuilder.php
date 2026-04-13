@@ -574,10 +574,11 @@ final class ArcaInspectionReportBuilder
 
     private static function resolveOverallRisk(array $matriz, array $inspeccion, bool $inspeccionPrevia, bool $senalesFraude): array
     {
-        $indices = array_map(static fn(array $bloque): int => intval($bloque['indice_json'] ?? 1), $matriz);
+        $riskIndices = array_map(static fn(array $bloque): int => intval($bloque['indice_json'] ?? 1), $matriz);
         $capital = floatval($inspeccion['capital_omitido'] ?? 0);
         $multas = floatval($inspeccion['multas'] ?? 0);
-        $promedio = count($indices) > 0 ? array_sum($indices) / count($indices) : 1.0;
+        $riskCount = count($riskIndices);
+        $promedio = $riskCount > 0 ? array_sum($riskIndices) / $riskCount : 1.0;
 
         if ($promedio >= 4.3 || ($promedio >= 4.0 && ($senalesFraude || $inspeccionPrevia) && $multas > 0)) {
             return ['label' => 'Crítico', 'indice' => 5];
