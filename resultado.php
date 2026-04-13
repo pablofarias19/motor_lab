@@ -678,6 +678,8 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             $inspMatriz = is_array($inspLaboral['matriz_riesgo'] ?? null) ? $inspLaboral['matriz_riesgo'] : [];
                             $inspChecklist = is_array($inspLaboral['checklist'] ?? null) ? $inspLaboral['checklist'] : [];
                             $inspConclusion = is_array($inspLaboral['conclusion_estrategica'] ?? null) ? $inspLaboral['conclusion_estrategica'] : [];
+                            $inspContext = is_array($inspLaboral['contexto_inspectivo'] ?? null) ? $inspLaboral['contexto_inspectivo'] : [];
+                            $inspScenarios = is_array($inspLaboral['escenarios'] ?? null) ? $inspLaboral['escenarios'] : [];
                             ?>
                             <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;">
                                 <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;"><span class="ui-emoji" aria-hidden="true">🏛️</span>Inspección ARCA / Ministerio</h4>
@@ -694,12 +696,22 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <div><strong>Recomendación final:</strong> <?= htmlspecialchars((string) $inspEmp['recomendacion_final']) ?></div>
                                 <?php endif; ?>
                                 <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($inspEmp['detalle'] ?? '') ?></p>
-                                <?php if (!empty($inspEmp['observaciones_clave'])): ?>
-                                <p style="margin:.5rem 0 0; font-size:.85rem; color:#7f1d1d;"><?= htmlspecialchars((string) $inspEmp['observaciones_clave']) ?></p>
-                                <?php endif; ?>
-                                <?php if (!empty($inspMatriz)): ?>
-                                <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
-                                    <div style="font-weight:600; margin-bottom:.6rem;">Matriz de riesgo laboral</div>
+                                 <?php if (!empty($inspEmp['observaciones_clave'])): ?>
+                                 <p style="margin:.5rem 0 0; font-size:.85rem; color:#7f1d1d;"><?= htmlspecialchars((string) $inspEmp['observaciones_clave']) ?></p>
+                                 <?php endif; ?>
+                                 <?php if (!empty($inspContext)): ?>
+                                 <div style="margin-top:1rem; padding:.85rem; border:1px solid #fecaca; border-radius:10px; background:#fff;">
+                                     <div style="font-weight:600; color:#991b1b; margin-bottom:.35rem;">Enfoque inspectivo</div>
+                                     <div style="font-size:.83rem; color:#6b7280;"><strong><?= htmlspecialchars((string) ($inspContext['titulo'] ?? '-')) ?></strong></div>
+                                     <div style="margin-top:.35rem; font-size:.83rem; color:#6b7280;"><?= htmlspecialchars((string) ($inspContext['descripcion'] ?? '')) ?></div>
+                                     <?php if (!empty($inspContext['foco_probatorio'])): ?>
+                                     <div style="margin-top:.35rem; font-size:.83rem; color:#7f1d1d;"><strong>Foco probatorio:</strong> <?= htmlspecialchars((string) $inspContext['foco_probatorio']) ?></div>
+                                     <?php endif; ?>
+                                 </div>
+                                 <?php endif; ?>
+                                 <?php if (!empty($inspMatriz)): ?>
+                                 <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
+                                     <div style="font-weight:600; margin-bottom:.6rem;">Matriz de riesgo laboral</div>
                                     <div style="display:grid; gap:.45rem;">
                                         <?php foreach ($inspMatriz as $nombre => $bloque): ?>
                                         <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.83rem;">
@@ -730,14 +742,38 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 </div>
                                 <?php endif; ?>
                                 <?php if (!empty($inspConclusion)): ?>
-                                <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5; font-size:.83rem; color:#6b7280;">
-                                    <div><strong>IRIL:</strong> <?= htmlspecialchars((string) ($inspEmp['iril_laboral'] ?? '-')) ?> / <?= htmlspecialchars((string) ($inspEmp['nivel_laboral'] ?? '-')) ?></div>
-                                    <div><strong>Nivel de riesgo general:</strong> <?= htmlspecialchars((string) ($inspConclusion['nivel_riesgo_general'] ?? '-')) ?></div>
-                                    <div><strong>Grado de exposición:</strong> <?= htmlspecialchars((string) ($inspConclusion['grado_exposicion'] ?? '-')) ?></div>
-                                </div>
-                                <?php endif; ?>
-                            </div>
-                        <?php endif; ?>
+                                 <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5; font-size:.83rem; color:#6b7280;">
+                                     <div><strong>IRIL:</strong> <?= htmlspecialchars((string) ($inspEmp['iril_laboral'] ?? '-')) ?> / <?= htmlspecialchars((string) ($inspEmp['nivel_laboral'] ?? '-')) ?></div>
+                                     <div><strong>Nivel de riesgo general:</strong> <?= htmlspecialchars((string) ($inspConclusion['nivel_riesgo_general'] ?? '-')) ?></div>
+                                     <div><strong>Grado de exposición:</strong> <?= htmlspecialchars((string) ($inspConclusion['grado_exposicion'] ?? '-')) ?></div>
+                                 </div>
+                                 <?php endif; ?>
+                                 <?php if (!empty($inspScenarios)): ?>
+                                 <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
+                                     <div style="font-weight:600; margin-bottom:.6rem;">Escenarios estratégicos adaptados</div>
+                                     <div style="display:grid; gap:.75rem;">
+                                         <?php foreach ($inspScenarios as $scenario): ?>
+                                             <?php if (!is_array($scenario) || empty($scenario['aplica'])) continue; ?>
+                                             <div style="padding:.75rem; border:1px solid #fecaca; border-radius:10px; background:#fff;">
+                                                 <div style="font-size:.83rem; font-weight:600; color:#991b1b;"><?= htmlspecialchars((string) ($scenario['titulo'] ?? 'Escenario')) ?></div>
+                                                 <div style="margin-top:.25rem; font-size:.82rem; color:#6b7280;"><?= htmlspecialchars((string) ($scenario['descripcion'] ?? '')) ?></div>
+                                                 <?php if (!empty($scenario['gatillo'])): ?>
+                                                 <div style="margin-top:.35rem; font-size:.82rem; color:#6b7280;"><strong>Cuándo aplica:</strong> <?= htmlspecialchars((string) $scenario['gatillo']) ?></div>
+                                                 <?php endif; ?>
+                                                 <?php if (!empty($scenario['acciones']) && is_array($scenario['acciones'])): ?>
+                                                 <ul style="margin:.45rem 0 0 1rem; font-size:.82rem; color:#7f1d1d;">
+                                                     <?php foreach ($scenario['acciones'] as $accion): ?>
+                                                         <li><?= htmlspecialchars((string) $accion) ?></li>
+                                                     <?php endforeach; ?>
+                                                 </ul>
+                                                 <?php endif; ?>
+                                             </div>
+                                         <?php endforeach; ?>
+                                     </div>
+                                 </div>
+                                 <?php endif; ?>
+                             </div>
+                         <?php endif; ?>
                     </div>
                 </div>
             </div>

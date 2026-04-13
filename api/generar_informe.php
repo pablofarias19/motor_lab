@@ -431,8 +431,24 @@ try {
                 $matriz = is_array($laboral['matriz_riesgo'] ?? null) ? $laboral['matriz_riesgo'] : [];
                 $checklist = is_array($laboral['checklist'] ?? null) ? $laboral['checklist'] : [];
                 $conclusion = is_array($laboral['conclusion_estrategica'] ?? null) ? $laboral['conclusion_estrategica'] : [];
+                $contextoInspectivo = is_array($laboral['contexto_inspectivo'] ?? null) ? $laboral['contexto_inspectivo'] : [];
+                $escenariosLaborales = is_array($laboral['escenarios'] ?? null) ? $laboral['escenarios'] : [];
+
+                if (!empty($contextoInspectivo)) {
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Enfoque inspectivo laboral'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+                    $pdf->MultiCell(0, 4, pdf_latin1(pdf_safe_text((string) ($contextoInspectivo['titulo'] ?? ''))), 0, 'L');
+                    if (!empty($contextoInspectivo['descripcion'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('  Descripción: ' . pdf_safe_text((string) $contextoInspectivo['descripcion'])), 0, 'L');
+                    }
+                    if (!empty($contextoInspectivo['foco_probatorio'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('  Foco probatorio: ' . pdf_safe_text((string) $contextoInspectivo['foco_probatorio'])), 0, 'L');
+                    }
+                }
 
                 if (!empty($matriz)) {
+                    $pdf->Ln(1);
                     $pdf->SetFont('Arial', 'B', 8);
                     $pdf->Cell(0, 5, pdf_latin1('Matriz de riesgo laboral'), 0, 1);
                     $pdf->SetFont('Arial', '', 8);
@@ -480,6 +496,30 @@ try {
                         }
 
                         $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . (string) $valor), 0, 'L');
+                    }
+                }
+
+                if (!empty($escenariosLaborales)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Escenarios estratégicos laborales'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($escenariosLaborales as $escenario) {
+                        if (!is_array($escenario) || empty($escenario['aplica'])) {
+                            continue;
+                        }
+
+                        $pdf->MultiCell(0, 4, pdf_latin1('- ' . pdf_safe_text((string) ($escenario['titulo'] ?? 'Escenario'))), 0, 'L');
+                        if (!empty($escenario['descripcion'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Descripción: ' . pdf_safe_text((string) $escenario['descripcion'])), 0, 'L');
+                        }
+                        if (!empty($escenario['gatillo'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Cuándo aplica: ' . pdf_safe_text((string) $escenario['gatillo'])), 0, 'L');
+                        }
+                        foreach (($escenario['acciones'] ?? []) as $accion) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Acción: ' . pdf_safe_text((string) $accion)), 0, 'L');
+                        }
                     }
                 }
 
@@ -553,7 +593,12 @@ try {
         : [];
 
     if (!empty($arcaReport)) {
-        $pdf->seccion('Informe preventivo de inspección ARCA');
+        $pdf->seccion((string) ($arcaReport['titulo'] ?? 'Informe preventivo de inspección ARCA / MTESS'));
+        if (!empty($arcaReport['subtitulo'])) {
+            $pdf->SetFont('Arial', 'I', 8);
+            $pdf->MultiCell(0, 4, pdf_latin1(pdf_safe_text((string) $arcaReport['subtitulo'])), 0, 'L');
+            $pdf->Ln(1);
+        }
 
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(0, 6, pdf_latin1('1. Identificación del sujeto analizado'), 0, 1);
@@ -572,11 +617,15 @@ try {
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('3. Matriz de riesgo fiscal (ARCA)'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('3. Matriz de riesgo fiscal y laboral (ARCA / MTESS)'), 0, 1);
         foreach (($arcaReport['matriz_riesgo'] ?? []) as $bloque => $detalle) {
             $pdf->SetFont('Arial', 'B', 8);
-            $pdf->Cell(0, 5, pdf_latin1(ucfirst((string) $bloque) . ' - Nivel: ' . pdf_safe_text((string) ($detalle['nivel'] ?? ''))), 0, 1);
+            $tituloBloque = (string) ($detalle['titulo'] ?? ucfirst((string) $bloque));
+            $pdf->Cell(0, 5, pdf_latin1(pdf_safe_text($tituloBloque) . ' - Nivel: ' . pdf_safe_text((string) ($detalle['nivel'] ?? ''))), 0, 1);
             $pdf->SetFont('Arial', '', 8);
+            if (!empty($detalle['referencia'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Referencia: ' . pdf_safe_text((string) $detalle['referencia'])), 0, 'L');
+            }
             foreach (($detalle['items'] ?? []) as $item) {
                 $pdf->MultiCell(0, 4, pdf_latin1('  ' . pdf_estado_arca((string) ($item['estado'] ?? 'sin_dato')) . ' - ' . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
             }
@@ -595,6 +644,15 @@ try {
         $pdf->MultiCell(0, 4, pdf_latin1('Fórmula: ' . pdf_safe_text((string) ($baseCalc['formula'] ?? ''))), 0, 'L');
         $pdf->MultiCell(0, 4, pdf_latin1('Salario real: ' . ml_formato_moneda(floatval($baseCalc['salario_real'] ?? 0)) . ' | Salario declarado: ' . ml_formato_moneda(floatval($baseCalc['salario_declarado'] ?? 0)) . ' | Meses: ' . intval($baseCalc['meses'] ?? 0)), 0, 'L');
         $pdf->MultiCell(0, 4, pdf_latin1('Capital omitido: ' . ml_formato_moneda(floatval($resultadoCalc['capital_omitido'] ?? 0)) . ' | Intereses: ' . ml_formato_moneda(floatval($resultadoCalc['intereses'] ?? 0)) . ' | Multas: ' . ml_formato_moneda(floatval($resultadoCalc['multas'] ?? 0)) . ' | Exposición total: ' . ml_formato_moneda(floatval($resultadoCalc['exposicion_total'] ?? 0))), 0, 'L');
+        foreach (($cuant['presunciones_tributarias'] ?? []) as $nombre => $texto) {
+            $pdf->MultiCell(0, 4, pdf_latin1('Presunción ' . ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . pdf_safe_text((string) $texto)), 0, 'L');
+        }
+        foreach (($cuant['sanciones_administrativas'] ?? []) as $nombre => $texto) {
+            $pdf->MultiCell(0, 4, pdf_latin1('Sanción administrativa - ' . ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . pdf_safe_text((string) $texto)), 0, 'L');
+        }
+        foreach (($cuant['sanciones_penales'] ?? []) as $nombre => $texto) {
+            $pdf->MultiCell(0, 4, pdf_latin1('Sanción penal - ' . ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . pdf_safe_text((string) $texto)), 0, 'L');
+        }
         foreach (($cuant['detalle_montos'] ?? []) as $nombre => $detalleMonto) {
             if (!is_array($detalleMonto)) {
                 continue;
@@ -611,7 +669,18 @@ try {
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('5. Consideraciones legales y 6. IRIL/Diagnóstico jurídico'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('5. Índice de Riesgo Institucional Laboral (IRIL)'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->MultiCell(0, 4, pdf_latin1('IRIL: ' . pdf_safe_text((string) ($arcaReport['iril']['valor'] ?? '0')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['nivel'] ?? '')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['interpretacion'] ?? ''))), 0, 'L');
+        foreach (($arcaReport['iril']['tabla_interpretacion'] ?? []) as $fila) {
+            if (!is_array($fila)) {
+                continue;
+            }
+            $pdf->MultiCell(0, 4, pdf_latin1(pdf_safe_text((string) ($fila['rango'] ?? '')) . ': ' . pdf_safe_text((string) ($fila['descripcion'] ?? ''))), 0, 'L');
+        }
+        $pdf->Ln(1);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->Cell(0, 5, pdf_latin1('Fundamentos legales relevantes'), 0, 1);
         $pdf->SetFont('Arial', '', 8);
         foreach (($arcaReport['consideraciones_legales'] ?? []) as $item) {
             if (!is_array($item)) {
@@ -638,33 +707,39 @@ try {
                 $pdf->MultiCell(0, 4, pdf_latin1('  Impacto en montos: ' . pdf_safe_text((string) $item['impacto_en_montos'])), 0, 'L');
             }
         }
-        $pdf->MultiCell(0, 4, pdf_latin1('IRIL: ' . pdf_safe_text((string) ($arcaReport['iril']['valor'] ?? '0')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['nivel'] ?? '')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['interpretacion'] ?? ''))), 0, 'L');
         foreach (($arcaReport['diagnostico_juridico'] ?? []) as $clave => $valor) {
             $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text((string) $valor)), 0, 'L');
         }
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('7. Escenarios estratégicos'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('6. Escenarios estratégicos y soluciones'), 0, 1);
         $pdf->SetFont('Arial', '', 8);
         foreach (($arcaReport['escenarios_estrategicos'] ?? []) as $esc) {
-            $line = sprintf(
-                '%s. %s - %s (Prioridad: %s)',
-                (string) ($esc['codigo'] ?? ''),
-                (string) ($esc['titulo'] ?? ''),
-                (string) ($esc['detalle'] ?? ''),
-                (string) ($esc['prioridad'] ?? '')
-            );
+            $line = sprintf('%s. %s', (string) ($esc['codigo'] ?? ''), (string) ($esc['titulo'] ?? ''));
             $pdf->MultiCell(0, 4, pdf_latin1(pdf_safe_text($line)), 0, 'L');
+            if (!empty($esc['detalle'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Detalle: ' . pdf_safe_text((string) $esc['detalle'])), 0, 'L');
+            }
+            foreach (($esc['acciones'] ?? []) as $accion) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Acción: ' . pdf_safe_text((string) $accion)), 0, 'L');
+            }
+            if (!empty($esc['prioridad'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Prioridad: ' . pdf_safe_text((string) $esc['prioridad'])), 0, 'L');
+            }
         }
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('8. Checklist y 9. Conclusión estratégica'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('7. Checklist operativo de recursos humanos'), 0, 1);
         $pdf->SetFont('Arial', '', 8);
         foreach (($arcaReport['checklist_inspeccion'] ?? []) as $item) {
             $pdf->MultiCell(0, 4, pdf_latin1((!empty($item['estado']) ? '[x] ' : '[ ] ') . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
         }
+        $pdf->Ln(1);
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('8. Conclusión estratégica'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
         foreach (($arcaReport['conclusion_estrategica'] ?? []) as $clave => $valor) {
             $texto = is_numeric($valor) ? ml_formato_moneda(floatval($valor)) : (string) $valor;
             $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text($texto)), 0, 'L');
@@ -672,7 +747,7 @@ try {
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('10. Modelo de salida (para sistema)'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('9. Modelo de salida (para sistema)'), 0, 1);
         $pdf->SetFont('Courier', '', 7);
         $pdf->MultiCell(
             0,

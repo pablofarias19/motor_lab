@@ -31,11 +31,14 @@ final class LaborInspectionAnalysisBuilderTest extends TestCase
                 'chk_art_vigente' => 'no',
                 'chk_examenes' => 'no',
                 'chk_epp_rgrl' => 'no',
+                'tiene_facturacion' => 'si',
+                'tiene_pago_bancario' => 'si',
                 'meses_no_registrados' => 12,
                 'inspeccion_previa' => 'si',
                 'hay_intercambio' => 'si',
                 'fue_intimado' => 'si',
                 'fraude_evasion_sistematica' => 'si',
+                'fraude_estructura_opaca' => 'si',
                 'probabilidad_condena' => 0.8,
             ],
             [
@@ -65,9 +68,28 @@ final class LaborInspectionAnalysisBuilderTest extends TestCase
         $this->assertTrue(($analysis['laboral']['matriz_riesgo']['condiciones']['puntaje'] ?? 0) >= 4.0);
         $this->assertSame(false, $analysis['laboral']['checklist']['art_vigente']);
         $this->assertTrue(str_contains((string) ($analysis['laboral']['diagnostico']['conclusion_juridica'] ?? ''), 'antecedentes de inspección'));
+        $this->assertSame(
+            'contagio_fiscal_por_operatoria_paralela',
+            $analysis['laboral']['contexto_inspectivo']['codigo'] ?? null
+        );
+        $this->assertTrue(str_contains(
+            strtolower((string) ($analysis['laboral']['contexto_inspectivo']['foco_probatorio'] ?? '')),
+            'desvincular la nómina'
+        ));
         $this->assertSame(2300000.0, floatval($analysis['laboral']['cuantificacion']['riesgo_economico_indirecto'] ?? 0));
         $this->assertSame('total_con_multas', $analysis['laboral']['cuantificacion']['fundamentos_montos']['riesgo_economico_indirecto']['componente_dominante'] ?? null);
-        $this->assertSame(true, $analysis['laboral']['consideraciones_legales'][1]['aplica'] ?? false);
-        $this->assertTrue(str_contains(strtolower((string) ($analysis['laboral']['consideraciones_legales'][1]['titulo'] ?? '')), '132 bis'));
+        $this->assertTrue(str_contains(
+            strtolower((string) ($analysis['laboral']['escenarios']['defensa_administrativa']['titulo'] ?? '')),
+            'descargo técnico'
+        ));
+        $this->assertTrue(str_contains(
+            strtolower((string) ($analysis['laboral']['escenarios']['defensa_administrativa']['descripcion'] ?? '')),
+            'única contraprestación del empleador'
+        ));
+        $this->assertTrue(str_contains(
+            strtolower((string) ($analysis['laboral']['consideraciones_legales'][1]['titulo'] ?? '')),
+            '11.683'
+        ));
+        $this->assertTrue(($analysis['laboral']['consideraciones_legales'][3]['aplica'] ?? false));
     }
 }

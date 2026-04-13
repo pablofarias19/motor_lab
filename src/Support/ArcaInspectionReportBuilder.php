@@ -28,9 +28,9 @@ final class ArcaInspectionReportBuilder
 
         $matriz = [
             'registral' => self::buildRegistralRisk($datos, $documentacion, $situacion, $mesesNoRegistrados, $tipoRegistro),
-            'contributivo' => self::buildContributiveRisk($datos, $documentacion, $situacion, $mesesNoRegistrados, $tipoRegistro),
-            'documental' => self::buildDocumentalRisk($documentacion, $situacion),
+            'contributivo' => self::buildContributiveRisk($datos, $documentacion, $situacion, $mesesNoRegistrados, $tipoRegistro, $alertasPenales),
             'conductual' => self::buildConductualRisk($situacion, $documentacion, $inspeccionPrevia, $senalesFraude, $regularizacionActiva, $regularizacion),
+            'documental' => self::buildThirdPartyRisk($documentacion, $situacion),
         ];
 
         $overall = self::resolveOverallRisk($matriz, $inspeccion, $inspeccionPrevia, $senalesFraude);
@@ -49,32 +49,42 @@ final class ArcaInspectionReportBuilder
         );
 
         return [
+            'titulo' => 'Informe preventivo de inspección ARCA / MTESS',
+            'subtitulo' => 'Modelo estructurado para análisis legal, fiscal y estratégico a nivel operativo',
             'identificacion' => [
                 'razon_social' => self::value($datos['razon_social'] ?? $datos['nombre_empresa'] ?? null),
                 'cuit' => self::value($datos['cuit'] ?? null),
-                'actividad' => self::value($datos['actividad'] ?? $datos['categoria'] ?? null),
+                'actividad_arca' => self::value($datos['actividad'] ?? $datos['categoria'] ?? null),
                 'convenio_colectivo' => self::value($datos['cct'] ?? null),
-                'domicilio_fiscal' => self::value($datos['domicilio_fiscal'] ?? $datos['domicilio'] ?? null),
-                'provincia_jurisdiccion' => self::value($datos['provincia'] ?? null),
+                'domicilio_fiscal_establecimientos' => self::value($datos['domicilio_fiscal'] ?? $datos['domicilio'] ?? null),
                 'cantidad_empleados' => max(1, intval($datos['cantidad_empleados'] ?? ($situacion['cantidad_empleados'] ?? 1))),
                 'fecha_analisis' => date('Y-m-d'),
             ],
             'objeto' => [
-                'Evaluar el riesgo de fiscalización por parte de ARCA (AFIP).',
-                'Medir la exposición fiscal y previsional a partir de los datos cargados.',
-                'Detectar contingencias documentales, registrales y conductuales.',
-                'Priorizar acciones preventivas, correctivas o defensivas.',
-                'Separar el análisis de moratoria (flujo) del eventual blanqueo/valuación de activos (stock).',
+                'Detección de riesgos por empleo no registrado o deficientemente registrado.',
+                'Cuantificación de contingencias fiscales y penales (ARCA / Seguridad Social).',
+                'Alternativas y soluciones preventivas frente a fiscalizaciones y tercerización.',
             ],
             'matriz_riesgo' => $matriz,
             'cuantificacion_contingencia' => [
                 'base_calculo' => [
-                    'formula' => 'Capital omitido = remuneración base imponible x (17% aportes + contribuciones patronales) x meses adeudados',
+                    'formula' => 'Capital omitido = remuneración base imponible x (aportes + contribuciones) x meses adeudados',
                     'salario_real' => round($salarioReal, 2),
                     'salario_declarado' => round($salarioDeclarado, 2),
                     'diferencia_mensual' => round(max(0, $salarioReal - $salarioDeclarado), 2),
                     'meses' => $mesesNoRegistrados,
                     'remuneracion_base_imponible' => round(floatval($inspeccion['desglose']['remuneracion_base_imponible'] ?? $salarioReal), 2),
+                ],
+                'presunciones_tributarias' => [
+                    'ganancias' => 'Se presume ganancia neta equivalente a las remuneraciones no declaradas más el 10% en concepto de renta dispuesta.',
+                    'iva' => 'Se presumen ventas omitidas por el mismo importe (remuneraciones ocultas + 10%), sin generación de crédito fiscal.',
+                ],
+                'sanciones_administrativas' => [
+                    'multas_empleo_no_registrado' => 'Multa graduable por ocupación de personal no registrado.',
+                    'clausura_tributaria_previsional' => 'Puede proceder clausura del establecimiento ante informalidad relevante y reincidencia.',
+                ],
+                'sanciones_penales' => [
+                    'apropiacion_indebida_rrss' => 'La omisión de depositar aportes retenidos puede configurar apropiación indebida de recursos de la seguridad social.',
                 ],
                 'aportes_omitidos' => [
                     'trabajador' => '~17%',
@@ -107,6 +117,12 @@ final class ArcaInspectionReportBuilder
                 'nivel' => $irilNivel['nivel'] ?? 'Moderado',
                 'descripcion' => $irilNivel['descripcion'] ?? '',
                 'interpretacion' => self::interpretIril($irilScore),
+                'tabla_interpretacion' => [
+                    ['rango' => '0 - 2', 'descripcion' => 'Bajo riesgo fiscal y laboral'],
+                    ['rango' => '2 - 3', 'descripcion' => 'Riesgo latente (Tercerización controlada)'],
+                    ['rango' => '3 - 4', 'descripcion' => 'Alta probabilidad de ajustes y multas (Contingencia presunta)'],
+                    ['rango' => '4 - 5', 'descripcion' => 'Contingencia crítica (Riesgo de clausura y denuncia penal)'],
+                ],
             ],
             'diagnostico_juridico' => [
                 'estado_cumplimiento' => self::estadoCumplimiento($overall['label']),
@@ -125,13 +141,16 @@ final class ArcaInspectionReportBuilder
             ],
             'escenarios_estrategicos' => self::buildStrategicScenarios($inspeccionPrevia, $senalesFraude, $recomendacion['label'], $escenariosResult),
             'checklist_inspeccion' => self::buildChecklist($documentacion, $situacion),
+            'checklist_operativo_rrhh' => self::buildChecklist($documentacion, $situacion),
             'consideraciones_legales' => $consideracionesLegales,
             'conclusion_estrategica' => [
                 'nivel_riesgo_general' => $overall['label'],
                 'probabilidad_inspeccion' => $probabilidadInspeccion,
-                'exposicion_economica' => round(floatval($inspeccion['deuda_total'] ?? 0), 2),
+                'exposicion_economica' => 'Muy severa',
+                'impacto_economico_total_estimado' => round(floatval($inspeccion['deuda_total'] ?? 0), 2),
                 'recomendacion_principal' => $recomendacion['label'],
                 'riesgo_penal' => (string) ($alertasPenales['nivel'] ?? 'bajo'),
+                'sintesis' => 'El trabajo no registrado o deficientemente registrado puede detonar multas, clausura y ajuste presuntivo sobre IVA/Ganancias.',
             ],
             'modelo_salida' => [
                 'riesgo_arca' => [
@@ -141,9 +160,9 @@ final class ArcaInspectionReportBuilder
                     'conductual' => $matriz['conductual']['indice_json'],
                 ],
                 'deuda' => [
-                    'capital' => round(floatval($inspeccion['capital_omitido'] ?? 0), 2),
-                    'intereses' => round(floatval($inspeccion['intereses'] ?? 0), 2),
-                    'multas' => round(floatval($inspeccion['multas'] ?? 0), 2),
+                    'capital' => 'Presunción Ganancias + IVA sobre salarios omitidos',
+                    'intereses' => 'Resarcitorios vigentes',
+                    'multas' => 'Multa graduable + posible clausura',
                 ],
                 'moratoria' => [
                     'condonacion_intereses_pct' => intval($regularizacion['condonacion_intereses_pct'] ?? 0),
@@ -168,81 +187,109 @@ final class ArcaInspectionReportBuilder
 
     private static function buildRegistralRisk(array $datos, array $documentacion, array $situacion, int $mesesNoRegistrados, string $tipoRegistro): array
     {
-        $items = [
-            self::stateItem('Alta temprana AFIP', self::state(
-                self::boolish($documentacion['registrado_afip'] ?? 'no') && self::boolish($situacion['chk_alta_sipa'] ?? 'no'),
-                self::boolish($documentacion['registrado_afip'] ?? 'no') ? 'sin_dato' : 'no_cumple'
-            )),
-            self::stateItem('Empleados correctamente registrados', self::state(
-                $tipoRegistro === 'registrado' && $mesesNoRegistrados === 0 && self::boolish($documentacion['registrado_afip'] ?? 'no'),
-                $tipoRegistro === 'registrado' ? 'sin_dato' : 'no_cumple'
-            )),
-            self::stateItem('Categoría laboral adecuada', self::state(
-                !empty($datos['categoria']) && !empty($datos['cct']),
-                'sin_dato'
-            )),
-            self::stateItem('Jornada declarada correcta', self::state(
-                $tipoRegistro === 'registrado' && $mesesNoRegistrados === 0,
-                'sin_dato'
-            )),
-        ];
-
-        return self::compileRiskBlock($items, [
-            $tipoRegistro !== 'registrado' ? 'Se detectó una registración no íntegra del vínculo laboral.' : null,
-            $mesesNoRegistrados > 0 ? 'Hay meses sin registración informados en el formulario.' : null,
-        ]);
-    }
-
-    private static function buildContributiveRisk(array $datos, array $documentacion, array $situacion, int $mesesNoRegistrados, string $tipoRegistro): array
-    {
-        $salarioReal = floatval($datos['salario'] ?? 0);
-        $salarioDeclarado = floatval($datos['salario_recibo'] ?? 0);
-        $hayPagoBancario = self::boolish($documentacion['pago_bancario'] ?? ($situacion['tiene_pago_bancario'] ?? 'no'));
+        $hayDatoMonotributo = array_key_exists('tiene_facturacion', $situacion)
+            || array_key_exists('fraude_facturacion_desproporcionada', $situacion);
+        $hayFacturacionParalela = self::boolish($situacion['tiene_facturacion'] ?? 'no')
+            || self::boolish($situacion['fraude_facturacion_desproporcionada'] ?? 'no');
+        $hayPagosInformales = $tipoRegistro !== 'registrado'
+            || $mesesNoRegistrados > 0
+            || floatval($datos['salario_recibo'] ?? 0) < floatval($datos['salario'] ?? 0);
 
         $items = [
-            self::stateItem('Declaraciones F931 consistentes', self::state(
-                $tipoRegistro === 'registrado' && $mesesNoRegistrados === 0 && !self::boolish($situacion['falta_f931_art'] ?? 'no'),
-                $mesesNoRegistrados > 0 ? 'no_cumple' : 'sin_dato'
+            self::stateItem('Inexistencia de empleados encubiertos bajo prestadores / monotributistas', self::state(
+                $hayDatoMonotributo && !$hayFacturacionParalela,
+                'sin_dato'
             )),
-            self::stateItem('Remuneraciones correctamente declaradas', self::state(
-                $tipoRegistro === 'registrado' && ($salarioDeclarado <= 0 || $salarioDeclarado >= $salarioReal),
-                $tipoRegistro === 'deficiente_salario' ? 'no_cumple' : 'sin_dato'
-            )),
-            self::stateItem('Pagos bancarizados', self::state($hayPagoBancario, 'sin_dato')),
-            self::stateItem('Sin pagos en negro', self::state(
-                $tipoRegistro === 'registrado' && $mesesNoRegistrados === 0,
+            self::stateItem('Ausencia de pagos informales o diferencias salariales no declaradas', self::state(
+                !$hayPagosInformales,
                 'no_cumple'
             )),
         ];
 
         return self::compileRiskBlock($items, [
-            $salarioDeclarado > 0 && $salarioDeclarado < $salarioReal
-                ? 'El salario declarado es inferior al salario real informado.'
-                : null,
-            !$hayPagoBancario ? 'No surge evidencia suficiente de pagos íntegramente bancarizados.' : null,
+            'titulo' => 'Riesgo de Registración y "Realidad Económica"',
+            'referencia' => 'Art. 2, Ley 11.683',
+            'observaciones' => [
+                $tipoRegistro !== 'registrado' ? 'Se detectó una registración no íntegra del vínculo laboral.' : null,
+                $mesesNoRegistrados > 0 ? 'Hay meses sin registración informados en el formulario.' : null,
+                'El Fisco puede prescindir de las formas jurídicas si la realidad subyacente exhibe dependencia no registrada.',
+            ],
         ]);
     }
 
-    private static function buildDocumentalRisk(array $documentacion, array $situacion): array
+    private static function buildContributiveRisk(
+        array $datos,
+        array $documentacion,
+        array $situacion,
+        int $mesesNoRegistrados,
+        string $tipoRegistro,
+        array $alertasPenales
+    ): array
     {
+        $salarioReal = floatval($datos['salario'] ?? 0);
+        $salarioDeclarado = floatval($datos['salario_recibo'] ?? 0);
+        $retencionesCorrectas = !self::boolish($situacion['hay_apropiacion_indebida'] ?? 'no')
+            && !self::boolish($situacion['falta_f931_art'] ?? 'no');
+        $depositoEnTermino = $mesesNoRegistrados === 0
+            && !self::boolish($situacion['falta_f931_art'] ?? 'no')
+            && floatval($alertasPenales['aporte_retenido_mensual'] ?? 0) <= 0;
+
         $items = [
-            self::stateItem('Recibos firmados', self::state(self::boolish($situacion['chk_recibos_cct'] ?? 'no'), 'sin_dato')),
-            self::stateItem('Libro de sueldos digital actualizado', self::state(self::boolish($situacion['chk_libro_art52'] ?? 'no'), 'sin_dato')),
-            self::stateItem('Contratos laborales disponibles', self::state(
-                self::boolish($documentacion['tiene_contrato'] ?? 'no')
-                    || self::boolish($documentacion['contrato_escrito'] ?? ($situacion['tiene_contrato_escrito'] ?? 'no')),
+            self::stateItem('Retenciones de aportes salariales practicadas correctamente', self::state(
+                $retencionesCorrectas,
+                'no_cumple'
+            )),
+            self::stateItem('Depósito de aportes y contribuciones dentro de los 10 días hábiles', self::state(
+                $depositoEnTermino,
+                'no_cumple'
+            )),
+        ];
+
+        return self::compileRiskBlock($items, [
+            'titulo' => 'Riesgo Contributivo y Retenciones (Penal Tributario)',
+            'referencia' => 'Art. 9, Régimen Penal Tributario',
+            'observaciones' => [
+                $salarioDeclarado > 0 && $salarioDeclarado < $salarioReal
+                    ? 'El salario declarado es inferior al salario real informado.'
+                    : null,
+                'La omisión de depositar aportes retenidos puede configurar apropiación indebida de recursos de la seguridad social.',
+            ],
+        ]);
+    }
+
+    private static function buildThirdPartyRisk(array $documentacion, array $situacion): array
+    {
+        $hayDatoControl = array_key_exists('control_documental', $situacion)
+            || array_key_exists('control_operativo', $situacion)
+            || array_key_exists('tiene_contrato', $documentacion);
+        $hayDatoArt = array_key_exists('chk_art_vigente', $situacion)
+            || array_key_exists('falta_f931_art', $situacion);
+        $controlMensual = self::boolish($situacion['control_documental'] ?? 'no')
+            && self::boolish($situacion['control_operativo'] ?? 'no')
+            && self::boolish($documentacion['tiene_contrato'] ?? 'no');
+        $artTercerizados = self::boolish($situacion['chk_art_vigente'] ?? 'no')
+            && !self::boolish($situacion['falta_f931_art'] ?? 'no');
+
+        $items = [
+            self::stateItem('Exigencia mensual de CUIL, recibos firmados, F.931 y pagos bancarizados', self::state(
+                $hayDatoControl && $controlMensual,
                 'sin_dato'
             )),
-            self::stateItem('ART vigente', self::state(
-                self::boolish($situacion['chk_art_vigente'] ?? 'no')
-                    || (($situacion['estado_art'] ?? 'activa_valida') !== 'inexistente'),
+            self::stateItem('Verificación de póliza de ART de personal tercerizado', self::state(
+                $hayDatoArt && $artTercerizados,
                 'sin_dato'
             )),
         ];
 
         return self::compileRiskBlock($items, [
-            !self::boolish($situacion['chk_examenes'] ?? 'no') ? 'No se validó soporte completo de exámenes preocupacionales/periódicos.' : null,
-            !self::boolish($situacion['chk_epp_rgrl'] ?? 'no') ? 'Falta confirmación de EPP y cumplimiento de higiene y seguridad.' : null,
+            'titulo' => 'Riesgo por Tercerización (Art. 30 LCT)',
+            'referencia' => 'Art. 30 LCT',
+            'observaciones' => [
+                self::boolish($situacion['actividad_esencial'] ?? 'no') || self::boolish($situacion['integracion_estructura'] ?? 'no')
+                    ? 'La actividad tercerizada aparece integrada al giro principal, elevando la solidaridad potencial.'
+                    : null,
+                'La obligación de control documental es irrenunciable e indelegable para la empresa principal.',
+            ],
         ]);
     }
 
@@ -255,25 +302,32 @@ final class ArcaInspectionReportBuilder
         array $regularizacion
     ): array
     {
+        $hayDatoRequerimientos = array_key_exists('incumplio_requerimientos_arca', $situacion);
         $items = [
-            self::stateItem('Sin antecedentes sancionatorios', self::state(!$inspeccionPrevia && !$senalesFraude, $senalesFraude ? 'no_cumple' : 'sin_dato')),
-            self::stateItem('Sin inspecciones previas relevantes', self::state(!$inspeccionPrevia, $inspeccionPrevia ? 'no_cumple' : 'cumple')),
-            self::stateItem('Sin juicios laborales activos significativos', self::state(
-                !self::boolish($documentacion['tiene_telegramas'] ?? 'no') && !$senalesFraude,
+            self::stateItem('Respuestas a requerimientos de AFIP / ARCA en plazo legal', self::state(
+                $hayDatoRequerimientos && !self::boolish($situacion['incumplio_requerimientos_arca'] ?? 'no'),
+                'sin_dato'
+            )),
+            self::stateItem('Personal instruido frente a encuestas o relevamientos in situ', self::state(
+                self::boolish($situacion['personal_instruido_inspeccion'] ?? 'no'),
                 'sin_dato'
             )),
         ];
 
         return self::compileRiskBlock($items, [
-            $inspeccionPrevia ? 'La empresa declaró inspecciones/auditorías previas, lo que incrementa exposición conductual.' : null,
-            $senalesFraude ? 'Se activaron señales internas compatibles con evasión o maniobras irregulares.' : null,
-            $regularizacionActiva ? 'La adhesión a Ley 27.743 no debe computarse como antecedente negativo autónomo.' : null,
-            self::boolish($regularizacion['plan_caducado'] ?? false)
-                ? 'La caducidad del plan reabre contingencia penal y prescriptiva.'
-                : null,
-            self::boolish($situacion['obligaciones_aduaneras'] ?? 'no')
-                ? 'Si hay deuda aduanera, la novación exige pesificación previa a la regularización.'
-                : null,
+            'titulo' => 'Riesgo Operativo en Inspecciones (Conductual)',
+            'referencia' => 'Arts. 35 y 39 Ley 11.683',
+            'observaciones' => [
+                $inspeccionPrevia ? 'La empresa declaró inspecciones previas, lo que incrementa exposición conductual.' : null,
+                $senalesFraude ? 'Se activaron señales internas compatibles con evasión o maniobras irregulares.' : null,
+                $regularizacionActiva ? 'La regularización espontánea atenúa riesgo pero no sustituye el protocolo de respuesta inspectiva.' : null,
+                self::boolish($regularizacion['plan_caducado'] ?? false)
+                    ? 'La caducidad del plan reabre contingencia penal y prescriptiva.'
+                    : null,
+                self::boolish($situacion['obligaciones_aduaneras'] ?? 'no')
+                    ? 'Si hay deuda aduanera, la novación exige pesificación previa a la regularización.'
+                    : null,
+            ],
         ]);
     }
 
@@ -399,41 +453,56 @@ final class ArcaInspectionReportBuilder
 
         return [
             [
+                'titulo' => 'Art. 2 Ley 11.683 - Realidad económica',
+                'aplica' => $hayDeficienciaRegistral,
+                'estado' => $hayDeficienciaRegistral ? 'Aplica' : 'Aplicación condicionada',
+                'motivo' => $hayDeficienciaRegistral
+                    ? 'La autoridad fiscal puede desestimar la forma jurídica cuando la operatoria encubre una relación de dependencia real.'
+                    : 'Sin desajustes registrales materiales, la recaracterización por realidad económica pierde intensidad.',
+                'impacto_en_montos' => 'Sostiene la presunción de Ganancias e IVA sobre remuneraciones omitidas.',
+            ],
+            [
+                'titulo' => 'Art. 9 Régimen Penal Tributario',
+                'aplica' => floatval($alertasPenales['aporte_retenido_mensual'] ?? 0) > 0 || self::boolish($situacion['hay_apropiacion_indebida'] ?? 'no'),
+                'estado' => (floatval($alertasPenales['aporte_retenido_mensual'] ?? 0) > 0 || self::boolish($situacion['hay_apropiacion_indebida'] ?? 'no'))
+                    ? 'Riesgo penal activo'
+                    : 'Sin activación relevante',
+                'motivo' => 'La omisión de depositar aportes retenidos dentro del plazo legal puede configurar apropiación indebida de recursos de la seguridad social.',
+                'impacto_en_montos' => 'Eleva la exposición por sanción penal y exige reacción temprana de regularización o defensa.',
+            ],
+            [
+                'titulo' => 'Arts. 35 y 39 Ley 11.683',
+                'aplica' => true,
+                'estado' => 'Aplica',
+                'motivo' => 'Regulan facultades de fiscalización, requerimientos y sanciones ante resistencia o incumplimiento del inspeccionado.',
+                'impacto_en_montos' => 'Explican el riesgo conductual y la necesidad de un protocolo interno ante encuestas y relevamientos.',
+            ],
+            [
+                'titulo' => 'Art. 30 LCT',
+                'aplica' => self::boolish($situacion['actividad_esencial'] ?? 'no')
+                    || self::boolish($situacion['integracion_estructura'] ?? 'no')
+                    || !self::boolish($situacion['control_documental'] ?? 'si'),
+                'estado' => (
+                    self::boolish($situacion['actividad_esencial'] ?? 'no')
+                    || self::boolish($situacion['integracion_estructura'] ?? 'no')
+                    || !self::boolish($situacion['control_documental'] ?? 'si')
+                ) ? 'Aplica / requiere control estricto' : 'Aplicación preventiva',
+                'motivo' => 'La empresa principal debe exigir mensualmente documentación del contratista y controlar ART, F.931 y pagos bancarizados.',
+                'impacto_en_montos' => 'Puede proyectar solidaridad laboral y previsional sobre la principal si falla la barrera documental.',
+            ],
+            [
                 'titulo' => 'Ley Bases Nº 27.742',
                 'aplica' => $aplicaLeyBases,
-                'estado' => $aplicaLeyBases ? 'Aplica de modo referencial' : 'No aplica directamente',
+                'estado' => $aplicaLeyBases ? 'Aplica de modo referencial' : 'No altera el núcleo del cálculo',
                 'motivo' => $aplicaLeyBases
-                    ? 'Se informó adhesión/regularización laboral, por lo que el informe aclara que no suma multas laborales suspendidas ajenas a la deuda previsional.'
-                    : 'La deuda ARCA aquí cuantificada responde a seguridad social y fiscalización previsional; no depende de las multas indemnizatorias suspendidas por Ley Bases.',
-                'impacto_en_montos' => 'Los montos del informe ARCA provienen de capital, intereses y multas previsionales; no se agregan multas laborales de despido por esta vía.',
-            ],
-            [
-                'titulo' => 'Art. 132 bis LCT',
-                'aplica' => $hayDeficienciaRegistral,
-                'estado' => $hayDeficienciaRegistral ? 'Puede coexistir' : 'No surge aplicación directa',
-                'motivo' => $hayDeficienciaRegistral
-                    ? 'La deficiencia registral puede abrir una contingencia laboral paralela, aunque distinta de la deuda previsional cuantificada por ARCA.'
-                    : 'Sin deficiencia registral material, no aparece una vía laboral autónoma relevante por este artículo.',
-                'impacto_en_montos' => 'No se suma dentro de capital/intereses/multas ARCA; debe leerse como contingencia laboral complementaria.',
-            ],
-            [
-                'titulo' => 'Jurisprudencia Ackerman (Marzo 2026)',
-                'aplica' => false,
-                'estado' => 'No aplica directamente',
-                'motivo' => 'La doctrina Ackerman corrige bases indemnizatorias ligadas a RIPTE/IPC y no altera el cálculo de deuda previsional aquí usado.',
-                'impacto_en_montos' => 'No modificó capital omitido, intereses ni multas del informe ARCA.',
-            ],
-            [
-                'titulo' => 'Baremo Lois (Marzo 2026)',
-                'aplica' => false,
-                'estado' => 'No aplica directamente',
-                'motivo' => 'El Baremo Lois se vincula con daño moral y culpa grave en vía civil, no con deuda previsional o fiscalización ARCA.',
-                'impacto_en_montos' => 'No se adicionó agravamiento civil sobre los importes previsionales estimados.',
+                    ? 'La regularización espontánea mejora la posición defensiva y atenúa sanciones laborales relacionadas.'
+                    : 'El núcleo de este informe sigue siendo fiscal/previsional y no depende de multas indemnizatorias suspendidas.',
+                'impacto_en_montos' => 'Opera como marco contextual de regularización, no como fuente principal del capital omitido.',
             ],
         ];
     }
 
-    private static function compileRiskBlock(array $items, array $observaciones = []): array
+    private static function compileRiskBlock(array $items, array $options = []): array
     {
         $weights = ['cumple' => 0.0, 'sin_dato' => 0.5, 'no_cumple' => 1.0];
         $score = 0.0;
@@ -446,43 +515,47 @@ final class ArcaInspectionReportBuilder
         [$label, $jsonIndex] = self::riskLabelAndIndex($avg);
 
         return [
+            'titulo' => (string) ($options['titulo'] ?? ''),
+            'referencia' => (string) ($options['referencia'] ?? ''),
             'nivel' => $label,
             'indice_json' => $jsonIndex,
             'items' => $items,
-            'observaciones' => array_values(array_filter($observaciones)),
+            'observaciones' => array_values(array_filter($options['observaciones'] ?? [])),
         ];
     }
 
     private static function buildStrategicScenarios(bool $inspeccionPrevia, bool $senalesFraude, string $recomendacion, array $escenariosResult): array
     {
-        $escenarioD = is_array($escenariosResult['escenarios']['D'] ?? null) ? $escenariosResult['escenarios']['D'] : [];
-
         return [
             [
                 'codigo' => 'A',
-                'titulo' => 'Regularización espontánea',
-                'detalle' => 'Antes de la inspección y con foco en reducir sanciones, intereses y exposición penal tributaria.',
-                'prioridad' => $inspeccionPrevia ? 'Media' : 'Alta',
+                'titulo' => 'Solución Preventiva: Auditoría de Contratación y Subcontratación',
+                'detalle' => 'Revisar monotributistas exclusivos y desplazar estructuras jurídicas inadecuadas.',
+                'acciones' => [
+                    'Relevar contratos de locación o facturación paralela que puedan encubrir dependencia.',
+                    'Implementar control mensual de F.931, pagos bancarizados y ART para contratistas.',
+                ],
+                'prioridad' => ($senalesFraude || $inspeccionPrevia) ? 'Alta' : 'Media',
             ],
             [
                 'codigo' => 'B',
-                'titulo' => 'Fiscalización activa',
-                'detalle' => 'Supuesto de determinación de oficio, multas plenas e intereses con menor margen de corrección.',
-                'prioridad' => ($inspeccionPrevia || $senalesFraude) ? 'Alta' : 'Media',
+                'titulo' => 'Solución Correctiva: Regularización Espontánea',
+                'detalle' => 'Registrar al personal detectado antes de la inspección para reducir sanciones y mejorar defensa.',
+                'acciones' => [
+                    'Regularizar íntegramente las relaciones laborales detectadas internamente.',
+                    'Preparar documentación para audiencia de descargo y atenuación de multas.',
+                ],
+                'prioridad' => $recomendacion === 'Compliance Laboral-Tributario Inmediato' ? 'Muy alta' : 'Alta',
             ],
             [
                 'codigo' => 'C',
-                'titulo' => 'Defensa administrativa',
-                'detalle' => 'Preparación de descargo, trazabilidad documental y producción de prueba frente a requerimientos.',
-                'prioridad' => $inspeccionPrevia ? 'Alta' : 'Media',
-            ],
-            [
-                'codigo' => 'D',
-                'titulo' => 'Estrategia preventiva (compliance)',
-                'detalle' => !empty($escenarioD['descripcion'])
-                    ? (string) $escenarioD['descripcion']
-                    : 'Auditoría interna, regularización estructural y reducción de contingencias futuras.',
-                'prioridad' => $recomendacion === 'Regularización inmediata' ? 'Alta' : 'Muy alta',
+                'titulo' => 'Solución Operativa ante Fiscalización in situ',
+                'detalle' => 'Protocolo de recepción de inspectores, identificación de firmantes y producción inmediata de prueba propia.',
+                'acciones' => [
+                    'Centralizar respuestas ante requerimientos y encuestas de personal.',
+                    'Recolectar asistencia, recibos, biometría y soportes internos para desvirtuar manifestaciones inexactas.',
+                ],
+                'prioridad' => ($inspeccionPrevia || $senalesFraude) ? 'Muy alta' : 'Alta',
             ],
         ];
     }
@@ -490,36 +563,44 @@ final class ArcaInspectionReportBuilder
     private static function buildChecklist(array $documentacion, array $situacion): array
     {
         return [
-            ['label' => 'Alta AFIP correcta', 'estado' => self::boolish($situacion['chk_alta_sipa'] ?? 'no')],
-            ['label' => 'F931 presentados', 'estado' => !self::boolish($situacion['falta_f931_art'] ?? 'no')],
-            ['label' => 'Recibos firmados', 'estado' => self::boolish($situacion['chk_recibos_cct'] ?? 'no')],
-            ['label' => 'Libro de sueldos digital', 'estado' => self::boolish($situacion['chk_libro_art52'] ?? 'no')],
-            ['label' => 'ART vigente', 'estado' => self::boolish($situacion['chk_art_vigente'] ?? 'no')],
-            ['label' => 'Pagos bancarizados', 'estado' => self::boolish($documentacion['pago_bancario'] ?? ($situacion['tiene_pago_bancario'] ?? 'no'))],
-            ['label' => 'Contratos laborales', 'estado' => self::boolish($documentacion['tiene_contrato'] ?? ($documentacion['contrato_escrito'] ?? 'no'))],
-            ['label' => 'Certificaciones de servicios', 'estado' => self::boolish($documentacion['tiene_telegramas'] ?? 'no')],
+            ['label' => 'Nómina 100% registrada en Sistema Registral', 'estado' => self::boolish($situacion['chk_alta_sipa'] ?? 'no') && self::boolish($documentacion['registrado_afip'] ?? 'no')],
+            ['label' => 'Recibos de sueldo firmados y coincidentes con pagos bancarios', 'estado' => self::boolish($situacion['chk_recibos_cct'] ?? 'no') && self::boolish($documentacion['pago_bancario'] ?? ($situacion['tiene_pago_bancario'] ?? 'no'))],
+            ['label' => 'Libro de Sueldos Digital al día', 'estado' => self::boolish($situacion['chk_libro_art52'] ?? 'no')],
+            ['label' => 'Sin facturación correlativa de monotributistas internos', 'estado' => !self::boolish($situacion['tiene_facturacion'] ?? 'no')],
+            ['label' => 'F.931 dentro de los 10 días para evitar riesgo penal', 'estado' => !self::boolish($situacion['falta_f931_art'] ?? 'no')],
+            ['label' => 'Archivo documental mensual de contratistas / tercerizados', 'estado' => self::boolish($situacion['control_documental'] ?? 'no') || self::boolish($documentacion['tiene_contrato'] ?? 'no')],
         ];
     }
 
     private static function resolveOverallRisk(array $matriz, array $inspeccion, bool $inspeccionPrevia, bool $senalesFraude): array
     {
-        $levels = array_column($matriz, 'nivel');
+        $riskIndices = array_map(static fn(array $bloque): int => intval($bloque['indice_json'] ?? 1), $matriz);
         $capital = floatval($inspeccion['capital_omitido'] ?? 0);
         $multas = floatval($inspeccion['multas'] ?? 0);
+        $riskCount = count($riskIndices);
+        $promedio = $riskCount > 0 ? array_sum($riskIndices) / $riskCount : 1.0;
 
-        if (in_array('Alto', $levels, true) || $senalesFraude || $inspeccionPrevia || $multas > 0) {
-            return ['label' => 'Alto'];
+        if ($promedio >= 4.3 || ($promedio >= 4.0 && ($senalesFraude || $inspeccionPrevia) && $multas > 0)) {
+            return ['label' => 'Crítico', 'indice' => 5];
         }
 
-        if (in_array('Medio', $levels, true) || $capital > 0) {
-            return ['label' => 'Medio'];
+        if ($promedio >= 3.2 || $capital > 0 || $multas > 0 || $senalesFraude || $inspeccionPrevia) {
+            return ['label' => 'Alto', 'indice' => 4];
         }
 
-        return ['label' => 'Bajo'];
+        if ($promedio >= 2.2) {
+            return ['label' => 'Medio', 'indice' => 3];
+        }
+
+        return ['label' => 'Bajo', 'indice' => 1];
     }
 
     private static function probabilidadInspeccion(string $overallRisk, bool $inspeccionPrevia, bool $senalesFraude, int $mesesNoRegistrados): string
     {
+        if ($overallRisk === 'Crítico') {
+            return 'Muy alta';
+        }
+
         if ($overallRisk === 'Alto' || $inspeccionPrevia || $senalesFraude || $mesesNoRegistrados >= 6) {
             return 'Alta';
         }
@@ -533,37 +614,41 @@ final class ArcaInspectionReportBuilder
 
     private static function resolveRecommendation(string $overallRisk, bool $inspeccionPrevia, bool $senalesFraude, int $mesesNoRegistrados): array
     {
-        if ($overallRisk === 'Alto' || $inspeccionPrevia || $senalesFraude || $mesesNoRegistrados >= 6) {
-            return ['label' => 'Regularización inmediata', 'code' => 'regularizacion_inmediata'];
+        if ($overallRisk === 'Crítico' || $overallRisk === 'Alto' || $inspeccionPrevia || $senalesFraude || $mesesNoRegistrados >= 6) {
+            return [
+                'label' => 'Compliance Laboral-Tributario Inmediato',
+                'code' => 'compliance_laboral_y_regularizacion_espontanea',
+            ];
         }
 
         if ($overallRisk === 'Medio' || $mesesNoRegistrados > 0) {
             return ['label' => 'Auditoría preventiva', 'code' => 'auditoria_preventiva'];
         }
 
-        return ['label' => 'Defensa estructurada', 'code' => 'defensa_estructurada'];
+        return ['label' => 'Monitoreo documentado', 'code' => 'monitoreo_documentado'];
     }
 
     private static function interpretIril(float $score): string
     {
         if ($score < 2.0) {
-            return 'Bajo riesgo fiscal';
+            return 'Bajo riesgo fiscal y laboral';
         }
 
         if ($score < 3.0) {
-            return 'Riesgo latente';
+            return 'Riesgo latente (Tercerización controlada)';
         }
 
         if ($score < 4.0) {
-            return 'Alta probabilidad de inspección';
+            return 'Alta probabilidad de ajustes y multas (Contingencia presunta)';
         }
 
-        return 'Contingencia crítica';
+        return 'Contingencia crítica (Riesgo de clausura y denuncia penal)';
     }
 
     private static function estadoCumplimiento(string $overallRisk): string
     {
         return match ($overallRisk) {
+            'Crítico' => 'Cumplimiento crítico / exposición severa',
             'Alto' => 'Cumplimiento crítico / irregular',
             'Medio' => 'Cumplimiento parcial con observaciones',
             default => 'Cumplimiento formal aceptable',
@@ -586,7 +671,7 @@ final class ArcaInspectionReportBuilder
     private static function buildLegalConclusion(string $overallRisk, string $probabilidadInspeccion, string $recomendacion): string
     {
         return sprintf(
-            'El cuadro actual refleja un riesgo %s con probabilidad %s de inspección. La prioridad jurídica sugerida es: %s.',
+            'El cuadro actual refleja un riesgo %s con probabilidad %s de fiscalización. La prioridad jurídica sugerida es: %s.',
             strtolower($overallRisk),
             strtolower($probabilidadInspeccion),
             $recomendacion
@@ -628,15 +713,23 @@ final class ArcaInspectionReportBuilder
 
     private static function riskLabelAndIndex(float $avg): array
     {
-        if ($avg <= 0.25) {
-            return ['Bajo', 0];
+        if ($avg <= 0.10) {
+            return ['Bajo', 1];
+        }
+
+        if ($avg <= 0.35) {
+            return ['Bajo', 2];
         }
 
         if ($avg <= 0.60) {
-            return ['Medio', 1];
+            return ['Medio', 3];
         }
 
-        return ['Alto', 2];
+        if ($avg <= 0.85) {
+            return ['Alto', 4];
+        }
+
+        return ['Crítico', 5];
     }
 
     private static function boolish($value): bool
