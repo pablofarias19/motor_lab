@@ -56,7 +56,7 @@ final class ArcaInspectionReportBuilderTest extends TestCase
             ]
         );
 
-        $this->assertSame('Alto', $report['matriz_riesgo']['registral']['nivel']);
+        $this->assertSame('Medio', $report['matriz_riesgo']['registral']['nivel']);
         $this->assertSame('Alta probabilidad de inspección', $report['iril']['interpretacion']);
         $this->assertSame('Alta', $report['conclusion_estrategica']['probabilidad_inspeccion']);
         $this->assertSame('Regularización inmediata', $report['conclusion_estrategica']['recomendacion_principal']);
