@@ -154,6 +154,12 @@ class ExposicionEngine
 
                 $notaLRT = "Fórmula LRT: {$analisisArt['formula_legal']} = " . ml_formato_moneda(floatval($analisisArt['monto_formula'] ?? 0)) . ".";
                 $notaLRT .= " IBM/VIB: " . ml_formato_moneda(floatval($analisisArt['ibm'] ?? $salario)) . ".";
+                if (!empty($analisisArt['nota'])) {
+                    $notaLRT .= ' ' . trim((string) $analisisArt['nota']);
+                }
+                if (!empty($analisisArt['ripte_referencia'])) {
+                    $notaLRT .= " RIPTE ref.: " . number_format(floatval($analisisArt['ripte_referencia']), 2, ',', '.') . ".";
+                }
                 if (!empty($analisisArt['fecha_siniestro'])) {
                     $notaLRT .= " PMI/siniestro: {$analisisArt['fecha_siniestro']}.";
                 }
@@ -169,8 +175,8 @@ class ExposicionEngine
                     'monto' => round($montoLRT, 2),
                     'base_legal' => 'Art. 14.2.a Ley 24.557 + Ley 26.773 (pisos RIPTE)',
                     'nota' => $notaLRT,
-                    'detalle_calculo' => $analisisArt,
-                ];
+                     'detalle_calculo' => $analisisArt,
+                 ];
 
                 // ═══ VÍA CIVIL: Fórmula Méndez + reparación integral orientativa ═══
                 $estimacionCivil = $this->calcularEstimacionCivilIntegral(
@@ -206,10 +212,13 @@ class ExposicionEngine
                     'monto' => 0.0,
                     'base_legal' => 'Trazabilidad interna del motor',
                     'nota' => sprintf(
-                        'Fuente RIPTE: %s. Cálculo %s. Tratamiento: %s. %s',
+                        'Fuente RIPTE: %s. Cálculo %s. Tratamiento: %s. %s%s',
                         $analisisArt['fuente_ripte'] ?? 'no_disponible',
                         !empty($analisisArt['calculo_estimado']) ? 'estimado' : 'completo',
                         $analisisArt['tratamiento'] ?? 'pago_unico',
+                        trim((string) ($analisisArt['nota'] ?? '')) !== ''
+                            ? trim((string) $analisisArt['nota']) . ' '
+                            : '',
                         !empty($analisisArt['necesita_comision_medica']) ? 'Falta dictamen firme de Comisión Médica.' : 'Dictamen/porcentaje consolidado.'
                     ),
                     'detalle_calculo' => $analisisArt,
@@ -660,6 +669,8 @@ class ExposicionEngine
                     'disponible' => true,
                     'tipo' => 'integral_excluyente',
                     'monto_integral_referencial' => round($civilExcluyente, 2),
+                    'monto_reclamo_mendez' => round($civilExcluyente, 2),
+                    'referencia_principal' => $tieneArt && $montoCivilComplementario !== null ? 'mendez_integral' : 'escenarios',
                     'escenarios' => [
                         'conservador' => round($civilConservador, 2),
                         'probable' => round($civilProbable, 2),
@@ -672,6 +683,7 @@ class ExposicionEngine
                     'opcion_excluyente' => true,
                     'via_recomendada' => $viaRecomendada,
                     'diferencia_probable_vs_art' => round($civilProbable - $montoArt, 2),
+                    'diferencia_mendez_vs_art' => round($civilExcluyente - $montoArt, 2),
                     'estrategia_sugerida' => $viaRecomendada === 'art'
                         ? 'Priorizar tarifa ART y reservar la vía civil para supuestos con prueba reforzada.'
                         : 'Analizar la vía civil porque la exposición probable supera materialmente a la tarifa ART y hay contexto jurídico favorable.',
@@ -689,6 +701,7 @@ class ExposicionEngine
                 'exposicion_civil_conservadora' => round($civilConservador, 2),
                 'exposicion_civil_probable' => round($civilProbable, 2),
                 'exposicion_civil_agresiva' => round($civilAgresivo, 2),
+                'exposicion_civil_mendez' => round($civilExcluyente, 2),
                 'exposicion_civil_integral_referencial' => round($civilExcluyente, 2),
                 'exposicion_maxima_real_con_costas' => round($maximoReal, 2),
                 'estrategia_sugerida' => $viaRecomendada,

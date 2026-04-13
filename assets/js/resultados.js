@@ -850,6 +850,10 @@ function _renderTablaExposicion(exposicion) {
     const estrategiaSugeridaHtml = estrategiaSugerida === 'art'
         ? '<abbr title="Aseguradora de Riesgos del Trabajo">ART</abbr>'
         : 'CIVIL';
+    const reclamoCivilMendez = resultadosClave.exposicion_civil_mendez
+        || resultadosClave.exposicion_civil_integral_referencial
+        || resultadosClave.exposicion_civil_probable
+        || 0;
     const resumenFooter = resultadosClave.exposicion_maxima_real_con_costas
         ? `
             <tr class="total-base">
@@ -857,8 +861,8 @@ function _renderTablaExposicion(exposicion) {
                 <td><strong>${_formatearMoneda(resultadosClave.exposicion_art_segura || 0)}</strong></td>
             </tr>
             <tr class="total-base">
-                <td colspan="2"><strong>Exposición civil probable</strong></td>
-                <td><strong>${_formatearMoneda(resultadosClave.exposicion_civil_probable || 0)}</strong></td>
+                <td colspan="2"><strong>Reclamo civil Méndez</strong></td>
+                <td><strong>${_formatearMoneda(reclamoCivilMendez)}</strong></td>
             </tr>
             <tr class="total-multas">
                 <td colspan="2"><strong>Exposición máxima real con costas</strong></td>
