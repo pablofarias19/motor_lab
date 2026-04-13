@@ -54,8 +54,16 @@ class ExposicionEngine
         $antiguedadM = intval($datosLaborales['antiguedad_meses'] ?? 0);
         $antiguedadA = $antiguedadM / 12;
 
+        $conflictosDespido = ['despido_sin_causa', 'despido_con_causa', 'trabajo_no_registrado', 'reclamo_indemnizatorio'];
         // Mes actual para SAC proporcional
         $mesActual = intval(date('n'));
+        // Cualquier indicio positivo de desvinculación activa estos conceptos.
+        // La normalización del payload limpia combinaciones incompatibles
+        // (por ejemplo, diferencias salariales con campos residuales de despido),
+        // y acá mantenemos un criterio defensivo para integraciones legacy.
+        $hayDesvinculacion = in_array($tipoConflicto, $conflictosDespido, true)
+            || (($situacion['ya_despedido'] ?? 'no') === 'si')
+            || !empty($situacion['fecha_despido']);
 
         $conceptos = [];
         $modeloDominio = [];
@@ -64,7 +72,6 @@ class ExposicionEngine
         // ─────────────────────────────────────────────────────────────────────
         // 1. CASOS DE DESVINCULACIÓN (LCT pura)
         // ─────────────────────────────────────────────────────────────────────
-        $conflictosDespido = ['despido_sin_causa', 'despido_con_causa', 'trabajo_no_registrado', 'reclamo_indemnizatorio'];
 
         if (in_array($tipoConflicto, $conflictosDespido)) {
             // Indemnización por antigüedad (Art. 245 LCT)
@@ -98,8 +105,8 @@ class ExposicionEngine
         // 2. CONCEPTOS ADICIONALES Y MULTAS (Según caso)
         // ─────────────────────────────────────────────────────────────────────
 
-        // SAC y Vacaciones proporcionales (Aplican a casi todo conflicto activo de desvinculación o duda)
-        if (in_array($tipoConflicto, array_merge($conflictosDespido, ['diferencias_salariales']))) {
+        // SAC y Vacaciones proporcionales (solo cuando hay desvinculación efectiva o reclamada)
+        if ($hayDesvinculacion) {
             $mesesSemestre = ($mesActual <= 6) ? $mesActual : $mesActual - 6;
             $sac = ($salario / 2) * ($mesesSemestre / 6);
             $conceptos['sac_proporcional'] = [
@@ -400,7 +407,7 @@ class ExposicionEngine
 
         // Solo si no es accidente puro ni auditoría preventiva
         $casosSinMultas = ['auditoria_preventiva', 'accidente_laboral'];
-        if (!in_array($tipoConflicto, $casosSinMultas)) {
+        if (!in_array($tipoConflicto, $casosSinMultas) && $hayDesvinculacion) {
             // Multa Art. 80 LCT (SÍ APLICA siempre — no fue derogada por Ley Bases)
             $conceptos['multa_art80_lct'] = [
                 'descripcion' => 'Certificados de Trabajo (Art. 80)',
