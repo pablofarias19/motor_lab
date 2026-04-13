@@ -72,21 +72,24 @@ $alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 
 $tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
 $tipoUsuarioAnalisis = strtolower((string) ($analisis['tipo_usuario'] ?? ''));
+$esAccidenteLaboral = (($analisis['tipo_conflicto'] ?? '') === 'accidente_laboral');
 $uiDanoComplementario = ml_admin_runtime_get('ui.dano_complementario', []);
 $uiEscenarioPreventivo = ml_admin_runtime_get('ui.escenario_preventivo', []);
 $preventivoAccentColor = (string) ($uiEscenarioPreventivo['accent_color'] ?? '#0f766e');
 $preventivoBadgeLabel = (string) ($uiEscenarioPreventivo['badge_label'] ?? 'Escenario preventivo');
 $preventivoClarification = (string) ($uiEscenarioPreventivo['clarification'] ?? '');
 
-$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario): string {
+$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario) use ($esAccidenteLaboral): string {
     if (!empty($escenario['lectura_beneficio'])) {
         return (string) $escenario['lectura_beneficio'];
     }
 
     return match ($codigo) {
-        'D' => $tipoUsuario === 'empleador'
-            ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.')
-            : (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_general', 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.'),
+        'D' => $esAccidenteLaboral
+            ? 'Aquí el beneficio debe leerse como estimación orientativa de la acción civil integral, no como monto acumulable con la tarifa ART. Es una vía excluyente y comparativa frente al sistema tarifado.'
+            : ($tipoUsuario === 'empleador'
+                ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.')
+                : (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_general', 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.')),
         'A', 'B', 'C' => $tipoUsuario === 'empleador'
             ? 'Aquí el beneficio debe interpretarse como reducción o contención de exposición económica para la parte empleadora, no como ingreso nuevo. El costo refleja la inversión necesaria para cerrar, negociar o sostener la estrategia.'
             : 'Aquí el beneficio debe interpretarse como recupero potencial para la parte reclamante, no como monto garantizado. El costo refleja honorarios, gestión y fricción esperable de la vía elegida.',
@@ -959,8 +962,12 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <div>• <strong>Balance neto</strong>: diferencia entre beneficio y costo, útil para no leer los importes en forma aislada.</div>
                         <div>• <strong>Duración</strong> y <strong>Riesgo</strong>: permiten evaluar tiempo esperado, fricción institucional y probabilidad de desgaste procesal.</div>
                         <div>• El <strong>Índice Estratégico</strong> es orientativo y compara balance relativo entre retorno neto, costo, tiempo y riesgo.</div>
+                        <?php if ($esAccidenteLaboral): ?>
+                        <div>• En <strong>accidente laboral</strong>, el escenario <strong>D</strong> compara la <strong>acción civil complementaria</strong> como alternativa excluyente frente a la tarifa ART.</div>
+                        <?php else: ?>
                         <div>• El escenario <strong>D</strong> representa una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.</div>
-                        <?php if ($preventivoClarification !== ''): ?>
+                        <?php endif; ?>
+                        <?php if (!$esAccidenteLaboral && $preventivoClarification !== ''): ?>
                         <div>• <strong><?= htmlspecialchars($preventivoBadgeLabel) ?>:</strong> <?= htmlspecialchars($preventivoClarification) ?></div>
                         <?php endif; ?>
                     </div>
@@ -973,7 +980,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
                     $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
-                    $esEscenarioPreventivo = $letra === 'D';
+                    $esEscenarioPreventivo = !$esAccidenteLaboral && $letra === 'D';
                     $beneficioLabel = (string) ($esc['beneficio_label'] ?? (($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'
                         : 'Beneficio'));

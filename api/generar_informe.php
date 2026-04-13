@@ -366,10 +366,16 @@ try {
 
         $pdf->Ln(2);
         $pdf->SetFont('Arial', 'B', 10);
+        $totalSecundarioLabel = 'TOTAL CON MULTAS (máxima exposición)';
+        $totalSecundarioMonto = $exposicion['total_con_multas'];
+        if (($analisis['tipo_conflicto'] ?? '') === 'accidente_laboral' && !empty($exposicion['conceptos']['estimacion_civil_mendez'])) {
+            $totalSecundarioLabel = 'ACCION CIVIL - BASE MENDEZ';
+            $totalSecundarioMonto = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? $totalSecundarioMonto;
+        }
         $pdf->Cell(120, 7, pdf_latin1('TOTAL BASE (sin multas)'), 'T', 0);
         $pdf->Cell(0, 7, ml_formato_moneda($exposicion['total_base']), 'T', 1, 'R');
-        $pdf->Cell(120, 7, pdf_latin1('TOTAL CON MULTAS (máxima exposición)'), 0, 0);
-        $pdf->Cell(0, 7, ml_formato_moneda($exposicion['total_con_multas']), 0, 1, 'R');
+        $pdf->Cell(120, 7, pdf_latin1($totalSecundarioLabel), 0, 0);
+        $pdf->Cell(0, 7, ml_formato_moneda($totalSecundarioMonto), 0, 1, 'R');
     }
 
     if (!empty($exposicion['analisis_empresa']) && is_array($exposicion['analisis_empresa'])) {
