@@ -3,6 +3,12 @@ namespace App\Support;
 
 final class LaborInspectionAnalysisBuilder
 {
+    private const WEIGHT_ECONOMIC = 0.30;
+    private const WEIGHT_JURIDICAL = 0.25;
+    private const WEIGHT_SANCTION = 0.20;
+    private const WEIGHT_MULTIPLIER = 0.15;
+    private const WEIGHT_TIME = 0.10;
+
     public static function build(array $datos, array $documentacion, array $situacion, array $exposicion, array $iril): array
     {
         $registracion = self::buildRegistracion($datos, $documentacion, $situacion);
@@ -962,8 +968,9 @@ final class LaborInspectionAnalysisBuilder
         $testificalImpacto = (floatval($estructural['puntaje'] ?? 0) / 5) * 0.10;
         $artImpacto = (($situacion['chk_art_vigente'] ?? 'no') !== 'si' ? 0.05 : 0.0)
             + (floatval($condiciones['puntaje'] ?? 0) / 5) * 0.02;
+        $probabilidadCalculada = $base + $documentalImpacto + $registralImpacto + $testificalImpacto + $artImpacto;
 
-        return round(min(0.95, max(0.05, $base + $documentalImpacto + $registralImpacto + $testificalImpacto + $artImpacto)), 2);
+        return round(min(0.95, max(0.05, $probabilidadCalculada)), 2);
     }
 
     private static function buildContingencyBreakdown(
@@ -1041,15 +1048,14 @@ final class LaborInspectionAnalysisBuilder
         $riesgoMultiplicador = self::levelToScenarioValue($scenario['riesgo_multiplicador'] ?? 'medio');
         $factorEconomico = floatval($scenario['factor_economico'] ?? 0);
         $tiempo = floatval($scenario['tiempo'] ?? 0);
+        $score =
+            ($factorEconomico * self::WEIGHT_ECONOMIC)
+            + ($riesgoJuridico * self::WEIGHT_JURIDICAL)
+            + ($probabilidadSancion * self::WEIGHT_SANCTION)
+            + ($riesgoMultiplicador * self::WEIGHT_MULTIPLIER)
+            + ($tiempo * self::WEIGHT_TIME);
 
-        return round(
-            ($factorEconomico * 0.30)
-            + ($riesgoJuridico * 0.25)
-            + ($probabilidadSancion * 0.20)
-            + ($riesgoMultiplicador * 0.15)
-            + ($tiempo * 0.10),
-            1
-        );
+        return round($score, 1);
     }
 
     private static function levelToScenarioValue(string $level): float

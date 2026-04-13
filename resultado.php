@@ -20,6 +20,21 @@
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/config/DatabaseManager.php';
 
+function ml_present_label(string $value): string
+{
+    return ucfirst(str_replace('_', ' ', $value));
+}
+
+function ml_format_key_value_list(array $items): string
+{
+    $parts = [];
+    foreach ($items as $key => $value) {
+        $parts[] = ml_present_label((string) $key) . ': ' . (string) $value;
+    }
+
+    return implode(' · ', $parts);
+}
+
 // ─── Validar UUID ─────────────────────────────────────────────────────────────
 $uuid = trim($_GET['uuid'] ?? '');
 
@@ -693,7 +708,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($inspEmp['intereses'] ?? 0)) ?></div>
                                 <div><strong>Deuda total:</strong> <?= ml_formato_moneda(floatval($inspEmp['deuda_total'] ?? 0)) ?></div>
                                 <?php if (!empty($inspEmp['estado_inspeccion'])): ?>
-                                <div><strong>Estado de inspección:</strong> <?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $inspEmp['estado_inspeccion']))) ?></div>
+                                <div><strong>Estado de inspección:</strong> <?= htmlspecialchars(ml_present_label((string) $inspEmp['estado_inspeccion'])) ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($inspEmp['infraccion_laboral'])): ?>
                                 <div><strong>Infracción laboral:</strong> <?= htmlspecialchars(str_replace('_', ' ', (string) $inspEmp['infraccion_laboral'])) ?></div>
@@ -756,7 +771,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                       <div style="display:grid; gap:.45rem;">
                                           <?php foreach ($inspProbMatrix as $nombre => $valor): ?>
                                           <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.83rem;">
-                                              <span><?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?></span>
+                                              <span><?= htmlspecialchars(ml_present_label((string) $nombre)) ?></span>
                                               <span><strong><?= htmlspecialchars(number_format((float) $valor, 1, ',', '.')) ?>/5</strong></span>
                                           </div>
                                           <?php endforeach; ?>
@@ -769,7 +784,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                      <div style="display:grid; gap:.45rem;">
                                         <?php foreach ($inspMatriz as $nombre => $bloque): ?>
                                         <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.83rem;">
-                                            <span><?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?></span>
+                                            <span><?= htmlspecialchars(ml_present_label((string) $nombre)) ?></span>
                                             <span><strong><?= htmlspecialchars((string) ($bloque['nivel'] ?? '-')) ?></strong> · <?= htmlspecialchars(number_format((float) ($bloque['puntaje'] ?? 0), 1, ',', '.')) ?>/5</span>
                                         </div>
                                         <?php endforeach; ?>
@@ -782,7 +797,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                     <ul style="margin:0 0 0 1rem; font-size:.83rem; color:#6b7280;">
                                         <?php foreach ($inspChecklist as $nombre => $valor): ?>
                                             <li>
-                                                <?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?>:
+                                                <?= htmlspecialchars(ml_present_label((string) $nombre)) ?>:
                                                 <strong>
                                                     <?=
                                                         $valor === null
@@ -817,11 +832,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                                   <?php if (!empty($scenario['variables']) && is_array($scenario['variables'])): ?>
                                                   <div style="margin-top:.35rem; font-size:.82rem; color:#6b7280;">
                                                       <strong>Variables:</strong>
-                                                      <?= htmlspecialchars(implode(' · ', array_map(
-                                                          static fn($k, $v): string => ucfirst(str_replace('_', ' ', (string) $k)) . ': ' . (string) $v,
-                                                          array_keys($scenario['variables']),
-                                                          array_values($scenario['variables'])
-                                                      ))) ?>
+                                                      <?= htmlspecialchars(ml_format_key_value_list($scenario['variables'])) ?>
                                                   </div>
                                                   <?php endif; ?>
                                                   <?php if (!empty($scenario['lectura_estrategica'])): ?>
