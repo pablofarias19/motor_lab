@@ -62,6 +62,6 @@ final class ArcaInspectionReportBuilderTest extends TestCase
         $this->assertSame('Regularización inmediata', $report['conclusion_estrategica']['recomendacion_principal']);
         $this->assertSame('regularizacion_inmediata', $report['modelo_salida']['recomendacion']);
         $this->assertSame(2, $report['modelo_salida']['riesgo_arca']['conductual']);
-        $this->assertTrue(count($report['escenarios_estrategicos']) === 4, 'El informe ARCA debe exponer los 4 escenarios estratégicos.');
+        $this->assertSame(4, count($report['escenarios_estrategicos']), 'El informe ARCA debe exponer los 4 escenarios estratégicos.');
     }
 }

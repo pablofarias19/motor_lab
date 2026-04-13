@@ -100,7 +100,7 @@ $explicarLecturaEconomicaEscenario = static function (string $codigo, array $esc
     };
 };
 
-$estadoChecklistArca = static function (string $estado): string {
+$mostrarEstadoChecklistArca = static function (string $estado): string {
     return match ($estado) {
         'cumple' => '✅ Cumple',
         'no_cumple' => '⚠️ No cumple',
@@ -712,7 +712,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                                         <span style="font-size:.75rem; background:#fee2e2; color:#991b1b; padding:.2rem .45rem; border-radius:999px;"><?= htmlspecialchars((string) ($bloque['nivel'] ?? '')) ?></span>
                                                     </div>
                                                     <?php foreach (($bloque['items'] ?? []) as $item): ?>
-                                                        <div style="font-size:.82rem; color:#4b5563; margin-bottom:.25rem;"><?= htmlspecialchars($estadoChecklistArca((string) ($item['estado'] ?? 'sin_dato'))) ?> — <?= htmlspecialchars((string) ($item['label'] ?? '')) ?></div>
+                                                        <div style="font-size:.82rem; color:#4b5563; margin-bottom:.25rem;"><?= htmlspecialchars($mostrarEstadoChecklistArca((string) ($item['estado'] ?? 'sin_dato'))) ?> — <?= htmlspecialchars((string) ($item['label'] ?? '')) ?></div>
                                                     <?php endforeach; ?>
                                                     <?php foreach (($bloque['observaciones'] ?? []) as $obs): ?>
                                                         <div style="font-size:.78rem; color:#6b7280; margin-top:.35rem;">• <?= htmlspecialchars((string) $obs) ?></div>

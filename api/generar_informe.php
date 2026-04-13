@@ -107,7 +107,7 @@ function pdf_safe_text($value): string {
     return $normalized !== null ? $normalized : $text;
 }
 
-function pdf_arca_estado(string $estado): string {
+function pdf_estado_arca(string $estado): string {
     return match ($estado) {
         'cumple' => '[OK] Cumple',
         'no_cumple' => '[!] No cumple',
@@ -456,7 +456,7 @@ try {
             $pdf->Cell(0, 5, pdf_latin1(ucfirst((string) $bloque) . ' - Nivel: ' . pdf_safe_text((string) ($detalle['nivel'] ?? ''))), 0, 1);
             $pdf->SetFont('Arial', '', 8);
             foreach (($detalle['items'] ?? []) as $item) {
-                $pdf->MultiCell(0, 4, pdf_latin1('  ' . pdf_arca_estado((string) ($item['estado'] ?? 'sin_dato')) . ' - ' . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
+                $pdf->MultiCell(0, 4, pdf_latin1('  ' . pdf_estado_arca((string) ($item['estado'] ?? 'sin_dato')) . ' - ' . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
             }
             foreach (($detalle['observaciones'] ?? []) as $obs) {
                 $pdf->MultiCell(0, 4, pdf_latin1('  Observación: ' . pdf_safe_text((string) $obs)), 0, 'L');

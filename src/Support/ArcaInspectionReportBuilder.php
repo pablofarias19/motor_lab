@@ -437,7 +437,9 @@ final class ArcaInspectionReportBuilder
 
     private static function boolish($value): bool
     {
-        return function_exists('ml_boolish') ? ml_boolish($value) : in_array(strtolower((string) $value), ['si', '1', 'true'], true);
+        return function_exists('ml_boolish')
+            ? ml_boolish($value)
+            : in_array(strtolower((string) $value), ['si', 'yes', 'y', 'on', '1', 'true'], true);
     }
 
     private static function value($value): string
