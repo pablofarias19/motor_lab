@@ -654,7 +654,7 @@ class EscenariosEngine
 
         if ($tipoUsuarioNormalizado === 'empleador') {
             $mensajeSeguros = ' Una estrategia con SEGUROS COMPLEMENTARIOS puede ampliar el ahorro preventivo y la cobertura. Para más información, consulte con nuestro Estudio Farias Ortiz.';
-            if (!str_contains((string) $perfil['descripcion'], 'SEGUROS COMPLEMENTARIOS')) {
+            if (stripos((string) $perfil['descripcion'], 'seguros complementarios') === false) {
                 $perfil['descripcion'] .= $mensajeSeguros;
             }
         }
