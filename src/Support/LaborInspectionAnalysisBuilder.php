@@ -146,7 +146,8 @@ final class LaborInspectionAnalysisBuilder
             $observaciones[] = 'La fecha o modalidad registral declarada exige revisión específica.';
         }
         if (intval($situacion['meses_no_registrados'] ?? 0) > 0) {
-            $puntaje += min(1.5, intval($situacion['meses_no_registrados']) / 24);
+            $mesesNoRegistrados = floatval($situacion['meses_no_registrados'] ?? 0);
+            $puntaje += min(1.5, $mesesNoRegistrados / 24.0);
             $observaciones[] = 'Se declaró un período pendiente de regularización registral.';
         }
 
@@ -337,7 +338,7 @@ final class LaborInspectionAnalysisBuilder
         $factores = [];
 
         if ($cantidad > 1) {
-            $factores[] = 'potencial réplica a otros ' . ($cantidad - 1) . ' trabajadores';
+            $factores[] = 'potencial extensión del reclamo a otros ' . ($cantidad - 1) . ' trabajadores';
         }
         if (($situacion['inspeccion_previa'] ?? 'no') === 'si') {
             $factores[] = 'reiteración de inspección';
