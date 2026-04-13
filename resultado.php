@@ -100,6 +100,14 @@ $explicarLecturaEconomicaEscenario = static function (string $codigo, array $esc
     };
 };
 
+$mostrarEstadoChecklistArca = static function (string $estado): string {
+    return match ($estado) {
+        'cumple' => '✅ Cumple',
+        'no_cumple' => '⚠️ No cumple',
+        default => '◻️ Sin dato',
+    };
+};
+
 // ─── Registrar que el usuario vio el informe ──────────────────────────────────
 if (!$usaRespaldoSesion && isset($db)) {
     try {
@@ -665,13 +673,120 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php endif; ?>
 
                         <?php if (!empty($analisisEmpresa['inspeccion'])):
-                            $inspEmp = $analisisEmpresa['inspeccion']; ?>
-                            <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;">
+                            $inspEmp = $analisisEmpresa['inspeccion'];
+                            $arcaReport = is_array($inspEmp['informe_preventivo'] ?? null) ? $inspEmp['informe_preventivo'] : []; ?>
+                            <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;<?= !empty($arcaReport) ? ' grid-column:1 / -1;' : '' ?>">
                                 <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;"><span class="ui-emoji" aria-hidden="true">🏛️</span>Inspección ARCA / Ministerio</h4>
                                 <div><strong>Capital omitido:</strong> <?= ml_formato_moneda(floatval($inspEmp['capital_omitido'] ?? 0)) ?></div>
                                 <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($inspEmp['intereses'] ?? 0)) ?></div>
                                 <div><strong>Deuda total:</strong> <?= ml_formato_moneda(floatval($inspEmp['deuda_total'] ?? 0)) ?></div>
                                 <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($inspEmp['detalle'] ?? '') ?></p>
+
+                                <?php if (!empty($arcaReport)): ?>
+                                <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #f5b4b4; display:grid; gap:1rem;">
+                                    <div>
+                                        <h5 style="margin:0 0 .5rem; color:#7f1d1d;">1. Identificación del sujeto analizado</h5>
+                                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.5rem; font-size:.85rem;">
+                                            <?php foreach (($arcaReport['identificacion'] ?? []) as $label => $value): ?>
+                                                <div><strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', (string) $label))) ?>:</strong> <?= htmlspecialchars((string) $value) ?></div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h5 style="margin:0 0 .5rem; color:#7f1d1d;">2. Objeto del informe</h5>
+                                        <ul style="margin:0 0 0 1rem; padding:0; font-size:.85rem; color:#4b5563;">
+                                            <?php foreach (($arcaReport['objeto'] ?? []) as $item): ?>
+                                                <li><?= htmlspecialchars((string) $item) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h5 style="margin:0 0 .5rem; color:#7f1d1d;">3. Matriz de riesgo fiscal (ARCA)</h5>
+                                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.75rem;">
+                                            <?php foreach (($arcaReport['matriz_riesgo'] ?? []) as $label => $bloque): ?>
+                                                <div style="background:#fff; border:1px solid #fecaca; border-radius:10px; padding:.85rem;">
+                                                    <div style="display:flex; justify-content:space-between; gap:.5rem; align-items:center; margin-bottom:.5rem;">
+                                                        <strong style="color:#991b1b;"><?= htmlspecialchars(ucfirst((string) $label)) ?></strong>
+                                                        <span style="font-size:.75rem; background:#fee2e2; color:#991b1b; padding:.2rem .45rem; border-radius:999px;"><?= htmlspecialchars((string) ($bloque['nivel'] ?? '')) ?></span>
+                                                    </div>
+                                                    <?php foreach (($bloque['items'] ?? []) as $item): ?>
+                                                        <div style="font-size:.82rem; color:#4b5563; margin-bottom:.25rem;"><?= htmlspecialchars($mostrarEstadoChecklistArca((string) ($item['estado'] ?? 'sin_dato'))) ?> — <?= htmlspecialchars((string) ($item['label'] ?? '')) ?></div>
+                                                    <?php endforeach; ?>
+                                                    <?php foreach (($bloque['observaciones'] ?? []) as $obs): ?>
+                                                        <div style="font-size:.78rem; color:#6b7280; margin-top:.35rem;">• <?= htmlspecialchars((string) $obs) ?></div>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h5 style="margin:0 0 .5rem; color:#7f1d1d;">4. Cuantificación de contingencia</h5>
+                                        <?php $cuant = $arcaReport['cuantificacion_contingencia'] ?? []; $baseCalc = $cuant['base_calculo'] ?? []; $resultadoCalc = $cuant['resultado'] ?? []; ?>
+                                        <div style="font-size:.85rem; color:#4b5563; margin-bottom:.35rem;"><strong>Fórmula:</strong> <?= htmlspecialchars((string) ($baseCalc['formula'] ?? '')) ?></div>
+                                        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:.5rem; font-size:.84rem;">
+                                            <div><strong>Salario real:</strong> <?= ml_formato_moneda(floatval($baseCalc['salario_real'] ?? 0)) ?></div>
+                                            <div><strong>Salario declarado:</strong> <?= ml_formato_moneda(floatval($baseCalc['salario_declarado'] ?? 0)) ?></div>
+                                            <div><strong>Diferencia mensual:</strong> <?= ml_formato_moneda(floatval($baseCalc['diferencia_mensual'] ?? 0)) ?></div>
+                                            <div><strong>Meses:</strong> <?= intval($baseCalc['meses'] ?? 0) ?></div>
+                                            <div><strong>Capital omitido:</strong> <?= ml_formato_moneda(floatval($resultadoCalc['capital_omitido'] ?? 0)) ?></div>
+                                            <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($resultadoCalc['intereses'] ?? 0)) ?></div>
+                                            <div><strong>Multas:</strong> <?= ml_formato_moneda(floatval($resultadoCalc['multas'] ?? 0)) ?></div>
+                                            <div><strong>Exposición total:</strong> <?= ml_formato_moneda(floatval($resultadoCalc['exposicion_total'] ?? 0)) ?></div>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem;">
+                                        <div>
+                                            <h5 style="margin:0 0 .5rem; color:#7f1d1d;">5. Índice IRIL</h5>
+                                            <div style="font-size:.85rem;"><strong>Valor:</strong> <?= htmlspecialchars((string) ($arcaReport['iril']['valor'] ?? '0')) ?></div>
+                                            <div style="font-size:.85rem;"><strong>Nivel:</strong> <?= htmlspecialchars((string) ($arcaReport['iril']['nivel'] ?? '')) ?></div>
+                                            <div style="font-size:.82rem; color:#6b7280; margin-top:.35rem;"><?= htmlspecialchars((string) ($arcaReport['iril']['interpretacion'] ?? '')) ?></div>
+                                        </div>
+                                        <div>
+                                            <h5 style="margin:0 0 .5rem; color:#7f1d1d;">6. Diagnóstico jurídico</h5>
+                                            <?php foreach (($arcaReport['diagnostico_juridico'] ?? []) as $label => $value): ?>
+                                                <div style="font-size:.82rem; color:#4b5563; margin-bottom:.25rem;"><strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', (string) $label))) ?>:</strong> <?= htmlspecialchars((string) $value) ?></div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h5 style="margin:0 0 .5rem; color:#7f1d1d;">7. Escenarios estratégicos</h5>
+                                        <div style="display:grid; gap:.45rem;">
+                                            <?php foreach (($arcaReport['escenarios_estrategicos'] ?? []) as $esc): ?>
+                                                <div style="background:#fff; border:1px solid #fecaca; border-radius:10px; padding:.7rem;">
+                                                    <strong><?= htmlspecialchars((string) ($esc['codigo'] ?? '')) ?>. <?= htmlspecialchars((string) ($esc['titulo'] ?? '')) ?></strong>
+                                                    <div style="font-size:.82rem; color:#4b5563; margin-top:.2rem;"><?= htmlspecialchars((string) ($esc['detalle'] ?? '')) ?></div>
+                                                    <div style="font-size:.78rem; color:#6b7280; margin-top:.25rem;"><strong>Prioridad:</strong> <?= htmlspecialchars((string) ($esc['prioridad'] ?? '')) ?></div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:1rem;">
+                                        <div>
+                                            <h5 style="margin:0 0 .5rem; color:#7f1d1d;">8. Checklist de inspección</h5>
+                                            <?php foreach (($arcaReport['checklist_inspeccion'] ?? []) as $item): ?>
+                                                <div style="font-size:.82rem; color:#4b5563; margin-bottom:.25rem;"><?= !empty($item['estado']) ? '✅' : '⬜' ?> <?= htmlspecialchars((string) ($item['label'] ?? '')) ?></div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <div>
+                                            <h5 style="margin:0 0 .5rem; color:#7f1d1d;">9. Conclusión estratégica</h5>
+                                            <?php foreach (($arcaReport['conclusion_estrategica'] ?? []) as $label => $value): ?>
+                                                <div style="font-size:.82rem; color:#4b5563; margin-bottom:.25rem;"><strong><?= htmlspecialchars(ucwords(str_replace('_', ' ', (string) $label))) ?>:</strong> <?= is_numeric($value) ? ml_formato_moneda(floatval($value)) : htmlspecialchars((string) $value) ?></div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h5 style="margin:0 0 .5rem; color:#7f1d1d;">10. Modelo de salida (para sistema)</h5>
+                                        <pre style="margin:0; background:#111827; color:#f9fafb; border-radius:10px; padding:.85rem; overflow:auto; font-size:.76rem;"><?= htmlspecialchars(json_encode($arcaReport['modelo_salida'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?></pre>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                     </div>
