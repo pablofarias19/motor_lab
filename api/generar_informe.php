@@ -163,12 +163,19 @@ $analisisComplementario = is_array($exposicion['analisis_complementario'] ?? nul
 $danoComplementario = is_array($analisisComplementario['ley_27802']['dano'] ?? null)
     ? $analisisComplementario['ley_27802']['dano']
     : [];
+$esAccidenteLaboral = (($analisis['tipo_conflicto'] ?? '') === 'accidente_laboral');
 
-$explicarLecturaEconomicaEscenario = static function (string $codigo, string $tipoUsuario): string {
+$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario, bool $esAccidenteLaboral): string {
+    if (!empty($escenario['lectura_beneficio'])) {
+        return (string) $escenario['lectura_beneficio'];
+    }
+
     return match ($codigo) {
-        'D' => $tipoUsuario === 'empleador'
-            ? 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No es ganancia inmediata, sino costo futuro evitado.'
-            : 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo usa como referencia de ahorro o contingencia evitada para quien regulariza.',
+        'D' => $esAccidenteLaboral
+            ? 'Aquí el beneficio debe leerse como estimación orientativa de la acción civil integral, no como monto acumulable con la tarifa ART. Es una vía excluyente y comparativa frente al sistema tarifado.'
+            : ($tipoUsuario === 'empleador'
+                ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado. Ese ahorro puede ser mayor si se evalúan SEGUROS COMPLEMENTARIOS. Para más información, consulte con nuestro Estudio Farias Ortiz.')
+                : (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_general', 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo usa como referencia de ahorro o contingencia evitada para quien regulariza.')),
         'A', 'B', 'C' => $tipoUsuario === 'empleador'
             ? 'Aquí el beneficio se interpreta como reducción o contención de exposición económica para la parte empleadora, no como ingreso nuevo.'
             : 'Aquí el beneficio se interpreta como recupero potencial para la parte reclamante, no como monto garantizado.',
@@ -610,17 +617,19 @@ try {
             $pdf->MultiCell(0, 5, pdf_latin1($esc['descripcion'] ?? ''), 0, 'J');
             $pdf->Ln(2);
             $pdf->SetFont('Arial', '', 8);
-            $beneficioLabelPdf = ($letra === 'D' && $tipoUsuarioAnalisis === 'empleador')
-                ? 'Beneficio (ahorro potencial)'
-                : 'Beneficio';
+            $esEscenarioPreventivo = !empty($esc['es_preventivo']);
+            $beneficioLabelPdf = (string) ($esc['beneficio_label'] ?? (($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
+                ? 'Beneficio (ahorro pot.)'
+                : 'Beneficio'));
+            $balanceLabelPdf = (string) ($esc['vbp_label'] ?? 'Balance neto');
             $pdf->MultiCell(0, 4, pdf_latin1(
                 $beneficioLabelPdf . ': ' . ml_formato_moneda($esc['beneficio_estimado'] ?? 0)
                 . ' | Costo: ' . ml_formato_moneda($esc['costo_estimado'] ?? 0)
-                . ' | Balance neto: ' . ml_formato_moneda($esc['vbp'] ?? 0)
+                . ' | ' . $balanceLabelPdf . ': ' . ml_formato_moneda($esc['vbp'] ?? 0)
                 . ' | Índice estratégico: ' . number_format(floatval($esc['indice_estrategico'] ?? 0), 1) . '/100'
             ), 0, 'J');
             $pdf->Ln(1);
-            $pdf->MultiCell(0, 4, pdf_latin1('Lectura económica: ' . $explicarLecturaEconomicaEscenario($letra, $tipoUsuarioAnalisis)), 0, 'J');
+            $pdf->MultiCell(0, 4, pdf_latin1('Lectura económica: ' . $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis, $esAccidenteLaboral)), 0, 'J');
             $pdf->Ln(2);
 
             // Ventajas

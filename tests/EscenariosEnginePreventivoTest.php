@@ -32,6 +32,9 @@ final class EscenariosEnginePreventivoTest extends TestCase
         $this->assertTrue($escenarioAudit['es_preventivo'] ?? false, 'El escenario D preventivo debe identificarse explícitamente.');
         $this->assertSame(3000000.0, floatval($escenarioAudit['beneficio_estimado'] ?? 0));
         $this->assertSame(375000.0, floatval($escenarioAudit['costo_estimado'] ?? 0));
+        $this->assertTrue(str_contains((string) ($escenarioAudit['descripcion'] ?? ''), 'SEGUROS COMPLEMENTARIOS'));
+        $this->assertTrue(str_contains((string) ($escenarioAudit['descripcion'] ?? ''), 'Estudio Farias Ortiz'));
+        $this->assertTrue(str_contains((string) ($escenarioAudit['lectura_beneficio'] ?? ''), 'SEGUROS COMPLEMENTARIOS'));
         $this->assertTrue(!empty($escenarioAudit['definicion_sistema']), 'El escenario preventivo debe explicar cómo se define.');
         $this->assertTrue(count($escenarioAudit['criterios_definidos'] ?? []) >= 6, 'El escenario preventivo debe exponer criterios explícitos.');
 
