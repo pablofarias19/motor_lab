@@ -107,6 +107,14 @@ function pdf_safe_text($value): string {
     return $normalized !== null ? $normalized : $text;
 }
 
+function pdf_estado_arca(string $estado): string {
+    return match ($estado) {
+        'cumple' => '[OK] Cumple',
+        'no_cumple' => '[!] No cumple',
+        default => '[ ] Sin dato',
+    };
+}
+
 // ─── Obtener UUID desde GET o POST ───────────────────────────────────────────
 $uuid = trim($_GET['uuid'] ?? $_POST['uuid'] ?? '');
 
@@ -474,6 +482,104 @@ try {
 
             $pdf->Ln(1);
         }
+    }
+
+    $arcaReport = is_array($exposicion['analisis_empresa']['inspeccion']['informe_preventivo'] ?? null)
+        ? $exposicion['analisis_empresa']['inspeccion']['informe_preventivo']
+        : [];
+
+    if (!empty($arcaReport)) {
+        $pdf->seccion('Informe preventivo de inspección ARCA');
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('1. Identificación del sujeto analizado'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        foreach (($arcaReport['identificacion'] ?? []) as $clave => $valor) {
+            $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text((string) $valor)), 0, 'L');
+        }
+        $pdf->Ln(1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('2. Objeto del informe'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        foreach (($arcaReport['objeto'] ?? []) as $item) {
+            $pdf->MultiCell(0, 4, pdf_latin1('- ' . pdf_safe_text((string) $item)), 0, 'L');
+        }
+        $pdf->Ln(1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('3. Matriz de riesgo fiscal (ARCA)'), 0, 1);
+        foreach (($arcaReport['matriz_riesgo'] ?? []) as $bloque => $detalle) {
+            $pdf->SetFont('Arial', 'B', 8);
+            $pdf->Cell(0, 5, pdf_latin1(ucfirst((string) $bloque) . ' - Nivel: ' . pdf_safe_text((string) ($detalle['nivel'] ?? ''))), 0, 1);
+            $pdf->SetFont('Arial', '', 8);
+            foreach (($detalle['items'] ?? []) as $item) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  ' . pdf_estado_arca((string) ($item['estado'] ?? 'sin_dato')) . ' - ' . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
+            }
+            foreach (($detalle['observaciones'] ?? []) as $obs) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Observación: ' . pdf_safe_text((string) $obs)), 0, 'L');
+            }
+        }
+        $pdf->Ln(1);
+
+        $cuant = $arcaReport['cuantificacion_contingencia'] ?? [];
+        $baseCalc = $cuant['base_calculo'] ?? [];
+        $resultadoCalc = $cuant['resultado'] ?? [];
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('4. Cuantificación de contingencia'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->MultiCell(0, 4, pdf_latin1('Fórmula: ' . pdf_safe_text((string) ($baseCalc['formula'] ?? ''))), 0, 'L');
+        $pdf->MultiCell(0, 4, pdf_latin1('Salario real: ' . ml_formato_moneda(floatval($baseCalc['salario_real'] ?? 0)) . ' | Salario declarado: ' . ml_formato_moneda(floatval($baseCalc['salario_declarado'] ?? 0)) . ' | Meses: ' . intval($baseCalc['meses'] ?? 0)), 0, 'L');
+        $pdf->MultiCell(0, 4, pdf_latin1('Capital omitido: ' . ml_formato_moneda(floatval($resultadoCalc['capital_omitido'] ?? 0)) . ' | Intereses: ' . ml_formato_moneda(floatval($resultadoCalc['intereses'] ?? 0)) . ' | Multas: ' . ml_formato_moneda(floatval($resultadoCalc['multas'] ?? 0)) . ' | Exposición total: ' . ml_formato_moneda(floatval($resultadoCalc['exposicion_total'] ?? 0))), 0, 'L');
+        $pdf->Ln(1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('5. IRIL y 6. Diagnóstico jurídico'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->MultiCell(0, 4, pdf_latin1('IRIL: ' . pdf_safe_text((string) ($arcaReport['iril']['valor'] ?? '0')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['nivel'] ?? '')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['interpretacion'] ?? ''))), 0, 'L');
+        foreach (($arcaReport['diagnostico_juridico'] ?? []) as $clave => $valor) {
+            $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text((string) $valor)), 0, 'L');
+        }
+        $pdf->Ln(1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('7. Escenarios estratégicos'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        foreach (($arcaReport['escenarios_estrategicos'] ?? []) as $esc) {
+            $line = sprintf(
+                '%s. %s - %s (Prioridad: %s)',
+                (string) ($esc['codigo'] ?? ''),
+                (string) ($esc['titulo'] ?? ''),
+                (string) ($esc['detalle'] ?? ''),
+                (string) ($esc['prioridad'] ?? '')
+            );
+            $pdf->MultiCell(0, 4, pdf_latin1(pdf_safe_text($line)), 0, 'L');
+        }
+        $pdf->Ln(1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('8. Checklist y 9. Conclusión estratégica'), 0, 1);
+        $pdf->SetFont('Arial', '', 8);
+        foreach (($arcaReport['checklist_inspeccion'] ?? []) as $item) {
+            $pdf->MultiCell(0, 4, pdf_latin1((!empty($item['estado']) ? '[x] ' : '[ ] ') . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
+        }
+        foreach (($arcaReport['conclusion_estrategica'] ?? []) as $clave => $valor) {
+            $texto = is_numeric($valor) ? ml_formato_moneda(floatval($valor)) : (string) $valor;
+            $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text($texto)), 0, 'L');
+        }
+        $pdf->Ln(1);
+
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 6, pdf_latin1('10. Modelo de salida (para sistema)'), 0, 1);
+        $pdf->SetFont('Courier', '', 7);
+        $pdf->MultiCell(
+            0,
+            4,
+            pdf_latin1(json_encode($arcaReport['modelo_salida'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)),
+            0,
+            'L'
+        );
+        $pdf->SetFont('Arial', '', 8);
     }
 
     if (!empty($danoComplementario)) {

@@ -100,6 +100,14 @@ $explicarLecturaEconomicaEscenario = static function (string $codigo, array $esc
     };
 };
 
+$mostrarEstadoChecklistArca = static function (string $estado): string {
+    return match ($estado) {
+        'cumple' => '✅ Cumple',
+        'no_cumple' => '⚠️ No cumple',
+        default => '◻️ Sin dato',
+    };
+};
+
 // ─── Registrar que el usuario vio el informe ──────────────────────────────────
 if (!$usaRespaldoSesion && isset($db)) {
     try {
