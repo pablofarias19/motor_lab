@@ -427,7 +427,7 @@ final class LaborInspectionAnalysisBuilder
     private static function resolveComplianceLevel(float $promedio): string
     {
         return match (true) {
-            $promedio >= 3.5 => 'critico',
+            $promedio >= 3.5 => 'crítico',
             $promedio >= 2.5 => 'alto',
             $promedio >= 1.5 => 'medio',
             default => 'bajo',
