@@ -66,6 +66,9 @@ final class InspectionPdfRenderingTest extends TestCase
         $this->assertTrue(str_contains($inspectionSearch, 'recomendacion final: defensa estructurada'), 'El PDF de riesgo de inspección debe exponer la recomendación laboral final.');
         $this->assertTrue(str_contains($inspectionSearch, 'recomendacion principal: regularizacion inmediata'), 'El PDF de riesgo de inspección debe exponer la recomendación ARCA principal.');
         $this->assertTrue(str_contains($inspectionSearch, 'probabilidad inspeccion: critico'), 'El PDF de riesgo de inspección debe exponer la probabilidad crítica laboral.');
+        $this->assertTrue(str_contains($inspectionSearch, 'fundamentos de los montos laborales'), 'El PDF de riesgo de inspección debe explicar los motivos de los montos laborales.');
+        $this->assertTrue(str_contains($inspectionSearch, 'consideraciones legales relevantes (laboral)'), 'El PDF de riesgo de inspección debe incluir consideraciones legales laborales.');
+        $this->assertTrue(str_contains($inspectionSearch, 'ley bases nº 27.742: aplica'), 'El PDF de riesgo de inspección debe indicar aplicabilidad legal en el bloque ARCA.');
 
         $auditPdf = $this->renderPdf([
             'tipo_usuario' => 'empleador',

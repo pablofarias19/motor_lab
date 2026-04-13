@@ -115,6 +115,10 @@ function pdf_estado_arca(string $estado): string {
     };
 }
 
+function pdf_aplicabilidad(bool $aplica): string {
+    return $aplica ? 'Aplica' : 'No aplica';
+}
+
 // ─── Obtener UUID desde GET o POST ───────────────────────────────────────────
 $uuid = trim($_GET['uuid'] ?? $_POST['uuid'] ?? '');
 
@@ -478,6 +482,66 @@ try {
                         $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . (string) $valor), 0, 'L');
                     }
                 }
+
+                $cuantificacionLaboral = is_array($laboral['cuantificacion'] ?? null) ? $laboral['cuantificacion'] : [];
+                $fundamentosLaborales = is_array($cuantificacionLaboral['fundamentos_montos'] ?? null) ? $cuantificacionLaboral['fundamentos_montos'] : [];
+                if (!empty($fundamentosLaborales)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Fundamentos de los montos laborales'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($fundamentosLaborales as $nombre => $detalleMonto) {
+                        if (!is_array($detalleMonto)) {
+                            continue;
+                        }
+
+                        $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . ml_formato_moneda(floatval($detalleMonto['monto'] ?? 0))), 0, 'L');
+                        if (!empty($detalleMonto['motivo'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Motivo: ' . (string) $detalleMonto['motivo']), 0, 'L');
+                        }
+                        if (!empty($detalleMonto['criterio'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Criterio: ' . (string) $detalleMonto['criterio']), 0, 'L');
+                        }
+                        if (!empty($detalleMonto['componente_dominante'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Componente dominante: ' . str_replace('_', ' ', (string) $detalleMonto['componente_dominante'])), 0, 'L');
+                        }
+                    }
+                }
+
+                $consideracionesLaborales = is_array($laboral['consideraciones_legales'] ?? null) ? $laboral['consideraciones_legales'] : [];
+                if (!empty($consideracionesLaborales)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Consideraciones legales relevantes (laboral)'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($consideracionesLaborales as $item) {
+                        if (!is_array($item)) {
+                            continue;
+                        }
+
+                        $pdf->MultiCell(
+                            0,
+                            4,
+                            pdf_latin1(
+                                pdf_safe_text((string) ($item['titulo'] ?? 'Consideración'))
+                                . ': '
+                                . pdf_aplicabilidad(!empty($item['aplica']))
+                                . ' - '
+                                . pdf_safe_text((string) ($item['estado'] ?? ''))
+                            ),
+                            0,
+                            'L'
+                        );
+                        if (!empty($item['motivo'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Motivo: ' . pdf_safe_text((string) $item['motivo'])), 0, 'L');
+                        }
+                        if (!empty($item['impacto_en_montos'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Impacto en montos: ' . pdf_safe_text((string) $item['impacto_en_montos'])), 0, 'L');
+                        }
+                    }
+                }
             }
 
             $pdf->Ln(1);
@@ -531,11 +595,49 @@ try {
         $pdf->MultiCell(0, 4, pdf_latin1('Fórmula: ' . pdf_safe_text((string) ($baseCalc['formula'] ?? ''))), 0, 'L');
         $pdf->MultiCell(0, 4, pdf_latin1('Salario real: ' . ml_formato_moneda(floatval($baseCalc['salario_real'] ?? 0)) . ' | Salario declarado: ' . ml_formato_moneda(floatval($baseCalc['salario_declarado'] ?? 0)) . ' | Meses: ' . intval($baseCalc['meses'] ?? 0)), 0, 'L');
         $pdf->MultiCell(0, 4, pdf_latin1('Capital omitido: ' . ml_formato_moneda(floatval($resultadoCalc['capital_omitido'] ?? 0)) . ' | Intereses: ' . ml_formato_moneda(floatval($resultadoCalc['intereses'] ?? 0)) . ' | Multas: ' . ml_formato_moneda(floatval($resultadoCalc['multas'] ?? 0)) . ' | Exposición total: ' . ml_formato_moneda(floatval($resultadoCalc['exposicion_total'] ?? 0))), 0, 'L');
+        foreach (($cuant['detalle_montos'] ?? []) as $nombre => $detalleMonto) {
+            if (!is_array($detalleMonto)) {
+                continue;
+            }
+
+            $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . ml_formato_moneda(floatval($detalleMonto['monto'] ?? 0))), 0, 'L');
+            if (!empty($detalleMonto['motivo'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Motivo: ' . pdf_safe_text((string) $detalleMonto['motivo'])), 0, 'L');
+            }
+            if (!empty($detalleMonto['impacto_regularizacion'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Impacto regularización: ' . pdf_safe_text((string) $detalleMonto['impacto_regularizacion'])), 0, 'L');
+            }
+        }
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('5. IRIL y 6. Diagnóstico jurídico'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('5. Consideraciones legales y 6. IRIL/Diagnóstico jurídico'), 0, 1);
         $pdf->SetFont('Arial', '', 8);
+        foreach (($arcaReport['consideraciones_legales'] ?? []) as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+
+            $pdf->MultiCell(
+                0,
+                4,
+                pdf_latin1(
+                    pdf_safe_text((string) ($item['titulo'] ?? 'Consideración'))
+                    . ': '
+                    . pdf_aplicabilidad(!empty($item['aplica']))
+                    . ' - '
+                    . pdf_safe_text((string) ($item['estado'] ?? ''))
+                ),
+                0,
+                'L'
+            );
+            if (!empty($item['motivo'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Motivo: ' . pdf_safe_text((string) $item['motivo'])), 0, 'L');
+            }
+            if (!empty($item['impacto_en_montos'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('  Impacto en montos: ' . pdf_safe_text((string) $item['impacto_en_montos'])), 0, 'L');
+            }
+        }
         $pdf->MultiCell(0, 4, pdf_latin1('IRIL: ' . pdf_safe_text((string) ($arcaReport['iril']['valor'] ?? '0')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['nivel'] ?? '')) . ' - ' . pdf_safe_text((string) ($arcaReport['iril']['interpretacion'] ?? ''))), 0, 'L');
         foreach (($arcaReport['diagnostico_juridico'] ?? []) as $clave => $valor) {
             $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text((string) $valor)), 0, 'L');

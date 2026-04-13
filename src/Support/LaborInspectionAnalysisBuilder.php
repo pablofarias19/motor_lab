@@ -46,6 +46,21 @@ final class LaborInspectionAnalysisBuilder
             $sancionAdministrativa,
             $deudaArca
         );
+        $fundamentosMontos = self::buildAmountRationale(
+            $datos,
+            $documentacion,
+            $situacion,
+            $exposicion,
+            $sancionAdministrativa,
+            $deudaArca,
+            $contingenciaIndirecta
+        );
+        $consideracionesLegales = self::buildLegalConsiderations(
+            $datos,
+            $documentacion,
+            $situacion,
+            $sancionAdministrativa
+        );
 
         return [
             'infraccion_laboral' => $infraccion,
@@ -79,6 +94,7 @@ final class LaborInspectionAnalysisBuilder
                     'multas_administrativas_estimadas' => round($sancionAdministrativa, 2),
                     'riesgo_economico_indirecto' => round($contingenciaIndirecta, 2),
                     'efecto_multiplicador' => self::buildEffectMultiplier($datos, $situacion),
+                    'fundamentos_montos' => $fundamentosMontos,
                 ],
                 'iril' => [
                     'valor' => round(floatval($iril['score'] ?? 0), 1),
@@ -92,6 +108,7 @@ final class LaborInspectionAnalysisBuilder
                 ],
                 'escenarios' => self::buildEscenarios($recomendacion['key'], $situacion),
                 'checklist' => self::buildChecklist($datos, $documentacion, $situacion),
+                'consideraciones_legales' => $consideracionesLegales,
                 'conclusion_estrategica' => [
                     'nivel_riesgo_general' => self::resolveLevel($promedio),
                     'probabilidad_inspeccion' => $probabilidad,
@@ -367,6 +384,118 @@ final class LaborInspectionAnalysisBuilder
         }
 
         return $base;
+    }
+
+    private static function buildAmountRationale(
+        array $datos,
+        array $documentacion,
+        array $situacion,
+        array $exposicion,
+        float $sancionAdministrativa,
+        float $deudaArca,
+        float $contingenciaIndirecta
+    ): array {
+        $totalConMultas = round(floatval($exposicion['total_con_multas'] ?? 0), 2);
+        $salarioReal = round(floatval($datos['salario'] ?? 0), 2);
+        $salarioRecibo = round(floatval($datos['salario_recibo'] ?? 0), 2);
+        $mesesNoRegistrados = max(0, intval($situacion['meses_no_registrados'] ?? 0));
+        $tipoRegistro = (string) ($datos['tipo_registro'] ?? 'registrado');
+        $componenteDominante = self::resolveDominantEconomicDriver($totalConMultas, $sancionAdministrativa, $deudaArca, $contingenciaIndirecta);
+
+        return [
+            'multas_administrativas_estimadas' => [
+                'aplica' => $sancionAdministrativa > 0,
+                'monto' => round($sancionAdministrativa, 2),
+                'motivo' => $sancionAdministrativa > 0
+                    ? 'Se replica la sanción administrativa ya cuantificada en la exposición para no perder el agravante inspectivo.'
+                    : 'No se agregó multa administrativa autónoma porque la exposición vigente no informó una sanción activa.',
+                'hechos_relevantes' => array_values(array_filter([
+                    $mesesNoRegistrados > 0 ? 'Meses sin registrar: ' . $mesesNoRegistrados : null,
+                    $tipoRegistro !== 'registrado' ? 'Tipo de registro observado: ' . self::formatRegistro($tipoRegistro) : null,
+                    ($documentacion['registrado_afip'] ?? 'no') !== 'si' ? 'No surge registración AFIP afirmativa.' : null,
+                ])),
+            ],
+            'riesgo_economico_indirecto' => [
+                'monto' => round($contingenciaIndirecta, 2),
+                'criterio' => 'Se toma el mayor valor entre exposición total con multas, sanción administrativa puntual y deuda ARCA para evitar subestimar el frente económico combinado.',
+                'componentes_considerados' => [
+                    'total_con_multas' => $totalConMultas,
+                    'sancion_administrativa' => round($sancionAdministrativa, 2),
+                    'deuda_arca' => round($deudaArca, 2),
+                ],
+                'componente_dominante' => $componenteDominante,
+                'lectura' => $salarioReal > 0 && $salarioRecibo > 0 && $salarioReal > $salarioRecibo
+                    ? 'La brecha entre salario real y salario documentado refuerza la necesidad de leer el monto como contingencia integral.'
+                    : 'El monto debe leerse como contingencia integral, aun sin brecha salarial explícita informada.',
+            ],
+        ];
+    }
+
+    private static function buildLegalConsiderations(
+        array $datos,
+        array $documentacion,
+        array $situacion,
+        float $sancionAdministrativa
+    ): array {
+        $hayDeficienciaRegistral = ($datos['tipo_registro'] ?? 'registrado') !== 'registrado'
+            || ($documentacion['registrado_afip'] ?? 'no') !== 'si'
+            || max(0, intval($situacion['meses_no_registrados'] ?? 0)) > 0;
+
+        return [
+            [
+                'titulo' => 'Ley Bases Nº 27.742',
+                'aplica' => false,
+                'estado' => 'No aplica directamente',
+                'motivo' => 'Este análisis estima contingencia inspectiva y sancionatoria, no multas indemnizatorias por despido posterior al 09/07/2024.',
+                'impacto_en_montos' => 'No se adicionaron multas laborales suspendidas por Ley Bases en este bloque; solo se conserva la sanción administrativa ya cuantificada si existe.',
+            ],
+            [
+                'titulo' => 'Art. 132 bis LCT',
+                'aplica' => $hayDeficienciaRegistral,
+                'estado' => $hayDeficienciaRegistral ? 'Aplica / requiere revisión' : 'No surge aplicación directa',
+                'motivo' => $hayDeficienciaRegistral
+                    ? 'Se observaron indicios de falta o deficiencia registral que pueden sostener contingencia administrativa autónoma.'
+                    : 'No se detectó un dato fuerte de falta registral que justifique activar esta contingencia administrativa adicional.',
+                'impacto_en_montos' => $hayDeficienciaRegistral && $sancionAdministrativa > 0
+                    ? 'El monto de multas administrativas se mantiene visible porque esta vía puede coexistir con la suspensión de otras multas.'
+                    : 'Se consigna solo como alerta legal y no como monto adicional autónomo cuando no hay cuantificación expresa.',
+            ],
+            [
+                'titulo' => 'Jurisprudencia Ackerman (Marzo 2026)',
+                'aplica' => false,
+                'estado' => 'No aplica directamente',
+                'motivo' => 'La doctrina Ackerman opera sobre bases indemnizatorias ajustadas por RIPTE/IPC, no sobre esta matriz inspectiva.',
+                'impacto_en_montos' => 'No modificó los importes de sanción ni el riesgo económico indirecto de este análisis.',
+            ],
+            [
+                'titulo' => 'Baremo Lois (Marzo 2026)',
+                'aplica' => false,
+                'estado' => 'No aplica directamente',
+                'motivo' => 'El Baremo Lois se vincula con daño moral y vía civil; no integra esta cuantificación administrativa-preventiva.',
+                'impacto_en_montos' => 'No se adicionó agravamiento por daño moral ni topes superados dentro de este análisis.',
+            ],
+        ];
+    }
+
+    private static function resolveDominantEconomicDriver(
+        float $totalConMultas,
+        float $sancionAdministrativa,
+        float $deudaArca,
+        float $contingenciaIndirecta
+    ): string {
+        if ($contingenciaIndirecta === $deudaArca && $deudaArca > 0) {
+            return 'deuda_arca';
+        }
+
+        if ($contingenciaIndirecta === $sancionAdministrativa && $sancionAdministrativa > 0) {
+            return 'sancion_administrativa';
+        }
+
+        if ($contingenciaIndirecta === $totalConMultas && $totalConMultas > 0) {
+            return 'total_con_multas';
+        }
+
+        return 'sin_componente_dominante';
     }
 
     private static function resolveInfraccion(array $datos, array $situacion, float $puntajeMaximo): string

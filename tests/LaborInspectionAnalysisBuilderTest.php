@@ -66,5 +66,8 @@ final class LaborInspectionAnalysisBuilderTest extends TestCase
         $this->assertSame(false, $analysis['laboral']['checklist']['art_vigente']);
         $this->assertTrue(str_contains((string) ($analysis['laboral']['diagnostico']['conclusion_juridica'] ?? ''), 'antecedentes de inspección'));
         $this->assertSame(2300000.0, floatval($analysis['laboral']['cuantificacion']['riesgo_economico_indirecto'] ?? 0));
+        $this->assertSame('total_con_multas', $analysis['laboral']['cuantificacion']['fundamentos_montos']['riesgo_economico_indirecto']['componente_dominante'] ?? null);
+        $this->assertSame(true, $analysis['laboral']['consideraciones_legales'][1]['aplica'] ?? false);
+        $this->assertTrue(str_contains(strtolower((string) ($analysis['laboral']['consideraciones_legales'][1]['titulo'] ?? '')), '132 bis'));
     }
 }
