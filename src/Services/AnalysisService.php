@@ -239,14 +239,36 @@ class AnalysisService
             $exposicion['total'] = $exposicion['total_con_multas'];
         }
 
-        if ($tipoConflicto === 'riesgo_inspeccion') {
-            $motor = new ArcaEngine();
-            $resultado = $motor->calcularRiesgoArca(
-                floatval($datos['salario'] ?? 0),
-                intval($situacion['meses_no_registrados'] ?? 0),
-                ml_boolish($situacion['aplica_blanco_laboral'] ?? false),
-                ml_boolish($situacion['fraude_evasion_sistematica'] ?? false)
-            );
+         if ($tipoConflicto === 'riesgo_inspeccion') {
+             $motor = new ArcaEngine();
+             $resultado = $motor->calcularRiesgoArca(
+                 floatval($datos['salario'] ?? 0),
+                 intval($situacion['meses_no_registrados'] ?? 0),
+                 ml_boolish($situacion['aplica_blanco_laboral'] ?? false),
+                 ml_boolish($situacion['fraude_evasion_sistematica'] ?? false),
+                 [
+                     'salario_declarado' => floatval($datos['salario_recibo'] ?? 0),
+                     'cantidad_empleados' => intval($datos['cantidad_empleados'] ?? ($situacion['cantidad_empleados'] ?? 1)),
+                     'dias_desde_reglamentacion' => intval($situacion['dias_desde_reglamentacion'] ?? 30),
+                     'modalidad_pago_regularizacion' => $situacion['modalidad_pago_regularizacion'] ?? '',
+                     'cuotas_regularizacion' => intval($situacion['cuotas_regularizacion'] ?? 1),
+                     'sentencia_firme' => $situacion['sentencia_firme'] ?? 'no',
+                     'plan_caducado' => $situacion['plan_caducado'] ?? 'no',
+                     'obligacion_cancelada_antes_2024_03_31' => $situacion['obligacion_cancelada_antes_2024_03_31'] ?? 'no',
+                     'obligaciones_aduaneras' => $situacion['obligaciones_aduaneras'] ?? 'no',
+                     'usa_beneficios_fiscales' => $situacion['usa_beneficios_fiscales'] ?? 'no',
+                     'hay_apropiacion_indebida' => $situacion['hay_apropiacion_indebida'] ?? 'no',
+                     'honorarios_estimados' => floatval($situacion['honorarios_estimados'] ?? 0),
+                     'gratificaciones_habituales' => floatval($situacion['gratificaciones_habituales'] ?? 0),
+                     'propinas_habituales' => floatval($situacion['propinas_habituales'] ?? 0),
+                     'suplementos_habituales' => floatval($situacion['suplementos_habituales'] ?? 0),
+                     'remuneracion_en_especie' => floatval($situacion['remuneracion_en_especie'] ?? 0),
+                     'activos_regularizables' => $situacion['activos_regularizables'] ?? [],
+                     'tipo_cambio_regularizacion' => floatval($situacion['tipo_cambio_regularizacion'] ?? 1000),
+                     'etapa_regularizacion' => intval($situacion['etapa_regularizacion'] ?? 1),
+                     'dinero_en_cera_hasta_franquicia' => $situacion['dinero_en_cera_hasta_franquicia'] ?? 'no',
+                 ]
+             );
 
             $analisisEmpresa['inspeccion'] = $resultado;
             $exposicion['conceptos']['capital_omitido_arca'] = [
