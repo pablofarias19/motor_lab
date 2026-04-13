@@ -394,6 +394,11 @@ final class AnalysisPayloadNormalizer
         if (!$esDiferencia) {
             $situacion['motivo_diferencia'] = 'mala_categorizacion';
             $situacion['meses_adeudados'] = 0;
+        } else {
+            $situacion['ya_despedido'] = 'no';
+            $situacion['fecha_despido'] = '';
+            $situacion['dia_despido'] = 15;
+            $situacion['check_inconstitucionalidad'] = 'no';
         }
 
         if (!$esPrevencion) {

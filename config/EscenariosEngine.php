@@ -2,7 +2,7 @@
 /**
  * EscenariosEngine.php — Generador de escenarios estratégicos comparativos
  *
- * Genera los 4 escenarios estratégicos del Motor de Riesgo Laboral:
+ * Genera los escenarios estratégicos del Motor de Riesgo Laboral:
  *
  *   A — Negociación Temprana:  cierre anticipado, costo controlado
  *   B — Litigio Completo:      mayor impacto potencial, mayor duración
@@ -27,6 +27,7 @@ require_once __DIR__ . '/config.php';
 
 class EscenariosEngine
 {
+    private const TIPO_USUARIO_EMPLEADOR = 'empleador';
 
     // ─────────────────────────────────────────────────────────────────────────
     // MÉTODO PRINCIPAL
@@ -52,7 +53,7 @@ class EscenariosEngine
     ];
 
     /**
-     * generarEscenarios() — Genera los 4 escenarios comparativos.
+     * generarEscenarios() — Genera los escenarios comparativos aplicables.
      *
      * @param array  $exposicion     Resultado de IrilEngine::calcularExposicion()
      * @param float  $irilScore      Puntaje IRIL
@@ -71,6 +72,7 @@ class EscenariosEngine
         string $provincia = 'CABA'
     ): array {
 
+        $tipoUsuarioNormalizado = strtolower(trim($tipoUsuario));
         $totalBase = $exposicion['total_base'] ?? 0;
         $totalConMultas = $exposicion['total_con_multas'] ?? 0;
         $salario = $exposicion['salario_base'] ?? 0;
@@ -103,10 +105,11 @@ class EscenariosEngine
         // ── Escenario C — Estrategia Mixta ────────────────────────────────────
         $c = $this->escenarioMixto($totalBase, $totalConMultas, $honorariosJudiciales, $irilScore, $tipoUsuario, $provincia);
 
-        // ── Escenario D — Reconfiguración Preventiva ──────────────────────────
-        $d = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
-
-        $escenarios = ['A' => $a, 'B' => $b, 'C' => $c, 'D' => $d];
+        $escenarios = ['A' => $a, 'B' => $b, 'C' => $c];
+        if ($tipoUsuarioNormalizado === self::TIPO_USUARIO_EMPLEADOR) {
+            // ── Escenario D — Reconfiguración Preventiva ──────────────────────
+            $escenarios['D'] = $this->escenarioPreventivo($exposicion, $irilScore, $tipoConflicto, $tipoUsuario, $situacion);
+        }
         $escenarios = $this->agregarIndicesEstrategicos($escenarios);
         $recomendado = $this->determinarRecomendado($escenarios, $tipoUsuario, $irilScore, $tipoConflicto);
 
@@ -710,8 +713,15 @@ class EscenariosEngine
 
         $montoTarifaART = floatval($viaArt['monto_seguro'] ?? ($conceptos['prestacion_art_tarifa']['monto'] ?? ($exposicion['total_base'] ?? 0)));
         $civilEscenarios = is_array($viaCivil['escenarios'] ?? null) ? $viaCivil['escenarios'] : [];
+        $montoCivilMendez = floatval(
+            $viaCivil['monto_reclamo_mendez']
+            ?? $viaCivil['monto_integral_referencial']
+            ?? ($conceptos['estimacion_civil_mendez']['monto'] ?? 0)
+        );
         $montoCivilConservador = floatval($civilEscenarios['conservador'] ?? ($montoTarifaART * 1.1));
-        $montoCivilProbable = floatval($civilEscenarios['probable'] ?? ($conceptos['estimacion_civil_mendez']['monto'] ?? ($montoTarifaART * 2.5)));
+        $montoCivilProbable = $montoCivilMendez > 0
+            ? $montoCivilMendez
+            : floatval($civilEscenarios['probable'] ?? ($montoTarifaART * 2.5));
         $montoCivilAgresivo = floatval($civilEscenarios['agresivo'] ?? max($montoCivilProbable, $montoTarifaART * 2.8));
         $honorariosBase = $montoTarifaART * ($params['escenarios']['global']['honorarios_judiciales_tasa'] ?? 0.22);
 
@@ -873,6 +883,7 @@ class EscenariosEngine
                 'conservador' => round($montoCivilConservador, 2),
                 'probable' => round($montoCivilProbable, 2),
                 'agresivo' => round($montoCivilAgresivo, 2),
+                'reclamo_mendez' => round($montoCivilProbable, 2),
             ],
             'duracion_min_meses' => $cfgD['duracion_min'],
             'duracion_max_meses' => $cfgD['duracion_max'],

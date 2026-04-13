@@ -218,8 +218,17 @@ final class ArtCalculationEngine
         array $tablaRipte,
         float $salarioFallback
     ): array {
-        if ($fechaSiniestro === null || $salariosPorMes === []) {
-            return $this->fallbackIbm($salarioFallback, 'Faltan fecha de siniestro o salarios históricos para reconstruir IBM.');
+        if ($fechaSiniestro === null) {
+            return $this->fallbackIbm($salarioFallback, 'Falta fecha de siniestro para reconstruir IBM con RIPTE.');
+        }
+
+        if ($salariosPorMes === []) {
+            $fallbackConRipte = $this->fallbackIbmConRipte($salarioFallback, $fechaSiniestro, $tablaRipte);
+            if ($fallbackConRipte !== null) {
+                return $fallbackConRipte;
+            }
+
+            return $this->fallbackIbm($salarioFallback, 'Faltan salarios históricos para reconstruir IBM con RIPTE.');
         }
 
         $mesReferencia = $fechaSiniestro->format('Y-m');
@@ -262,6 +271,78 @@ final class ArtCalculationEngine
             'ripte_referencia' => round($ripteReferencia, 2),
             'nota' => 'IBM reconstruido con salarios históricos ajustados por RIPTE hasta el mes del siniestro.',
         ];
+    }
+
+    private function fallbackIbmConRipte(
+        float $salarioFallback,
+        DateTimeImmutable $fechaSiniestro,
+        array $tablaRipte
+    ): ?array {
+        if ($salarioFallback <= 0) {
+            return null;
+        }
+
+        $mesReferencia = $fechaSiniestro->format('Y-m');
+        $ripteReferencia = floatval($tablaRipte[$mesReferencia] ?? 0);
+        if ($ripteReferencia <= 0) {
+            return null;
+        }
+
+        $mesBase = $fechaSiniestro->modify('-12 month')->format('Y-m');
+        if (!isset($tablaRipte[$mesBase])) {
+            $mesBase = $this->resolveMesBaseRipte($tablaRipte, $mesReferencia);
+        }
+
+        if ($mesBase === null) {
+            return null;
+        }
+
+        $ripteBase = floatval($tablaRipte[$mesBase] ?? 0);
+        if ($ripteBase <= 0) {
+            return null;
+        }
+
+        $coeficiente = $ripteReferencia / $ripteBase;
+        $ibmEstimado = $salarioFallback * $coeficiente;
+
+        return [
+            'ibm' => round($ibmEstimado, 2),
+            'salarios_considerados' => [[
+                'mes' => $mesBase,
+                'salario_original' => round($salarioFallback, 2),
+                'ripte_mes' => round($ripteBase, 2),
+                'ripte_referencia' => round($ripteReferencia, 2),
+                'coeficiente' => round($coeficiente, 6),
+                'salario_actualizado' => round($ibmEstimado, 2),
+                'metodo' => 'fallback_simplificado_ripte',
+            ]],
+            'calculo_estimado' => true,
+            'usa_salario_fallback' => true,
+            'ripte_referencia' => round($ripteReferencia, 2),
+            'ripte_base' => round($ripteBase, 2),
+            'ripte_base_mes' => $mesBase,
+            'nota' => sprintf(
+                'IBM estimado con salario base actualizado por RIPTE (%s → %s) ante falta de serie salarial histórica completa.',
+                $mesBase,
+                $mesReferencia
+            ),
+        ];
+    }
+
+    private function resolveMesBaseRipte(array $tablaRipte, string $mesReferencia): ?string
+    {
+        $meses = array_keys($tablaRipte);
+        sort($meses);
+
+        $candidato = null;
+        foreach ($meses as $mes) {
+            if ($mes >= $mesReferencia) {
+                break;
+            }
+            $candidato = $mes;
+        }
+
+        return $candidato;
     }
 
     private function fallbackIbm(float $salarioFallback, string $motivo): array

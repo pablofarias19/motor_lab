@@ -357,7 +357,7 @@ class WizardMotorLaboral {
             }
 
             const valor = campo.value.trim();
-            const esVacio = !valor || valor === '' || valor === '0';
+            const esVacio = valor === '';
 
             if (esVacio) {
                 this._mostrarError(campo, mensaje);

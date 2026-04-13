@@ -54,8 +54,16 @@ class ExposicionEngine
         $antiguedadM = intval($datosLaborales['antiguedad_meses'] ?? 0);
         $antiguedadA = $antiguedadM / 12;
 
+        $conflictosDespido = ['despido_sin_causa', 'despido_con_causa', 'trabajo_no_registrado', 'reclamo_indemnizatorio'];
         // Mes actual para SAC proporcional
         $mesActual = intval(date('n'));
+        // Cualquier indicio positivo de desvinculación activa estos conceptos.
+        // La normalización del payload limpia combinaciones incompatibles
+        // (por ejemplo, diferencias salariales con campos residuales de despido),
+        // y acá mantenemos un criterio defensivo para integraciones legacy.
+        $hayDesvinculacion = in_array($tipoConflicto, $conflictosDespido, true)
+            || (($situacion['ya_despedido'] ?? 'no') === 'si')
+            || !empty($situacion['fecha_despido']);
 
         $conceptos = [];
         $modeloDominio = [];
@@ -64,7 +72,6 @@ class ExposicionEngine
         // ─────────────────────────────────────────────────────────────────────
         // 1. CASOS DE DESVINCULACIÓN (LCT pura)
         // ─────────────────────────────────────────────────────────────────────
-        $conflictosDespido = ['despido_sin_causa', 'despido_con_causa', 'trabajo_no_registrado', 'reclamo_indemnizatorio'];
 
         if (in_array($tipoConflicto, $conflictosDespido)) {
             // Indemnización por antigüedad (Art. 245 LCT)
@@ -98,8 +105,8 @@ class ExposicionEngine
         // 2. CONCEPTOS ADICIONALES Y MULTAS (Según caso)
         // ─────────────────────────────────────────────────────────────────────
 
-        // SAC y Vacaciones proporcionales (Aplican a casi todo conflicto activo de desvinculación o duda)
-        if (in_array($tipoConflicto, array_merge($conflictosDespido, ['diferencias_salariales']))) {
+        // SAC y Vacaciones proporcionales (solo cuando hay desvinculación efectiva o reclamada)
+        if ($hayDesvinculacion) {
             $mesesSemestre = ($mesActual <= 6) ? $mesActual : $mesActual - 6;
             $sac = ($salario / 2) * ($mesesSemestre / 6);
             $conceptos['sac_proporcional'] = [
@@ -147,6 +154,12 @@ class ExposicionEngine
 
                 $notaLRT = "Fórmula LRT: {$analisisArt['formula_legal']} = " . ml_formato_moneda(floatval($analisisArt['monto_formula'] ?? 0)) . ".";
                 $notaLRT .= " IBM/VIB: " . ml_formato_moneda(floatval($analisisArt['ibm'] ?? $salario)) . ".";
+                if (!empty($analisisArt['nota'])) {
+                    $notaLRT .= ' ' . trim((string) $analisisArt['nota']);
+                }
+                if (!empty($analisisArt['ripte_referencia'])) {
+                    $notaLRT .= " RIPTE ref.: " . number_format(floatval($analisisArt['ripte_referencia']), 2, ',', '.') . ".";
+                }
                 if (!empty($analisisArt['fecha_siniestro'])) {
                     $notaLRT .= " PMI/siniestro: {$analisisArt['fecha_siniestro']}.";
                 }
@@ -162,25 +175,26 @@ class ExposicionEngine
                     'monto' => round($montoLRT, 2),
                     'base_legal' => 'Art. 14.2.a Ley 24.557 + Ley 26.773 (pisos RIPTE)',
                     'nota' => $notaLRT,
-                    'detalle_calculo' => $analisisArt,
-                ];
+                     'detalle_calculo' => $analisisArt,
+                 ];
 
-                $analisisCivil = $this->buildCivilScenarios(
+                // ═══ VÍA CIVIL: Fórmula Méndez + reparación integral orientativa ═══
+                $estimacionCivil = $this->calcularEstimacionCivilIntegral(
                     $salario,
                     $edad,
                     $incapacidad,
                     $montoLRT,
-                    $p,
-                    $perfilJurisdiccional,
-                    true
+                    $situacion,
+                    $p
                 );
-                $montoCivil = floatval($analisisCivil['escenarios']['probable']['monto_total'] ?? $montoLRT);
+                $montoCivil = $estimacionCivil['monto_total'];
 
                 $conceptos['estimacion_civil_mendez'] = [
-                    'descripcion' => "Estimación acción civil integral — escenario probable",
+                    'descripcion' => "Estimación acción civil complementaria (Méndez integral)",
                     'monto' => round($montoCivil, 2),
-                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente + criterio de reparación integral',
-                    'nota' => (string) ($analisisCivil['escenarios']['probable']['nota'] ?? '')
+                    'base_legal' => 'Art. 4 Ley 26.773 — Opción excluyente',
+                    'nota' => $estimacionCivil['nota'],
+                    'componentes' => $estimacionCivil['componentes']
                 ];
 
                 // Adicional gran invalidez
@@ -198,14 +212,28 @@ class ExposicionEngine
                     'monto' => 0.0,
                     'base_legal' => 'Trazabilidad interna del motor',
                     'nota' => sprintf(
-                        'Fuente RIPTE: %s. Cálculo %s. Tratamiento: %s. %s',
+                        'Fuente RIPTE: %s. Cálculo %s. Tratamiento: %s. %s%s',
                         $analisisArt['fuente_ripte'] ?? 'no_disponible',
                         !empty($analisisArt['calculo_estimado']) ? 'estimado' : 'completo',
                         $analisisArt['tratamiento'] ?? 'pago_unico',
+                        trim((string) ($analisisArt['nota'] ?? '')) !== ''
+                            ? trim((string) $analisisArt['nota']) . ' '
+                            : '',
                         !empty($analisisArt['necesita_comision_medica']) ? 'Falta dictamen firme de Comisión Médica.' : 'Dictamen/porcentaje consolidado.'
                     ),
                     'detalle_calculo' => $analisisArt,
                 ];
+
+                $usarPisoComparativoArt = true;
+                $analisisCivil = $this->buildCivilScenarios(
+                    $salario,
+                    $edad,
+                    $incapacidad,
+                    $montoLRT,
+                    $p,
+                    $perfilJurisdiccional,
+                    $usarPisoComparativoArt
+                );
 
                 $modeloDominio = $this->buildAccidentDomainModel(
                     true,
@@ -214,7 +242,8 @@ class ExposicionEngine
                     $analisisCivil,
                     $perfilJurisdiccional,
                     $alertasCriticas,
-                    $situacion
+                    $situacion,
+                    $montoCivil
                 );
 
             } elseif ($incapacidad > 0 && !$tieneArt) {
@@ -399,7 +428,7 @@ class ExposicionEngine
 
         // Solo si no es accidente puro ni auditoría preventiva
         $casosSinMultas = ['auditoria_preventiva', 'accidente_laboral'];
-        if (!in_array($tipoConflicto, $casosSinMultas)) {
+        if (!in_array($tipoConflicto, $casosSinMultas) && $hayDesvinculacion) {
             // Multa Art. 80 LCT (SÍ APLICA siempre — no fue derogada por Ley Bases)
             $conceptos['multa_art80_lct'] = [
                 'descripcion' => 'Certificados de Trabajo (Art. 80)',
@@ -450,12 +479,16 @@ class ExposicionEngine
         // ─────────────────────────────────────────────────────────────────────
         // 5. CÁLCULO DE TOTALES  
         // ─────────────────────────────────────────────────────────────────────
-        $totalBase = 0;
-        $totalConMultas = 0;
-        foreach ($conceptos as $key => $concepto) {
-            $totalConMultas += $concepto['monto'];
-            if (strpos($key, 'multa') === false && strpos($key, 'sancion') === false) {
-                $totalBase += $concepto['monto'];
+        if ($tipoConflicto === 'accidente_laboral' && (($situacion['tiene_art'] ?? 'no') === 'si')) {
+            [$totalBase, $totalConMultas] = $this->calcularTotalesAccidenteArt($conceptos);
+        } else {
+            $totalBase = 0;
+            $totalConMultas = 0;
+            foreach ($conceptos as $key => $concepto) {
+                $totalConMultas += $concepto['monto'];
+                if (strpos($key, 'multa') === false && strpos($key, 'sancion') === false) {
+                    $totalBase += $concepto['monto'];
+                }
             }
         }
 
@@ -595,13 +628,17 @@ class ExposicionEngine
         array $analisisCivil,
         array $perfilJurisdiccional,
         array $alertasCriticas,
-        array $situacion
+        array $situacion,
+        ?float $montoCivilComplementario = null
     ): array {
         $escenariosCiviles = $analisisCivil['escenarios'] ?? [];
         $civilConservador = floatval($escenariosCiviles['conservador']['monto_total'] ?? 0);
         $civilProbable = floatval($escenariosCiviles['probable']['monto_total'] ?? 0);
         $civilAgresivo = floatval($escenariosCiviles['agresivo']['monto_total'] ?? 0);
-        $maximoReal = max($montoArt, $civilAgresivo);
+        $civilExcluyente = $tieneArt && $montoCivilComplementario !== null
+            ? round(max(0.0, $montoCivilComplementario), 2)
+            : $civilAgresivo;
+        $maximoReal = max($montoArt, $civilExcluyente);
         $viaRecomendada = $this->resolveViaRecomendada(
             $tieneArt,
             $montoArt,
@@ -631,6 +668,9 @@ class ExposicionEngine
                 'via_civil' => [
                     'disponible' => true,
                     'tipo' => 'integral_excluyente',
+                    'monto_integral_referencial' => round($civilExcluyente, 2),
+                    'monto_reclamo_mendez' => round($civilExcluyente, 2),
+                    'referencia_principal' => $tieneArt && $montoCivilComplementario !== null ? 'mendez_integral' : 'escenarios',
                     'escenarios' => [
                         'conservador' => round($civilConservador, 2),
                         'probable' => round($civilProbable, 2),
@@ -643,6 +683,7 @@ class ExposicionEngine
                     'opcion_excluyente' => true,
                     'via_recomendada' => $viaRecomendada,
                     'diferencia_probable_vs_art' => round($civilProbable - $montoArt, 2),
+                    'diferencia_mendez_vs_art' => round($civilExcluyente - $montoArt, 2),
                     'estrategia_sugerida' => $viaRecomendada === 'art'
                         ? 'Priorizar tarifa ART y reservar la vía civil para supuestos con prueba reforzada.'
                         : 'Analizar la vía civil porque la exposición probable supera materialmente a la tarifa ART y hay contexto jurídico favorable.',
@@ -650,8 +691,8 @@ class ExposicionEngine
                 'costas' => $analisisCivil['costas_estimadas'] ?? ['min' => 0, 'probable' => 0, 'max' => 0],
                 'resultado_final' => [
                     'exposicion_maxima_real' => round($maximoReal, 2),
-                    'tipo' => $civilAgresivo >= $montoArt
-                        ? 'escenario_civil_agresivo_con_costas'
+                    'tipo' => $civilExcluyente >= $montoArt
+                        ? 'estimacion_civil_integral_excluyente'
                         : 'escenario_art_tarifado',
                 ],
             ],
@@ -660,6 +701,8 @@ class ExposicionEngine
                 'exposicion_civil_conservadora' => round($civilConservador, 2),
                 'exposicion_civil_probable' => round($civilProbable, 2),
                 'exposicion_civil_agresiva' => round($civilAgresivo, 2),
+                'exposicion_civil_mendez' => round($civilExcluyente, 2),
+                'exposicion_civil_integral_referencial' => round($civilExcluyente, 2),
                 'exposicion_maxima_real_con_costas' => round($maximoReal, 2),
                 'estrategia_sugerida' => $viaRecomendada,
             ],
@@ -737,5 +780,94 @@ class ExposicionEngine
             'total_base' => floatval($resultadosClave['exposicion_art_segura'] ?? 0),
             'total_con_multas' => floatval($resultadosClave['exposicion_maxima_real_con_costas'] ?? 0),
         ];
+    }
+
+    private function calcularEstimacionCivilIntegral(
+        float $salario,
+        int $edad,
+        float $incapacidad,
+        float $montoTarifaArt,
+        array $situacion,
+        array $parametrosAccidente
+    ): array {
+        $cfgCivil = $parametrosAccidente['civil_mendez'] ?? [];
+        $capitalBase = ($salario * $parametrosAccidente['meses_año'] * ($incapacidad / 100) * $parametrosAccidente['factor_edad_limite']) / $edad;
+
+        $danioMoral = $capitalBase * floatval($cfgCivil['danio_moral_pct'] ?? 0.20);
+        $danioVidaRelacion = $capitalBase * floatval($cfgCivil['danio_vida_relacion_pct'] ?? 0.15);
+
+        $mesesLitigio = intval($situacion['meses_litigio'] ?? 0);
+        if ($mesesLitigio <= 0) {
+            $mesesLitigio = intval($cfgCivil['meses_litigio_default'] ?? 48);
+        }
+
+        $subtotalIntegral = $capitalBase + $danioMoral + $danioVidaRelacion;
+        $tasaAnual = floatval($cfgCivil['interes_judicial_anual_orientativo'] ?? 0.50);
+        $factorActualizacion = pow(1 + $tasaAnual, $mesesLitigio / 12) - 1;
+        $actualizacionJudicial = $subtotalIntegral * $factorActualizacion;
+
+        $montoIntegral = $subtotalIntegral + $actualizacionJudicial;
+        $pisoCivil = $montoTarifaArt * floatval($cfgCivil['piso_sobre_tarifa_art'] ?? 1.0);
+        $pisoAplicado = $montoIntegral < $pisoCivil;
+        $montoTotal = $pisoAplicado ? $pisoCivil : $montoIntegral;
+
+        $nota = sprintf(
+            'Estimación integral civil sobre base Méndez: capital base %s + daño moral mínimo %s + vida de relación/pérdida de chance %s + actualización judicial orientativa %s (%d meses). %s ADVERTENCIA: optar por vía civil excluye cobro de tarifa ART.',
+            ml_formato_moneda($capitalBase),
+            ml_formato_moneda($danioMoral),
+            ml_formato_moneda($danioVidaRelacion),
+            ml_formato_moneda($actualizacionJudicial),
+            $mesesLitigio,
+            $pisoAplicado
+                ? 'Se aplicó piso comparativo equivalente a la tarifa ART para evitar una estimación civil por debajo del umbral tarifado.'
+                : 'No fue necesario aplicar piso comparativo sobre la tarifa ART.'
+        );
+
+        return [
+            'monto_total' => round($montoTotal, 2),
+            'nota' => $nota,
+            'componentes' => [
+                'capital_base' => round($capitalBase, 2),
+                'danio_moral' => round($danioMoral, 2),
+                'danio_vida_relacion' => round($danioVidaRelacion, 2),
+                'actualizacion_judicial' => round($actualizacionJudicial, 2),
+                'meses_litigio' => $mesesLitigio,
+                'piso_tarifa_art' => round($pisoCivil, 2),
+                'piso_aplicado' => $pisoAplicado,
+            ],
+        ];
+    }
+
+    private function calcularTotalesAccidenteArt(array $conceptos): array
+    {
+        $rutaArt = 0.0;
+        $rutaCivil = 0.0;
+        $extrasBase = 0.0;
+        $extrasConMultas = 0.0;
+
+        foreach ($conceptos as $key => $concepto) {
+            $monto = floatval($concepto['monto'] ?? 0);
+
+            if ($key === 'prestacion_art_tarifa' || $key === 'adicional_gran_invalidez') {
+                $rutaArt += $monto;
+                continue;
+            }
+
+            if ($key === 'estimacion_civil_mendez') {
+                $rutaCivil += $monto;
+                continue;
+            }
+
+            $extrasConMultas += $monto;
+            if (strpos($key, 'multa') === false && strpos($key, 'sancion') === false) {
+                $extrasBase += $monto;
+            }
+        }
+
+        $mejorRuta = max($rutaArt, $rutaCivil);
+        $totalBase = $mejorRuta + $extrasBase;
+        $totalConMultas = $mejorRuta + $extrasConMultas;
+
+        return [round($totalBase, 2), round($totalConMultas, 2)];
     }
 }

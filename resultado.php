@@ -72,6 +72,7 @@ $alertasMarzo2026 = $escenariosPayload['alertas_marzo_2026'];
 
 $tipoConflictoLabel = ml_conflicto_label($analisis['tipo_conflicto']);
 $tipoUsuarioAnalisis = strtolower((string) ($analisis['tipo_usuario'] ?? ''));
+$esAccidenteLaboral = (($analisis['tipo_conflicto'] ?? '') === 'accidente_laboral');
 $uiDanoComplementario = ml_admin_runtime_get('ui.dano_complementario', []);
 $uiEscenarioPreventivo = ml_admin_runtime_get('ui.escenario_preventivo', []);
 $preventivoAccentColor = (string) ($uiEscenarioPreventivo['accent_color'] ?? '#0f766e');
@@ -81,15 +82,17 @@ $escenarioD = is_array($escenarios['D'] ?? null) ? $escenarios['D'] : [];
 $escenarioDPreventivo = !empty($escenarioD['es_preventivo']);
 $escenarioDNombre = htmlspecialchars((string) ($escenarioD['nombre'] ?? 'Acción Civil Complementaria'), ENT_QUOTES, 'UTF-8');
 
-$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario): string {
+$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario, bool $esAccidenteLaboral): string {
     if (!empty($escenario['lectura_beneficio'])) {
         return (string) $escenario['lectura_beneficio'];
     }
 
     return match ($codigo) {
-        'D' => $tipoUsuario === 'empleador'
-            ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.')
-            : (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_general', 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.'),
+        'D' => $esAccidenteLaboral
+            ? 'Aquí el beneficio debe leerse como estimación orientativa de la acción civil integral, no como monto acumulable con la tarifa ART. Es una vía excluyente y comparativa frente al sistema tarifado.'
+            : ($tipoUsuario === 'empleador'
+                ? (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_empleador', 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.')
+                : (string) ml_admin_runtime_get('ui.escenario_preventivo.economic_reading_general', 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.')),
         'A', 'B', 'C' => $tipoUsuario === 'empleador'
             ? 'Aquí el beneficio debe interpretarse como reducción o contención de exposición económica para la parte empleadora, no como ingreso nuevo. El costo refleja la inversión necesaria para cerrar, negociar o sostener la estrategia.'
             : 'Aquí el beneficio debe interpretarse como recupero potencial para la parte reclamante, no como monto garantizado. El costo refleja honorarios, gestión y fricción esperable de la vía elegida.',
@@ -683,8 +686,9 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
 
             if ($esArtConCobertura):
                 $montoTarifa = $exposicion['conceptos']['prestacion_art_tarifa']['monto'] ?? 0;
-                $montoCivil = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? 0;
-                $detalleArtCalc = $exposicion['conceptos']['prestacion_art_tarifa']['detalle_calculo'] ?? [];
+                $civilConcepto = $exposicion['conceptos']['estimacion_civil_mendez'] ?? [];
+                $montoCivil = $civilConcepto['monto'] ?? 0;
+                $notaCivil = $civilConcepto['nota'] ?? '';
                 $tipoContingencia = $situacion['tipo_contingencia'] ?? 'accidente_tipico';
                 $estadoCM = $situacion['comision_medica'] ?? 'no_iniciada';
                 $incapTipo = $situacion['incapacidad_tipo'] ?? 'permanente_definitiva';
@@ -776,7 +780,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             <tr style="background: var(--premium-blue); color: #fff;">
                                 <th style="padding: 8px; text-align: left;"></th>
                                 <th style="padding: 8px; text-align: right;">Tarifa ART (Ley 24.557)</th>
-                                <th style="padding: 8px; text-align: right;">Acción Civil integral</th>
+                                <th style="padding: 8px; text-align: right;">Acción Civil (Méndez integral)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -796,60 +800,18 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <td style="padding: 6px 8px; border-bottom: 1px solid #eee; text-align: right;">Alto</td>
                             </tr>
                             <tr>
-                                <td style="padding: 6px 8px;">Diferencia</td>
-                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $colorDiferenciaCivil ?>;">
+                                <td style="padding: 6px 8px;">Diferencia orientativa</td>
+                                <td colspan="2" style="padding: 6px 8px; text-align: right; font-weight: bold; color: <?= $montoCivil > $montoTarifa ? '#16a34a' : '#dc2626' ?>;">
                                     <?= $montoCivil > $montoTarifa ? '+' : '' ?><?= ml_formato_moneda($montoCivil - $montoTarifa) ?> vía civil
                                 </td>
                             </tr>
                         </tbody>
                     </table>
 
-                    <?php if (!empty($detalleArtCalc)): ?>
-                    <div style="margin-top: 1rem; padding: 1rem; border: 1px solid #dbeafe; border-radius: 10px; background: #f8fbff;">
-                        <h4 style="margin: 0 0 .75rem; font-size: .85rem; color: var(--premium-blue);">Trazabilidad del cálculo ART</h4>
-                        <div class="resumen-grid" style="margin-bottom: .75rem;">
-                            <div class="resumen-item">
-                                <div class="resumen-content">
-                                    <span class="resumen-label">IBM / VIB:</span>
-                                    <span class="resumen-value"><?= ml_formato_moneda(floatval($detalleArtCalc['ibm'] ?? 0)) ?></span>
-                                </div>
-                            </div>
-                            <div class="resumen-item">
-                                <div class="resumen-content">
-                                    <span class="resumen-label">Piso legal:</span>
-                                    <span class="resumen-value"><?= ml_formato_moneda(floatval($detalleArtCalc['piso_minimo'] ?? 0)) ?><?= !empty($detalleArtCalc['piso_aplicado']) ? ' aplicado' : ' controlado' ?></span>
-                                </div>
-                            </div>
-                            <div class="resumen-item">
-                                <div class="resumen-content">
-                                    <span class="resumen-label">RIPTE:</span>
-                                    <span class="resumen-value"><?= htmlspecialchars((string) ($detalleArtCalc['fuente_ripte'] ?? 'no_disponible')) ?></span>
-                                </div>
-                            </div>
-                            <div class="resumen-item">
-                                <div class="resumen-content">
-                                    <span class="resumen-label">Tipo de cálculo:</span>
-                                    <span class="resumen-value"><?= !empty($detalleArtCalc['calculo_estimado']) ? 'Estimado' : 'Completo' ?></span>
-                                </div>
-                            </div>
-                        </div>
-                        <div style="font-size: .8rem; color: #4b5563; line-height: 1.5;">
-                            <strong>Fórmula:</strong> <?= htmlspecialchars((string) ($detalleArtCalc['formula_legal'] ?? '')) ?><br>
-                            <strong>Tratamiento:</strong> <?= htmlspecialchars(str_replace('_', ' ', (string) ($detalleArtCalc['tratamiento'] ?? 'pago_unico'))) ?><br>
-                            <strong>Salarios considerados:</strong> <?= intval($detalleArtCalc['cantidad_salarios'] ?? 0) ?><br>
-                            <?php if (!empty($detalleArtCalc['preexistencia_aplicada'])): ?>
-                                <strong>Preexistencia:</strong> <?= floatval($detalleArtCalc['preexistencia_porcentaje'] ?? 0) ?>%<br>
-                            <?php endif; ?>
-                            <?php if (!empty($detalleArtCalc['necesita_comision_medica'])): ?>
-                                <strong>Observación:</strong> Falta dictamen consolidado de Comisión Médica; se tomó el porcentaje informado.
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
-
-                    <?php if (!empty($exposicion['conceptos']['estimacion_civil_mendez']['nota'])): ?>
-                    <div style="margin-top: .65rem; font-size: .78rem; color: #6b7280; line-height: 1.45;">
-                        <em><?= htmlspecialchars($exposicion['conceptos']['estimacion_civil_mendez']['nota']) ?></em>
+                    <?php if (!empty($notaCivil)): ?>
+                    <div class="motor-aviso-legal" style="margin-top: 1rem; background: #eff6ff; border-color: #bfdbfe;">
+                        <i class="bi bi-info-circle-fill" style="color: #2563eb;"></i>
+                        <span><?= htmlspecialchars($notaCivil) ?></span>
                     </div>
                     <?php endif; ?>
 
@@ -1222,6 +1184,10 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                     onclick="window.open('https://fariasortiz.com.ar', '_blank')">
                     Agendar Consulta
                 </button>
+                <div class="premium-pdf-notice">
+                    <strong><i class="bi bi-info-circle"></i> Para más información, mayor detalle y explicación de este análisis, descargá el informe en PDF.</strong>
+                    El dashboard resume los datos principales y el informe amplía fundamentos, observaciones y variables relevantes del caso.
+                </div>
             </div>
         </div>
     </main>
