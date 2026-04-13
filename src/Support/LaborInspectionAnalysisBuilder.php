@@ -364,11 +364,11 @@ final class LaborInspectionAnalysisBuilder
                 'gatillo' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
                     ? 'Aplica cuando hay facturación paralela, depósitos o señales de interposición que pueden contaminar el análisis laboral.'
                     : 'Aplica cuando existen meses sin registrar, brecha salarial o inconsistencias formales relevantes.',
-                'acciones' => array_values(array_filter([
+                'acciones' => self::buildConditionalActions([
                     'Auditar alta temprana, libro Art. 52 LCT, recibos y trazabilidad bancaria.',
                     $hayFacturacionParalela ? 'Documentar por escrito que la empresa no participa en la facturación ni en los cobros externos del dependiente.' : null,
                     $hayRiesgoEstructuraOpaca ? 'Separar accesos, herramientas y circuitos internos para evitar que se infiera una maniobra simulada desde la empresa.' : null,
-                ])),
+                ]),
             ],
             'inspeccion_en_curso' => [
                 'aplica' => $hayInspeccionPrevia,
@@ -377,10 +377,10 @@ final class LaborInspectionAnalysisBuilder
                     ? 'La reinspección puede requerir no solo documentación laboral sino también explicación sobre depósitos, clientes o facturación externa del dependiente.'
                     : 'Puede existir acta previa o reiteración inspectiva con foco en registración, jornada, ART y F.931.',
                 'gatillo' => 'Se activa frente a visitas previas, actas abiertas o reincidencia ante Ministerio de Trabajo/ARCA.',
-                'acciones' => array_values(array_filter([
+                'acciones' => self::buildConditionalActions([
                     'Centralizar la respuesta en RR.HH./Legales y preservar legajo, recibos, libro sueldo y constancias de pago.',
                     $hayFacturacionParalela ? 'Preparar carpeta de deslinde para demostrar que los ingresos extra salariales no provienen del empleador.' : null,
-                ])),
+                ]),
             ],
             'defensa_administrativa' => [
                 'aplica' => $hayRequerimientoActivo || $recommendation === 'defensa_estructurada',
@@ -391,11 +391,11 @@ final class LaborInspectionAnalysisBuilder
                 'gatillo' => $hayRequerimientoActivo
                     ? 'Existe requerimiento, intercambio formal u orden de informar.'
                     : 'Se recomienda cuando el riesgo estructural obliga a preparar defensa antes del acto administrativo.',
-                'acciones' => array_values(array_filter([
+                'acciones' => self::buildConditionalActions([
                     'Acompañar F.931, transferencias, libro Art. 52 LCT, altas y recibos firmados.',
                     $hayFacturacionParalela ? 'Pedir que cualquier análisis sobre facturación externa se circunscriba al dependiente o a terceros y no se traslade automáticamente al salario.' : null,
                     $hayRiesgoEstructuraOpaca ? 'Responder de inmediato oficios, embargos o pedidos de información para evitar multas por obstrucción o incumplimiento.' : null,
-                ])),
+                ]),
             ],
             'estrategia_preventiva' => [
                 'aplica' => $recommendation === 'auditoria_preventiva',
@@ -404,11 +404,11 @@ final class LaborInspectionAnalysisBuilder
                     ? 'La auditoría debe revisar legajo y pagos, pero también el riesgo de que una facturación externa del dependiente genere presunciones de salario no registrado o pedidos de informes.'
                     : 'Auditoría interna y ordenamiento de compliance laboral antes de una visita de inspección.',
                 'gatillo' => 'Se sugiere cuando aún no existe acta, pero sí una exposición potencial que conviene ordenar.',
-                'acciones' => array_values(array_filter([
+                'acciones' => self::buildConditionalActions([
                     'Verificar consistencia entre recibos, transferencias, cargas sociales y legajo.',
                     $hayFacturacionParalela ? 'Emitir política interna que prohíba usar medios o tiempo de trabajo para actividades facturadas ajenas al empleador.' : null,
                     'Definir protocolo para contestar requerimientos del Ministerio de Trabajo, ARCA u oficios judiciales.',
-                ])),
+                ]),
             ],
         ];
     }
@@ -708,8 +708,8 @@ final class LaborInspectionAnalysisBuilder
 
     private static function hasParallelBillingSignals(array $documentacion, array $situacion): bool
     {
-        return self::flag($situacion['tiene_facturacion'] ?? ($documentacion['tiene_facturacion'] ?? 'no'))
-            || self::flag($situacion['tiene_pago_bancario'] ?? ($documentacion['pago_bancario'] ?? 'no'));
+        return self::isFlagEnabled($situacion['tiene_facturacion'] ?? ($documentacion['tiene_facturacion'] ?? 'no'))
+            || self::isFlagEnabled($situacion['tiene_pago_bancario'] ?? ($documentacion['pago_bancario'] ?? 'no'));
     }
 
     private static function hasOpaqueStructureSignals(array $situacion): bool
@@ -721,7 +721,7 @@ final class LaborInspectionAnalysisBuilder
             'fraude_sobre_facturacion',
             'fraude_estructura_opaca',
         ] as $flag) {
-            if (self::flag($situacion[$flag] ?? 'no')) {
+            if (self::isFlagEnabled($situacion[$flag] ?? 'no')) {
                 return true;
             }
         }
@@ -729,13 +729,18 @@ final class LaborInspectionAnalysisBuilder
         return false;
     }
 
-    private static function flag($value): bool
+    private static function isFlagEnabled($value): bool
     {
         if (is_bool($value)) {
             return $value;
         }
 
         return in_array(strtolower(trim((string) $value)), ['si', 'sí', 'true', '1', 'yes', 'on'], true);
+    }
+
+    private static function buildConditionalActions(array $actions): array
+    {
+        return array_values(array_filter($actions));
     }
 
     private static function makeBlock(float $puntaje, array $checks, array $observaciones): array
