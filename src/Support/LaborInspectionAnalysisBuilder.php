@@ -318,7 +318,7 @@ final class LaborInspectionAnalysisBuilder
             ],
             'inspeccion_en_curso' => [
                 'aplica' => ($situacion['inspeccion_previa'] ?? 'no') === 'si',
-                'descripcion' => 'Puede existir acta previa o reiteración inspectiva con multa potencial.',
+                'descripcion' => 'Puede existir acta previa o reiteración de inspección con multa potencial.',
             ],
             'defensa_administrativa' => [
                 'aplica' => ($situacion['hay_intercambio'] ?? 'no') === 'si' || ($situacion['fue_intimado'] ?? 'no') === 'si',
@@ -326,7 +326,7 @@ final class LaborInspectionAnalysisBuilder
             ],
             'estrategia_preventiva' => [
                 'aplica' => $recommendation === 'auditoria_preventiva',
-                'descripcion' => 'Auditoría interna y ordenamiento de compliance laboral antes de una visita inspectiva.',
+                'descripcion' => 'Auditoría interna y ordenamiento de compliance laboral antes de una visita de inspección.',
             ],
         ];
     }
@@ -340,7 +340,7 @@ final class LaborInspectionAnalysisBuilder
             $factores[] = 'potencial réplica a otros ' . ($cantidad - 1) . ' trabajadores';
         }
         if (($situacion['inspeccion_previa'] ?? 'no') === 'si') {
-            $factores[] = 'reiteración inspectiva';
+            $factores[] = 'reiteración de inspección';
         }
         if (($situacion['fraude_evasion_sistematica'] ?? 'no') === 'si') {
             $factores[] = 'riesgo de denuncia por evasión sistemática';
@@ -358,7 +358,7 @@ final class LaborInspectionAnalysisBuilder
         };
 
         if (($situacion['inspeccion_previa'] ?? 'no') === 'si') {
-            $base .= ' El antecedente inspectivo aumenta la exposición por reincidencia.';
+            $base .= ' El antecedente de inspección aumenta la exposición por reincidencia.';
         }
 
         if (!empty($observaciones)) {
