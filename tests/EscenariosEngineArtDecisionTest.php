@@ -51,6 +51,7 @@ final class EscenariosEngineArtDecisionTest extends TestCase
         $escenarioD = $resultado['escenarios']['D'] ?? [];
         $this->assertSame('D', $resultado['recomendado'] ?? null, 'La comparativa explícita debe poder forzar la recomendación civil.');
         $this->assertSame('civil', $escenarioD['via_juridica'] ?? null);
+        $this->assertSame(false, $escenarioD['es_preventivo'] ?? null, 'La acción civil complementaria no debe marcarse como escenario preventivo.');
         $this->assertTrue(isset($escenarioD['exposicion_economica']['agresivo']), 'La acción civil debe exponerse por rango y no por un único monto.');
         $this->assertSame(12400000.0, floatval($escenarioD['beneficio_estimado'] ?? 0), 'La acción civil debe priorizar el reclamo Méndez referencial cuando está disponible.');
         $this->assertSame(12400000.0, floatval($escenarioD['exposicion_economica']['reclamo_mendez'] ?? 0), 'Debe conservar visible la referencia Méndez principal.');

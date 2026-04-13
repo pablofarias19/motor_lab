@@ -78,6 +78,9 @@ $uiEscenarioPreventivo = ml_admin_runtime_get('ui.escenario_preventivo', []);
 $preventivoAccentColor = (string) ($uiEscenarioPreventivo['accent_color'] ?? '#0f766e');
 $preventivoBadgeLabel = (string) ($uiEscenarioPreventivo['badge_label'] ?? 'Escenario preventivo');
 $preventivoClarification = (string) ($uiEscenarioPreventivo['clarification'] ?? '');
+$escenarioD = is_array($escenarios['D'] ?? null) ? $escenarios['D'] : [];
+$escenarioDPreventivo = !empty($escenarioD['es_preventivo']);
+$escenarioDNombre = htmlspecialchars((string) ($escenarioD['nombre'] ?? 'Acción Civil Complementaria'), ENT_QUOTES, 'UTF-8');
 
 $explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario, bool $esAccidenteLaboral): string {
     if (!empty($escenario['lectura_beneficio'])) {
@@ -962,12 +965,14 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <div>• <strong>Balance neto</strong>: diferencia entre beneficio y costo, útil para no leer los importes en forma aislada.</div>
                         <div>• <strong>Duración</strong> y <strong>Riesgo</strong>: permiten evaluar tiempo esperado, fricción institucional y probabilidad de desgaste procesal.</div>
                         <div>• El <strong>Índice Estratégico</strong> es orientativo y compara balance relativo entre retorno neto, costo, tiempo y riesgo.</div>
-                        <?php if ($esAccidenteLaboral): ?>
-                        <div>• En <strong>accidente laboral</strong>, el escenario <strong>D</strong> compara la <strong>acción civil complementaria</strong> como alternativa excluyente frente a la tarifa ART.</div>
-                        <?php else: ?>
-                        <div>• El escenario <strong>D</strong> representa una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.</div>
-                        <?php endif; ?>
-                        <?php if (!$esAccidenteLaboral && $preventivoClarification !== ''): ?>
+                        <div>• El escenario <strong>D</strong> representa
+                            <?php if ($escenarioDPreventivo): ?>
+                            una lógica de <strong>reconfiguración preventiva</strong>, normalmente más alineada con empleadores que con reclamos ya activados.
+                            <?php else: ?>
+                            la alternativa específica de <strong><?= $escenarioDNombre ?></strong> dentro del tipo de análisis realizado.
+                            <?php endif; ?>
+                        </div>
+                        <?php if ($escenarioDPreventivo && $preventivoClarification !== ''): ?>
                         <div>• <strong><?= htmlspecialchars($preventivoBadgeLabel) ?>:</strong> <?= htmlspecialchars($preventivoClarification) ?></div>
                         <?php endif; ?>
                     </div>
@@ -979,8 +984,8 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 <?php foreach ($escenarios as $letra => $esc):
                     $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
-                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis, $esAccidenteLaboral);
-                    $esEscenarioPreventivo = !$esAccidenteLaboral && $letra === 'D';
+                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
+                    $esEscenarioPreventivo = !empty($esc['es_preventivo']);
                     $beneficioLabel = (string) ($esc['beneficio_label'] ?? (($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'
                         : 'Beneficio'));
