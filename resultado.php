@@ -665,13 +665,69 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                         <?php endif; ?>
 
                         <?php if (!empty($analisisEmpresa['inspeccion'])):
-                            $inspEmp = $analisisEmpresa['inspeccion']; ?>
+                            $inspEmp = $analisisEmpresa['inspeccion'];
+                            $inspLaboral = is_array($inspEmp['laboral'] ?? null) ? $inspEmp['laboral'] : [];
+                            $inspMatriz = is_array($inspLaboral['matriz_riesgo'] ?? null) ? $inspLaboral['matriz_riesgo'] : [];
+                            $inspChecklist = is_array($inspLaboral['checklist'] ?? null) ? $inspLaboral['checklist'] : [];
+                            $inspConclusion = is_array($inspLaboral['conclusion_estrategica'] ?? null) ? $inspLaboral['conclusion_estrategica'] : [];
+                            ?>
                             <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;">
                                 <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;"><span class="ui-emoji" aria-hidden="true">🏛️</span>Inspección ARCA / Ministerio</h4>
                                 <div><strong>Capital omitido:</strong> <?= ml_formato_moneda(floatval($inspEmp['capital_omitido'] ?? 0)) ?></div>
                                 <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($inspEmp['intereses'] ?? 0)) ?></div>
                                 <div><strong>Deuda total:</strong> <?= ml_formato_moneda(floatval($inspEmp['deuda_total'] ?? 0)) ?></div>
+                                <?php if (!empty($inspEmp['infraccion_laboral'])): ?>
+                                <div><strong>Infracción laboral:</strong> <?= htmlspecialchars(str_replace('_', ' ', (string) $inspEmp['infraccion_laboral'])) ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($inspEmp['probabilidad_inspeccion'])): ?>
+                                <div><strong>Probabilidad de inspección:</strong> <?= htmlspecialchars((string) $inspEmp['probabilidad_inspeccion']) ?></div>
+                                <?php endif; ?>
+                                <?php if (!empty($inspEmp['recomendacion_final'])): ?>
+                                <div><strong>Recomendación final:</strong> <?= htmlspecialchars((string) $inspEmp['recomendacion_final']) ?></div>
+                                <?php endif; ?>
                                 <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($inspEmp['detalle'] ?? '') ?></p>
+                                <?php if (!empty($inspEmp['observaciones_clave'])): ?>
+                                <p style="margin:.5rem 0 0; font-size:.85rem; color:#7f1d1d;"><?= htmlspecialchars((string) $inspEmp['observaciones_clave']) ?></p>
+                                <?php endif; ?>
+                                <?php if (!empty($inspMatriz)): ?>
+                                <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
+                                    <div style="font-weight:600; margin-bottom:.6rem;">Matriz de riesgo laboral</div>
+                                    <div style="display:grid; gap:.45rem;">
+                                        <?php foreach ($inspMatriz as $nombre => $bloque): ?>
+                                        <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.83rem;">
+                                            <span><?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?></span>
+                                            <span><strong><?= htmlspecialchars((string) ($bloque['nivel'] ?? '-')) ?></strong> · <?= htmlspecialchars(number_format((float) ($bloque['puntaje'] ?? 0), 1, ',', '.')) ?>/5</span>
+                                        </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                                <?php endif; ?>
+                                <?php if (!empty($inspChecklist)): ?>
+                                <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
+                                    <div style="font-weight:600; margin-bottom:.6rem;">Checklist de inspección</div>
+                                    <ul style="margin:0 0 0 1rem; font-size:.83rem; color:#6b7280;">
+                                        <?php foreach ($inspChecklist as $nombre => $valor): ?>
+                                            <li>
+                                                <?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?>:
+                                                <strong>
+                                                    <?=
+                                                        $valor === null
+                                                            ? 'No relevado'
+                                                            : ($valor ? 'Sí' : 'No')
+                                                    ?>
+                                                </strong>
+                                            </li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                                <?php endif; ?>
+                                <?php if (!empty($inspConclusion)): ?>
+                                <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5; font-size:.83rem; color:#6b7280;">
+                                    <div><strong>IRIL:</strong> <?= htmlspecialchars((string) ($inspEmp['iril_laboral'] ?? '-')) ?> / <?= htmlspecialchars((string) ($inspEmp['nivel_laboral'] ?? '-')) ?></div>
+                                    <div><strong>Nivel de riesgo general:</strong> <?= htmlspecialchars((string) ($inspConclusion['nivel_riesgo_general'] ?? '-')) ?></div>
+                                    <div><strong>Grado de exposición:</strong> <?= htmlspecialchars((string) ($inspConclusion['grado_exposicion'] ?? '-')) ?></div>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
                     </div>

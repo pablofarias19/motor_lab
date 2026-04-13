@@ -9,6 +9,7 @@ use App\Engines\SolidaridadEngine;
 use App\Support\AnalysisPayloadNormalizer;
 use App\Support\AnalysisSessionStore;
 use App\Support\ComplementaryLegalAnalysisBuilder;
+use App\Support\LaborInspectionAnalysisBuilder;
 use App\Support\LegacyEngineFactory;
 use Exception;
 
@@ -66,6 +67,7 @@ class AnalysisService
             $payload['tipo_conflicto'],
             $payload['tipo_usuario']
         );
+        $exposicion = $this->enriquecerDiagnosticoInspeccionLaboral($payload, $exposicion, $irilResult);
 
         $escenariosResult = $this->escenariosEngine->generarEscenarios(
             $exposicion,
@@ -262,6 +264,29 @@ class AnalysisService
         if (!empty($analisisEmpresa)) {
             $exposicion['analisis_empresa'] = $analisisEmpresa;
         }
+
+        return $exposicion;
+    }
+
+    private function enriquecerDiagnosticoInspeccionLaboral(array $payload, array $exposicion, array $irilResult): array
+    {
+        if (($payload['tipo_usuario'] ?? '') !== 'empleador' || ($payload['tipo_conflicto'] ?? '') !== 'riesgo_inspeccion') {
+            return $exposicion;
+        }
+
+        $inspeccion = is_array($exposicion['analisis_empresa']['inspeccion'] ?? null)
+            ? $exposicion['analisis_empresa']['inspeccion']
+            : [];
+
+        $analisisLaboral = LaborInspectionAnalysisBuilder::build(
+            $payload['datos_laborales'],
+            $payload['documentacion'],
+            $payload['situacion'],
+            $exposicion,
+            $irilResult
+        );
+
+        $exposicion['analisis_empresa']['inspeccion'] = array_merge($inspeccion, $analisisLaboral);
 
         return $exposicion;
     }

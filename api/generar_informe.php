@@ -414,6 +414,64 @@ try {
                 $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', $clave)) . ': ' . $texto), 0, 'L');
             }
 
+            if ($modulo === 'inspeccion' && !empty($detalle['laboral']) && is_array($detalle['laboral'])) {
+                $laboral = $detalle['laboral'];
+                $matriz = is_array($laboral['matriz_riesgo'] ?? null) ? $laboral['matriz_riesgo'] : [];
+                $checklist = is_array($laboral['checklist'] ?? null) ? $laboral['checklist'] : [];
+                $conclusion = is_array($laboral['conclusion_estrategica'] ?? null) ? $laboral['conclusion_estrategica'] : [];
+
+                if (!empty($matriz)) {
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Matriz de riesgo laboral'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($matriz as $nombre => $bloque) {
+                        $pdf->MultiCell(
+                            0,
+                            4,
+                            pdf_latin1(
+                                ucfirst(str_replace('_', ' ', (string) $nombre))
+                                . ': '
+                                . number_format((float) ($bloque['puntaje'] ?? 0), 1, ',', '.')
+                                . '/5'
+                                . ' ('
+                                . (string) ($bloque['nivel'] ?? '-')
+                                . ')'
+                            ),
+                            0,
+                            'L'
+                        );
+                    }
+                }
+
+                if (!empty($checklist)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Checklist de inspección'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($checklist as $nombre => $valor) {
+                        $texto = $valor === null ? 'No relevado' : ($valor ? 'Sí' : 'No');
+                        $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . $texto), 0, 'L');
+                    }
+                }
+
+                if (!empty($conclusion)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Conclusión estratégica'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($conclusion as $nombre => $valor) {
+                        if (is_array($valor)) {
+                            continue;
+                        }
+
+                        $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . (string) $valor), 0, 'L');
+                    }
+                }
+            }
+
             $pdf->Ln(1);
         }
     }
