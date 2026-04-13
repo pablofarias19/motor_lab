@@ -359,7 +359,7 @@ final class LaborInspectionAnalysisBuilder
         };
 
         if (($situacion['inspeccion_previa'] ?? 'no') === 'si') {
-            $base .= ' El antecedente de inspección aumenta la exposición por reincidencia.';
+            $base .= ' Los antecedentes de inspección aumentan la exposición por reincidencia.';
         }
 
         if (!empty($observaciones)) {
