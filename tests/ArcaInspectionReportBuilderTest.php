@@ -95,5 +95,8 @@ final class ArcaInspectionReportBuilderTest extends TestCase
         $this->assertSame('alto', strtolower((string) $report['alertas_penales']['nivel']));
         $this->assertSame(10000.0, floatval($report['valuacion_regularizacion']['impuesto_especial_usd']));
         $this->assertSame(false, $report['beneficios_bloqueo_fiscal']['antecedente_negativo']);
+        $this->assertSame('La regularización reduce intereses en 60%.', $report['cuantificacion_contingencia']['detalle_montos']['intereses']['impacto_regularizacion']);
+        $this->assertSame(true, $report['consideraciones_legales'][0]['aplica']);
+        $this->assertSame(false, $report['consideraciones_legales'][2]['aplica']);
     }
 }

@@ -38,6 +38,15 @@ final class ArcaInspectionReportBuilder
         $irilNivel = is_array($irilResult['nivel'] ?? null) ? $irilResult['nivel'] : ml_nivel_iril($irilScore);
         $probabilidadInspeccion = self::probabilidadInspeccion($overall['label'], $inspeccionPrevia, $senalesFraude, $mesesNoRegistrados);
         $recomendacion = self::resolveRecommendation($overall['label'], $inspeccionPrevia, $senalesFraude, $mesesNoRegistrados);
+        $detalleMontos = self::buildAmountDetail($inspeccion, $regularizacion, $salarioReal, $salarioDeclarado, $mesesNoRegistrados);
+        $consideracionesLegales = self::buildLegalConsiderations(
+            $datos,
+            $documentacion,
+            $situacion,
+            $regularizacion,
+            $alertasPenales,
+            $mesesNoRegistrados
+        );
 
         return [
             'identificacion' => [
@@ -87,6 +96,7 @@ final class ArcaInspectionReportBuilder
                     'multas' => round(floatval($inspeccion['multas'] ?? 0), 2),
                     'exposicion_total' => round(floatval($inspeccion['deuda_total'] ?? 0), 2),
                 ],
+                'detalle_montos' => $detalleMontos,
             ],
             'moratoria_ley_27743' => self::buildMoratoriaSection($regularizacion, $situacion),
             'valuacion_regularizacion' => self::buildAssetRegularizationSection($valuacionActivos),
@@ -115,6 +125,7 @@ final class ArcaInspectionReportBuilder
             ],
             'escenarios_estrategicos' => self::buildStrategicScenarios($inspeccionPrevia, $senalesFraude, $recomendacion['label'], $escenariosResult),
             'checklist_inspeccion' => self::buildChecklist($documentacion, $situacion),
+            'consideraciones_legales' => $consideracionesLegales,
             'conclusion_estrategica' => [
                 'nivel_riesgo_general' => $overall['label'],
                 'probabilidad_inspeccion' => $probabilidadInspeccion,
@@ -318,6 +329,107 @@ final class ArcaInspectionReportBuilder
             'aporte_retenido_mensual' => round(floatval($alertasPenales['aporte_retenido_mensual'] ?? 0), 2),
             'capital_evadido_mensual' => round(floatval($alertasPenales['capital_evadido_mensual'] ?? 0), 2),
             'detalle' => (string) ($alertasPenales['detalle'] ?? 'Sin alertas relevantes.'),
+        ];
+    }
+
+    private static function buildAmountDetail(
+        array $inspeccion,
+        array $regularizacion,
+        float $salarioReal,
+        float $salarioDeclarado,
+        int $mesesNoRegistrados
+    ): array {
+        $capital = round(floatval($inspeccion['capital_omitido'] ?? 0), 2);
+        $intereses = round(floatval($inspeccion['intereses'] ?? 0), 2);
+        $multas = round(floatval($inspeccion['multas'] ?? 0), 2);
+        $deudaTotal = round(floatval($inspeccion['deuda_total'] ?? 0), 2);
+        $condonacionIntereses = intval($regularizacion['condonacion_intereses_pct'] ?? 0);
+        $condonacionMultas = intval($regularizacion['condonacion_multas_pct'] ?? 0);
+
+        return [
+            'capital_omitido' => [
+                'monto' => $capital,
+                'motivo' => $capital > 0
+                    ? 'Se calcula sobre remuneración imponible, aportes del trabajador, contribuciones patronales y meses omitidos declarados.'
+                    : 'No surge capital omitido porque no se informó deuda previsional relevante.',
+                'hechos_relevantes' => array_values(array_filter([
+                    $salarioReal > 0 ? 'Salario real informado: ' . round($salarioReal, 2) : null,
+                    $salarioDeclarado > 0 ? 'Salario declarado/recibo: ' . round($salarioDeclarado, 2) : null,
+                    $mesesNoRegistrados > 0 ? 'Meses no registrados: ' . $mesesNoRegistrados : null,
+                ])),
+            ],
+            'intereses' => [
+                'monto' => $intereses,
+                'motivo' => $intereses > 0
+                    ? 'Se aplica interés simple sobre el capital omitido, con eventual reducción por acogimiento a regularización.'
+                    : 'No se adicionaron intereses por ausencia de deuda o por neutralización completa del escenario informado.',
+                'impacto_regularizacion' => $condonacionIntereses > 0
+                    ? 'La regularización reduce intereses en ' . $condonacionIntereses . '%.'
+                    : 'No se informó condonación de intereses aplicable.',
+            ],
+            'multas' => [
+                'monto' => $multas,
+                'motivo' => $multas > 0
+                    ? 'Se contemplan multas por omisión/no registración y agravantes preventivos del escenario oficioso.'
+                    : 'No se adicionaron multas relevantes por la información disponible o por neutralización del régimen de regularización.',
+                'impacto_regularizacion' => $condonacionMultas > 0
+                    ? 'La regularización reduce multas en ' . $condonacionMultas . '%.'
+                    : 'No se informó condonación de multas aplicable.',
+            ],
+            'exposicion_total' => [
+                'monto' => $deudaTotal,
+                'motivo' => 'La exposición total consolida capital omitido, intereses y multas luego de aplicar las reducciones del escenario declarado.',
+            ],
+        ];
+    }
+
+    private static function buildLegalConsiderations(
+        array $datos,
+        array $documentacion,
+        array $situacion,
+        array $regularizacion,
+        array $alertasPenales,
+        int $mesesNoRegistrados
+    ): array {
+        $hayDeficienciaRegistral = ((string) ($datos['tipo_registro'] ?? 'registrado')) !== 'registrado'
+            || !self::boolish($documentacion['registrado_afip'] ?? 'no')
+            || $mesesNoRegistrados > 0;
+        $aplicaLeyBases = self::boolish($situacion['aplica_blanco_laboral'] ?? 'no')
+            || self::boolish($regularizacion['aplica_regimen'] ?? false);
+
+        return [
+            [
+                'titulo' => 'Ley Bases Nº 27.742',
+                'aplica' => $aplicaLeyBases,
+                'estado' => $aplicaLeyBases ? 'Aplica de modo referencial' : 'No aplica directamente',
+                'motivo' => $aplicaLeyBases
+                    ? 'Se informó adhesión/regularización laboral, por lo que el informe aclara que no suma multas laborales suspendidas ajenas a la deuda previsional.'
+                    : 'La deuda ARCA aquí cuantificada responde a seguridad social y fiscalización previsional; no depende de las multas indemnizatorias suspendidas por Ley Bases.',
+                'impacto_en_montos' => 'Los montos del informe ARCA provienen de capital, intereses y multas previsionales; no se agregan multas laborales de despido por esta vía.',
+            ],
+            [
+                'titulo' => 'Art. 132 bis LCT',
+                'aplica' => $hayDeficienciaRegistral,
+                'estado' => $hayDeficienciaRegistral ? 'Puede coexistir' : 'No surge aplicación directa',
+                'motivo' => $hayDeficienciaRegistral
+                    ? 'La deficiencia registral puede abrir una contingencia laboral paralela, aunque distinta de la deuda previsional cuantificada por ARCA.'
+                    : 'Sin deficiencia registral material, no aparece una vía laboral autónoma relevante por este artículo.',
+                'impacto_en_montos' => 'No se suma dentro de capital/intereses/multas ARCA; debe leerse como contingencia laboral complementaria.',
+            ],
+            [
+                'titulo' => 'Jurisprudencia Ackerman (Marzo 2026)',
+                'aplica' => false,
+                'estado' => 'No aplica directamente',
+                'motivo' => 'La doctrina Ackerman corrige bases indemnizatorias ligadas a RIPTE/IPC y no altera el cálculo de deuda previsional aquí usado.',
+                'impacto_en_montos' => 'No modificó capital omitido, intereses ni multas del informe ARCA.',
+            ],
+            [
+                'titulo' => 'Baremo Lois (Marzo 2026)',
+                'aplica' => false,
+                'estado' => 'No aplica directamente',
+                'motivo' => 'El Baremo Lois se vincula con daño moral y culpa grave en vía civil, no con deuda previsional o fiscalización ARCA.',
+                'impacto_en_montos' => 'No se adicionó agravamiento civil sobre los importes previsionales estimados.',
+            ],
         ];
     }
 
