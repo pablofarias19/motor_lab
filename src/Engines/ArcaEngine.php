@@ -339,7 +339,10 @@ class ArcaEngine
         }
 
         $excedente = max(0, $totalUsd - $franquicia);
-        $dineroEspecial = $this->boolish($contexto['dinero_en_cera_hasta_franquicia'] ?? false);
+        $dineroEspecial = $this->boolish(
+            $contexto['dinero_en_caja_hasta_franquicia']
+            ?? ($contexto['dinero_en_cera_hasta_franquicia'] ?? false)
+        );
         $impuesto = ($dineroEspecial && $totalUsd <= $franquicia) ? 0.0 : ($excedente * $alicuota);
 
         return [

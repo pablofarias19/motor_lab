@@ -266,7 +266,8 @@ class AnalysisService
                      'activos_regularizables' => $situacion['activos_regularizables'] ?? [],
                      'tipo_cambio_regularizacion' => floatval($situacion['tipo_cambio_regularizacion'] ?? 1000),
                      'etapa_regularizacion' => intval($situacion['etapa_regularizacion'] ?? 1),
-                     'dinero_en_cera_hasta_franquicia' => $situacion['dinero_en_cera_hasta_franquicia'] ?? 'no',
+                     'dinero_en_caja_hasta_franquicia' => $situacion['dinero_en_caja_hasta_franquicia']
+                         ?? ($situacion['dinero_en_cera_hasta_franquicia'] ?? 'no'),
                  ]
              );
 
