@@ -12,3 +12,7 @@
 [2026-04-13 00:14:42] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.29,"uuid":"9e9eaa0b-f7db-42cb-8f31-62a09c8027e2"}
 [2026-04-13 18:37:24] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.9,"uuid":"f97869f0-34aa-493f-94c4-bcd8978e8b15"}
 [2026-04-13 18:37:24] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.67,"uuid":"f30fd344-6e14-4a79-b94a-a0f8f3d339eb"}
+[2026-04-13 18:41:22] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.33,"uuid":"493f729d-45ba-4aee-b6cb-541a6c8f8819"}
+[2026-04-13 18:41:22] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.37,"uuid":"10ff9a30-6a30-422b-89a8-30a98de510c2"}
+[2026-04-13 18:41:57] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2,"uuid":"5e3f24b0-a1c6-40e7-9778-960b5556299b"}
+[2026-04-13 18:41:57] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.31,"uuid":"9aa8cb37-3c58-429d-b138-266356afb949"}

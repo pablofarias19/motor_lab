@@ -709,8 +709,7 @@ final class LaborInspectionAnalysisBuilder
     private static function hasParallelBillingSignals(array $documentacion, array $situacion): bool
     {
         return self::flag($situacion['tiene_facturacion'] ?? ($documentacion['tiene_facturacion'] ?? 'no'))
-            || self::flag($situacion['tiene_pago_bancario'] ?? ($documentacion['pago_bancario'] ?? 'no'))
-            || self::flag($situacion['tiene_contrato_escrito'] ?? ($documentacion['contrato_escrito'] ?? 'no'));
+            || self::flag($situacion['tiene_pago_bancario'] ?? ($documentacion['pago_bancario'] ?? 'no'));
     }
 
     private static function hasOpaqueStructureSignals(array $situacion): bool
