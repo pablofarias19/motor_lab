@@ -433,6 +433,12 @@ try {
                 $conclusion = is_array($laboral['conclusion_estrategica'] ?? null) ? $laboral['conclusion_estrategica'] : [];
                 $contextoInspectivo = is_array($laboral['contexto_inspectivo'] ?? null) ? $laboral['contexto_inspectivo'] : [];
                 $escenariosLaborales = is_array($laboral['escenarios'] ?? null) ? $laboral['escenarios'] : [];
+                $variablesCriticas = is_array($laboral['variables_criticas'] ?? null) ? $laboral['variables_criticas'] : [];
+                $variablesJuridicas = is_array($variablesCriticas['variables_juridicas'] ?? null) ? $variablesCriticas['variables_juridicas'] : [];
+                $contingenciaLaboral = is_array($laboral['contingencia'] ?? null) ? $laboral['contingencia'] : [];
+                $docProbatoria = is_array($laboral['documentacion_probatoria'] ?? null) ? $laboral['documentacion_probatoria'] : [];
+                $matrizProbatoria = is_array($docProbatoria['matriz_impacto_probatorio'] ?? null) ? $docProbatoria['matriz_impacto_probatorio'] : [];
+                $escenarioOptimo = is_array($laboral['escenario_optimo'] ?? null) ? $laboral['escenario_optimo'] : [];
 
                 if (!empty($contextoInspectivo)) {
                     $pdf->SetFont('Arial', 'B', 8);
@@ -444,6 +450,71 @@ try {
                     }
                     if (!empty($contextoInspectivo['foco_probatorio'])) {
                         $pdf->MultiCell(0, 4, pdf_latin1('  Foco probatorio: ' . pdf_safe_text((string) $contextoInspectivo['foco_probatorio'])), 0, 'L');
+                    }
+                }
+
+                if (!empty($variablesCriticas) || !empty($contingenciaLaboral)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Variables críticas del sistema (MILI)'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    if (!empty($variablesCriticas['estado_inspeccion'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('Estado de inspección: ' . pdf_safe_text(ucfirst(str_replace('_', ' ', (string) $variablesCriticas['estado_inspeccion'])))), 0, 'L');
+                    }
+                    foreach ($variablesJuridicas as $nombre => $valor) {
+                        if (is_array($valor)) {
+                            continue;
+                        }
+
+                        $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . pdf_safe_text((string) $valor)), 0, 'L');
+                    }
+                    if (!empty($escenarioOptimo['titulo'])) {
+                        $pdf->MultiCell(
+                            0,
+                            4,
+                            pdf_latin1(
+                                'Escenario óptimo MILI: '
+                                . pdf_safe_text((string) $escenarioOptimo['titulo'])
+                                . (isset($escenarioOptimo['score']) ? ' (' . number_format((float) $escenarioOptimo['score'], 1, ',', '.') . '/100)' : '')
+                            ),
+                            0,
+                            'L'
+                        );
+                    }
+                }
+
+                if (!empty($contingenciaLaboral)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Matriz de contingencia'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($contingenciaLaboral as $nombre => $valor) {
+                        $pdf->MultiCell(
+                            0,
+                            4,
+                            pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . ml_formato_moneda(floatval($valor))),
+                            0,
+                            'L'
+                        );
+                    }
+                }
+
+                if (!empty($matrizProbatoria)) {
+                    $pdf->Ln(1);
+                    $pdf->SetFont('Arial', 'B', 8);
+                    $pdf->Cell(0, 5, pdf_latin1('Matriz de impacto probatorio'), 0, 1);
+                    $pdf->SetFont('Arial', '', 8);
+
+                    foreach ($matrizProbatoria as $nombre => $valor) {
+                        $pdf->MultiCell(
+                            0,
+                            4,
+                            pdf_latin1(ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . number_format((float) $valor, 1, ',', '.') . '/5'),
+                            0,
+                            'L'
+                        );
                     }
                 }
 
@@ -510,12 +581,26 @@ try {
                             continue;
                         }
 
-                        $pdf->MultiCell(0, 4, pdf_latin1('- ' . pdf_safe_text((string) ($escenario['titulo'] ?? 'Escenario'))), 0, 'L');
+                        $tituloEscenario = '- ' . pdf_safe_text((string) ($escenario['titulo'] ?? 'Escenario'));
+                        if (isset($escenario['score'])) {
+                            $tituloEscenario .= ' (' . number_format((float) $escenario['score'], 1, ',', '.') . '/100)';
+                        }
+                        $pdf->MultiCell(0, 4, pdf_latin1($tituloEscenario), 0, 'L');
                         if (!empty($escenario['descripcion'])) {
                             $pdf->MultiCell(0, 4, pdf_latin1('  Descripción: ' . pdf_safe_text((string) $escenario['descripcion'])), 0, 'L');
                         }
                         if (!empty($escenario['gatillo'])) {
                             $pdf->MultiCell(0, 4, pdf_latin1('  Cuándo aplica: ' . pdf_safe_text((string) $escenario['gatillo'])), 0, 'L');
+                        }
+                        if (!empty($escenario['variables']) && is_array($escenario['variables'])) {
+                            $variablesTexto = [];
+                            foreach ($escenario['variables'] as $nombre => $valor) {
+                                $variablesTexto[] = ucfirst(str_replace('_', ' ', (string) $nombre)) . ': ' . (string) $valor;
+                            }
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Variables: ' . pdf_safe_text(implode(' | ', $variablesTexto))), 0, 'L');
+                        }
+                        if (!empty($escenario['lectura_estrategica'])) {
+                            $pdf->MultiCell(0, 4, pdf_latin1('  Lectura estratégica: ' . pdf_safe_text((string) $escenario['lectura_estrategica'])), 0, 'L');
                         }
                         foreach (($escenario['acciones'] ?? []) as $accion) {
                             $pdf->MultiCell(0, 4, pdf_latin1('  Acción: ' . pdf_safe_text((string) $accion)), 0, 'L');

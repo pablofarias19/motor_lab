@@ -680,17 +680,32 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                             $inspConclusion = is_array($inspLaboral['conclusion_estrategica'] ?? null) ? $inspLaboral['conclusion_estrategica'] : [];
                             $inspContext = is_array($inspLaboral['contexto_inspectivo'] ?? null) ? $inspLaboral['contexto_inspectivo'] : [];
                             $inspScenarios = is_array($inspLaboral['escenarios'] ?? null) ? $inspLaboral['escenarios'] : [];
+                            $inspVariables = is_array($inspLaboral['variables_criticas'] ?? null) ? $inspLaboral['variables_criticas'] : [];
+                            $inspJuridicas = is_array($inspVariables['variables_juridicas'] ?? null) ? $inspVariables['variables_juridicas'] : [];
+                            $inspContingencia = is_array($inspLaboral['contingencia'] ?? null) ? $inspLaboral['contingencia'] : [];
+                            $inspEscenarioOptimo = is_array($inspLaboral['escenario_optimo'] ?? null) ? $inspLaboral['escenario_optimo'] : [];
+                            $inspDocProb = is_array($inspLaboral['documentacion_probatoria'] ?? null) ? $inspLaboral['documentacion_probatoria'] : [];
+                            $inspProbMatrix = is_array($inspDocProb['matriz_impacto_probatorio'] ?? null) ? $inspDocProb['matriz_impacto_probatorio'] : [];
                             ?>
                             <div style="border:1px solid #dc2626; border-radius:12px; padding:1rem; background:#fff5f5;">
                                 <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#dc2626;"><span class="ui-emoji" aria-hidden="true">🏛️</span>Inspección ARCA / Ministerio</h4>
                                 <div><strong>Capital omitido:</strong> <?= ml_formato_moneda(floatval($inspEmp['capital_omitido'] ?? 0)) ?></div>
                                 <div><strong>Intereses:</strong> <?= ml_formato_moneda(floatval($inspEmp['intereses'] ?? 0)) ?></div>
                                 <div><strong>Deuda total:</strong> <?= ml_formato_moneda(floatval($inspEmp['deuda_total'] ?? 0)) ?></div>
+                                <?php if (!empty($inspEmp['estado_inspeccion'])): ?>
+                                <div><strong>Estado de inspección:</strong> <?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $inspEmp['estado_inspeccion']))) ?></div>
+                                <?php endif; ?>
                                 <?php if (!empty($inspEmp['infraccion_laboral'])): ?>
                                 <div><strong>Infracción laboral:</strong> <?= htmlspecialchars(str_replace('_', ' ', (string) $inspEmp['infraccion_laboral'])) ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($inspEmp['probabilidad_inspeccion'])): ?>
                                 <div><strong>Probabilidad de inspección:</strong> <?= htmlspecialchars((string) $inspEmp['probabilidad_inspeccion']) ?></div>
+                                <?php endif; ?>
+                                <?php if (isset($inspEmp['probabilidad_condena'])): ?>
+                                <div><strong>Probabilidad de condena:</strong> <?= htmlspecialchars(number_format(floatval($inspEmp['probabilidad_condena']) * 100, 1, ',', '.')) ?>%</div>
+                                <?php endif; ?>
+                                <?php if (!empty($inspEscenarioOptimo['titulo'])): ?>
+                                <div><strong>Escenario óptimo MILI:</strong> <?= htmlspecialchars((string) $inspEscenarioOptimo['titulo']) ?><?php if (isset($inspEscenarioOptimo['score'])): ?> · <?= htmlspecialchars(number_format(floatval($inspEscenarioOptimo['score']), 1, ',', '.')) ?>/100<?php endif; ?></div>
                                 <?php endif; ?>
                                 <?php if (!empty($inspEmp['recomendacion_final'])): ?>
                                 <div><strong>Recomendación final:</strong> <?= htmlspecialchars((string) $inspEmp['recomendacion_final']) ?></div>
@@ -698,21 +713,60 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($inspEmp['detalle'] ?? '') ?></p>
                                  <?php if (!empty($inspEmp['observaciones_clave'])): ?>
                                  <p style="margin:.5rem 0 0; font-size:.85rem; color:#7f1d1d;"><?= htmlspecialchars((string) $inspEmp['observaciones_clave']) ?></p>
-                                 <?php endif; ?>
-                                 <?php if (!empty($inspContext)): ?>
-                                 <div style="margin-top:1rem; padding:.85rem; border:1px solid #fecaca; border-radius:10px; background:#fff;">
-                                     <div style="font-weight:600; color:#991b1b; margin-bottom:.35rem;">Enfoque inspectivo</div>
-                                     <div style="font-size:.83rem; color:#6b7280;"><strong><?= htmlspecialchars((string) ($inspContext['titulo'] ?? '-')) ?></strong></div>
-                                     <div style="margin-top:.35rem; font-size:.83rem; color:#6b7280;"><?= htmlspecialchars((string) ($inspContext['descripcion'] ?? '')) ?></div>
+                                  <?php endif; ?>
+                                  <?php if (!empty($inspJuridicas) || !empty($inspContingencia)): ?>
+                                  <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5; display:grid; gap:1rem;">
+                                      <?php if (!empty($inspJuridicas)): ?>
+                                      <div>
+                                          <div style="font-weight:600; margin-bottom:.45rem;">Variables jurídicas clave</div>
+                                          <div style="display:grid; gap:.35rem; font-size:.83rem; color:#6b7280;">
+                                              <div><strong>Impacto en prueba:</strong> <?= htmlspecialchars((string) ($inspJuridicas['impacto_prueba'] ?? '-')) ?></div>
+                                              <div><strong>Probabilidad de sanción:</strong> <?= htmlspecialchars((string) ($inspJuridicas['probabilidad_sancion'] ?? '-')) ?></div>
+                                              <div><strong>Riesgo multiplicador:</strong> <?= htmlspecialchars((string) ($inspJuridicas['riesgo_multiplicador'] ?? '-')) ?></div>
+                                              <div><strong>Riesgo judicial:</strong> <?= htmlspecialchars((string) ($inspJuridicas['riesgo_judicial'] ?? '-')) ?></div>
+                                          </div>
+                                      </div>
+                                      <?php endif; ?>
+                                      <?php if (!empty($inspContingencia)): ?>
+                                      <div>
+                                          <div style="font-weight:600; margin-bottom:.45rem;">Matriz de contingencia</div>
+                                          <div style="display:grid; gap:.35rem; font-size:.83rem; color:#6b7280;">
+                                              <div><strong>Administrativa:</strong> <?= ml_formato_moneda(floatval($inspContingencia['administrativa'] ?? 0)) ?></div>
+                                              <div><strong>Laboral:</strong> <?= ml_formato_moneda(floatval($inspContingencia['laboral'] ?? 0)) ?></div>
+                                              <div><strong>Multas LCT:</strong> <?= ml_formato_moneda(floatval($inspContingencia['multas_lct'] ?? 0)) ?></div>
+                                              <div><strong>Indirecta:</strong> <?= ml_formato_moneda(floatval($inspContingencia['indirecta'] ?? 0)) ?></div>
+                                          </div>
+                                      </div>
+                                      <?php endif; ?>
+                                  </div>
+                                  <?php endif; ?>
+                                  <?php if (!empty($inspContext)): ?>
+                                  <div style="margin-top:1rem; padding:.85rem; border:1px solid #fecaca; border-radius:10px; background:#fff;">
+                                      <div style="font-weight:600; color:#991b1b; margin-bottom:.35rem;">Enfoque inspectivo</div>
+                                      <div style="font-size:.83rem; color:#6b7280;"><strong><?= htmlspecialchars((string) ($inspContext['titulo'] ?? '-')) ?></strong></div>
+                                      <div style="margin-top:.35rem; font-size:.83rem; color:#6b7280;"><?= htmlspecialchars((string) ($inspContext['descripcion'] ?? '')) ?></div>
                                      <?php if (!empty($inspContext['foco_probatorio'])): ?>
                                      <div style="margin-top:.35rem; font-size:.83rem; color:#7f1d1d;"><strong>Foco probatorio:</strong> <?= htmlspecialchars((string) $inspContext['foco_probatorio']) ?></div>
                                      <?php endif; ?>
                                  </div>
-                                 <?php endif; ?>
-                                 <?php if (!empty($inspMatriz)): ?>
-                                 <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
-                                     <div style="font-weight:600; margin-bottom:.6rem;">Matriz de riesgo laboral</div>
-                                    <div style="display:grid; gap:.45rem;">
+                                  <?php endif; ?>
+                                  <?php if (!empty($inspProbMatrix)): ?>
+                                  <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
+                                      <div style="font-weight:600; margin-bottom:.6rem;">Matriz de impacto probatorio</div>
+                                      <div style="display:grid; gap:.45rem;">
+                                          <?php foreach ($inspProbMatrix as $nombre => $valor): ?>
+                                          <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.83rem;">
+                                              <span><?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?></span>
+                                              <span><strong><?= htmlspecialchars(number_format((float) $valor, 1, ',', '.')) ?>/5</strong></span>
+                                          </div>
+                                          <?php endforeach; ?>
+                                      </div>
+                                  </div>
+                                  <?php endif; ?>
+                                  <?php if (!empty($inspMatriz)): ?>
+                                  <div style="margin-top:1rem; padding-top:1rem; border-top:1px dashed #fca5a5;">
+                                      <div style="font-weight:600; margin-bottom:.6rem;">Matriz de riesgo laboral</div>
+                                     <div style="display:grid; gap:.45rem;">
                                         <?php foreach ($inspMatriz as $nombre => $bloque): ?>
                                         <div style="display:flex; justify-content:space-between; gap:1rem; font-size:.83rem;">
                                             <span><?= htmlspecialchars(ucfirst(str_replace('_', ' ', (string) $nombre))) ?></span>
@@ -754,16 +808,29 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                      <div style="display:grid; gap:.75rem;">
                                          <?php foreach ($inspScenarios as $scenario): ?>
                                              <?php if (!is_array($scenario) || empty($scenario['aplica'])) continue; ?>
-                                             <div style="padding:.75rem; border:1px solid #fecaca; border-radius:10px; background:#fff;">
-                                                 <div style="font-size:.83rem; font-weight:600; color:#991b1b;"><?= htmlspecialchars((string) ($scenario['titulo'] ?? 'Escenario')) ?></div>
-                                                 <div style="margin-top:.25rem; font-size:.82rem; color:#6b7280;"><?= htmlspecialchars((string) ($scenario['descripcion'] ?? '')) ?></div>
-                                                 <?php if (!empty($scenario['gatillo'])): ?>
-                                                 <div style="margin-top:.35rem; font-size:.82rem; color:#6b7280;"><strong>Cuándo aplica:</strong> <?= htmlspecialchars((string) $scenario['gatillo']) ?></div>
-                                                 <?php endif; ?>
-                                                 <?php if (!empty($scenario['acciones']) && is_array($scenario['acciones'])): ?>
-                                                 <ul style="margin:.45rem 0 0 1rem; font-size:.82rem; color:#7f1d1d;">
-                                                     <?php foreach ($scenario['acciones'] as $accion): ?>
-                                                         <li><?= htmlspecialchars((string) $accion) ?></li>
+                                              <div style="padding:.75rem; border:1px solid #fecaca; border-radius:10px; background:#fff;">
+                                                  <div style="font-size:.83rem; font-weight:600; color:#991b1b;"><?= htmlspecialchars((string) ($scenario['titulo'] ?? 'Escenario')) ?><?php if (isset($scenario['score'])): ?> · <?= htmlspecialchars(number_format(floatval($scenario['score']), 1, ',', '.')) ?>/100<?php endif; ?></div>
+                                                  <div style="margin-top:.25rem; font-size:.82rem; color:#6b7280;"><?= htmlspecialchars((string) ($scenario['descripcion'] ?? '')) ?></div>
+                                                  <?php if (!empty($scenario['gatillo'])): ?>
+                                                  <div style="margin-top:.35rem; font-size:.82rem; color:#6b7280;"><strong>Cuándo aplica:</strong> <?= htmlspecialchars((string) $scenario['gatillo']) ?></div>
+                                                  <?php endif; ?>
+                                                  <?php if (!empty($scenario['variables']) && is_array($scenario['variables'])): ?>
+                                                  <div style="margin-top:.35rem; font-size:.82rem; color:#6b7280;">
+                                                      <strong>Variables:</strong>
+                                                      <?= htmlspecialchars(implode(' · ', array_map(
+                                                          static fn($k, $v): string => ucfirst(str_replace('_', ' ', (string) $k)) . ': ' . (string) $v,
+                                                          array_keys($scenario['variables']),
+                                                          array_values($scenario['variables'])
+                                                      ))) ?>
+                                                  </div>
+                                                  <?php endif; ?>
+                                                  <?php if (!empty($scenario['lectura_estrategica'])): ?>
+                                                  <div style="margin-top:.35rem; font-size:.82rem; color:#7f1d1d;"><strong>Lectura estratégica:</strong> <?= htmlspecialchars((string) $scenario['lectura_estrategica']) ?></div>
+                                                  <?php endif; ?>
+                                                  <?php if (!empty($scenario['acciones']) && is_array($scenario['acciones'])): ?>
+                                                  <ul style="margin:.45rem 0 0 1rem; font-size:.82rem; color:#7f1d1d;">
+                                                      <?php foreach ($scenario['acciones'] as $accion): ?>
+                                                          <li><?= htmlspecialchars((string) $accion) ?></li>
                                                      <?php endforeach; ?>
                                                  </ul>
                                                  <?php endif; ?>

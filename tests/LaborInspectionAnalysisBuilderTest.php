@@ -62,8 +62,13 @@ final class LaborInspectionAnalysisBuilderTest extends TestCase
         $this->assertSame(3.8, $analysis['iril_laboral']);
         $this->assertSame('Alto', $analysis['nivel_laboral']);
         $this->assertSame('crítico', $analysis['probabilidad_inspeccion']);
-        $this->assertSame('Defensa estructurada', $analysis['recomendacion_final']);
-        $this->assertSame('defensa_estructurada', $analysis['modelo_sistema']['recomendacion']);
+        $this->assertSame('Control de daño y conciliación', $analysis['recomendacion_final']);
+        $this->assertSame('control_daño_y_conciliacion', $analysis['modelo_sistema']['recomendacion']);
+        $this->assertSame('acta_labrada', $analysis['estado_inspeccion']);
+        $this->assertSame('estrategia_mixta', $analysis['escenario_optimo']);
+        $this->assertTrue(floatval($analysis['score'] ?? 0) >= 60);
+        $this->assertSame('crítico', $analysis['laboral']['variables_criticas']['variables_juridicas']['impacto_prueba'] ?? null);
+        $this->assertTrue(floatval($analysis['probabilidad_condena'] ?? 0) >= 0.8);
         $this->assertTrue(($analysis['laboral']['matriz_riesgo']['registracion']['puntaje'] ?? 0) >= 4.0);
         $this->assertTrue(($analysis['laboral']['matriz_riesgo']['condiciones']['puntaje'] ?? 0) >= 4.0);
         $this->assertSame(false, $analysis['laboral']['checklist']['art_vigente']);
@@ -79,17 +84,19 @@ final class LaborInspectionAnalysisBuilderTest extends TestCase
         $this->assertSame(2300000.0, floatval($analysis['laboral']['cuantificacion']['riesgo_economico_indirecto'] ?? 0));
         $this->assertSame('total_con_multas', $analysis['laboral']['cuantificacion']['fundamentos_montos']['riesgo_economico_indirecto']['componente_dominante'] ?? null);
         $this->assertTrue(str_contains(
-            strtolower((string) ($analysis['laboral']['escenarios']['defensa_administrativa']['titulo'] ?? '')),
-            'descargo técnico'
+            strtolower((string) ($analysis['laboral']['escenarios']['estrategia_mixta']['titulo'] ?? '')),
+            'estrategia mixta'
         ));
         $this->assertTrue(str_contains(
-            strtolower((string) ($analysis['laboral']['escenarios']['defensa_administrativa']['descripcion'] ?? '')),
-            'única contraprestación del empleador'
+            strtolower((string) ($analysis['laboral']['escenarios']['estrategia_mixta']['descripcion'] ?? '')),
+            'controlar daño'
         ));
         $this->assertTrue(str_contains(
             strtolower((string) ($analysis['laboral']['consideraciones_legales'][1]['titulo'] ?? '')),
             '11.683'
         ));
         $this->assertTrue(($analysis['laboral']['consideraciones_legales'][3]['aplica'] ?? false));
+        $this->assertSame(900000.0, floatval($analysis['laboral']['contingencia']['administrativa'] ?? 0));
+        $this->assertSame('Escenario C — Estrategia mixta', $analysis['laboral']['escenario_optimo']['titulo'] ?? null);
     }
 }

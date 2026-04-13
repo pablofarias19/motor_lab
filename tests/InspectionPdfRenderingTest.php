@@ -63,18 +63,22 @@ final class InspectionPdfRenderingTest extends TestCase
         $inspectionSearch = $this->normalizeText($inspectionPdf);
         $this->assertTrue(str_contains($inspectionSearch, 'informe preventivo de inspeccion arca / mtess'), 'El PDF de riesgo de inspección debe incluir la sección ARCA / MTESS.');
         $this->assertTrue(str_contains($inspectionSearch, 'matriz de riesgo laboral'), 'El PDF de riesgo de inspección debe incluir la matriz laboral.');
-        $this->assertTrue(str_contains($inspectionSearch, 'recomendacion final: defensa estructurada'), 'El PDF de riesgo de inspección debe exponer la recomendación laboral final.');
+        $this->assertTrue(str_contains($inspectionSearch, 'recomendacion final: control de dano y conciliacion'), 'El PDF de riesgo de inspección debe exponer la recomendación laboral final.');
         $this->assertTrue(str_contains($inspectionSearch, 'recomendacion principal: compliance laboral-tributario inmediato'), 'El PDF de riesgo de inspección debe exponer la recomendación ARCA principal.');
         $this->assertTrue(str_contains($inspectionSearch, 'probabilidad inspeccion: critico'), 'El PDF de riesgo de inspección debe exponer la probabilidad crítica laboral.');
         $this->assertTrue(str_contains($inspectionSearch, 'enfoque inspectivo laboral'), 'El PDF de riesgo de inspección debe incluir el enfoque inspectivo específico.');
         $this->assertTrue(str_contains($inspectionSearch, 'escenarios estrategicos laborales'), 'El PDF de riesgo de inspección debe incluir escenarios laborales adaptados.');
-        $this->assertTrue(str_contains($inspectionSearch, 'descargo tecnico con enfoque laboral-fiscal'), 'El PDF de riesgo de inspección debe mostrar escenarios no genéricos.');
+        $this->assertTrue(str_contains($inspectionSearch, 'escenario c - estrategia mixta'), 'El PDF de riesgo de inspección debe mostrar escenarios MILI coherentes.');
         $this->assertTrue(str_contains($inspectionSearch, 'fundamentos de los montos laborales'), 'El PDF de riesgo de inspección debe explicar los motivos de los montos laborales.');
         $this->assertTrue(str_contains($inspectionSearch, 'consideraciones legales relevantes (laboral)'), 'El PDF de riesgo de inspección debe incluir consideraciones legales laborales.');
         $this->assertTrue(str_contains($inspectionSearch, 'matriz de riesgo fiscal y laboral (arca / mtess)'), 'El PDF de riesgo de inspección debe mostrar la nueva matriz fiscal y laboral.');
         $this->assertTrue(str_contains($inspectionSearch, 'art. 30 lct'), 'El PDF de riesgo de inspección debe indicar el marco de tercerización específico.');
         $this->assertTrue(str_contains($inspectionSearch, 'arts. 35 y 39 ley 11.683'), 'El PDF de riesgo de inspección debe incluir instrucción fiscal específica.');
         $this->assertTrue(str_contains($inspectionSearch, 'ley bases no 27.742: aplica'), 'El PDF de riesgo de inspección debe indicar aplicabilidad legal en el bloque ARCA.');
+        $this->assertTrue(str_contains($inspectionSearch, 'variables criticas del sistema (mili)'), 'El PDF de riesgo de inspección debe exponer las variables MILI.');
+        $this->assertTrue(str_contains($inspectionSearch, 'matriz de contingencia'), 'El PDF de riesgo de inspección debe separar la contingencia.');
+        $this->assertTrue(str_contains($inspectionSearch, 'matriz de impacto probatorio'), 'El PDF de riesgo de inspección debe exponer el riesgo probatorio.');
+        $this->assertTrue(str_contains($inspectionSearch, 'escenario optimo mili: escenario c'), 'El PDF de riesgo de inspección debe informar el escenario óptimo.');
 
         $auditPdf = $this->renderPdf([
             'tipo_usuario' => 'empleador',
