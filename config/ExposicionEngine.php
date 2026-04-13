@@ -215,6 +215,17 @@ class ExposicionEngine
                     'detalle_calculo' => $analisisArt,
                 ];
 
+                $usarPisoComparativoArt = true;
+                $analisisCivil = $this->buildCivilScenarios(
+                    $salario,
+                    $edad,
+                    $incapacidad,
+                    $montoLRT,
+                    $p,
+                    $perfilJurisdiccional,
+                    $usarPisoComparativoArt
+                );
+
                 $modeloDominio = $this->buildAccidentDomainModel(
                     true,
                     $montoLRT,
@@ -222,7 +233,8 @@ class ExposicionEngine
                     $analisisCivil,
                     $perfilJurisdiccional,
                     $alertasCriticas,
-                    $situacion
+                    $situacion,
+                    $montoCivil
                 );
 
             } elseif ($incapacidad > 0 && !$tieneArt) {
@@ -607,13 +619,17 @@ class ExposicionEngine
         array $analisisCivil,
         array $perfilJurisdiccional,
         array $alertasCriticas,
-        array $situacion
+        array $situacion,
+        ?float $montoCivilComplementario = null
     ): array {
         $escenariosCiviles = $analisisCivil['escenarios'] ?? [];
         $civilConservador = floatval($escenariosCiviles['conservador']['monto_total'] ?? 0);
         $civilProbable = floatval($escenariosCiviles['probable']['monto_total'] ?? 0);
         $civilAgresivo = floatval($escenariosCiviles['agresivo']['monto_total'] ?? 0);
-        $maximoReal = max($montoArt, $civilAgresivo);
+        $civilExcluyente = $tieneArt && $montoCivilComplementario !== null
+            ? round(max(0.0, $montoCivilComplementario), 2)
+            : $civilAgresivo;
+        $maximoReal = max($montoArt, $civilExcluyente);
         $viaRecomendada = $this->resolveViaRecomendada(
             $tieneArt,
             $montoArt,
@@ -643,6 +659,7 @@ class ExposicionEngine
                 'via_civil' => [
                     'disponible' => true,
                     'tipo' => 'integral_excluyente',
+                    'monto_integral_referencial' => round($civilExcluyente, 2),
                     'escenarios' => [
                         'conservador' => round($civilConservador, 2),
                         'probable' => round($civilProbable, 2),
@@ -662,8 +679,8 @@ class ExposicionEngine
                 'costas' => $analisisCivil['costas_estimadas'] ?? ['min' => 0, 'probable' => 0, 'max' => 0],
                 'resultado_final' => [
                     'exposicion_maxima_real' => round($maximoReal, 2),
-                    'tipo' => $civilAgresivo >= $montoArt
-                        ? 'escenario_civil_agresivo_con_costas'
+                    'tipo' => $civilExcluyente >= $montoArt
+                        ? 'estimacion_civil_integral_excluyente'
                         : 'escenario_art_tarifado',
                 ],
             ],
@@ -672,6 +689,7 @@ class ExposicionEngine
                 'exposicion_civil_conservadora' => round($civilConservador, 2),
                 'exposicion_civil_probable' => round($civilProbable, 2),
                 'exposicion_civil_agresiva' => round($civilAgresivo, 2),
+                'exposicion_civil_integral_referencial' => round($civilExcluyente, 2),
                 'exposicion_maxima_real_con_costas' => round($maximoReal, 2),
                 'estrategia_sugerida' => $viaRecomendada,
             ],
