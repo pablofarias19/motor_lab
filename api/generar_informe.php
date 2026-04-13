@@ -369,7 +369,7 @@ try {
         $totalSecundarioLabel = 'TOTAL CON MULTAS (máxima exposición)';
         $totalSecundarioMonto = $exposicion['total_con_multas'];
         if (($analisis['tipo_conflicto'] ?? '') === 'accidente_laboral' && !empty($exposicion['conceptos']['estimacion_civil_mendez'])) {
-            $totalSecundarioLabel = 'ACCION CIVIL - BASE MENDEZ';
+            $totalSecundarioLabel = 'ACCIÓN CIVIL - BASE MÉNDEZ';
             $totalSecundarioMonto = $exposicion['conceptos']['estimacion_civil_mendez']['monto'] ?? $totalSecundarioMonto;
         }
         $pdf->Cell(120, 7, pdf_latin1('TOTAL BASE (sin multas)'), 'T', 0);

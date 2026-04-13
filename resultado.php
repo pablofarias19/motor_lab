@@ -79,7 +79,7 @@ $preventivoAccentColor = (string) ($uiEscenarioPreventivo['accent_color'] ?? '#0
 $preventivoBadgeLabel = (string) ($uiEscenarioPreventivo['badge_label'] ?? 'Escenario preventivo');
 $preventivoClarification = (string) ($uiEscenarioPreventivo['clarification'] ?? '');
 
-$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario) use ($esAccidenteLaboral): string {
+$explicarLecturaEconomicaEscenario = static function (string $codigo, array $escenario, string $tipoUsuario, bool $esAccidenteLaboral): string {
     if (!empty($escenario['lectura_beneficio'])) {
         return (string) $escenario['lectura_beneficio'];
     }
@@ -979,7 +979,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 <?php foreach ($escenarios as $letra => $esc):
                     $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
-                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
+                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis, $esAccidenteLaboral);
                     $esEscenarioPreventivo = !$esAccidenteLaboral && $letra === 'D';
                     $beneficioLabel = (string) ($esc['beneficio_label'] ?? (($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'
