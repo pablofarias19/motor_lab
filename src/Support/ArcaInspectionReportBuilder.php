@@ -425,7 +425,7 @@ final class ArcaInspectionReportBuilder
             ],
             [
                 'titulo' => 'Baremo Lois (Marzo 2026)',
-                'aplica' => !empty($alertasPenales['nivel']) && strtolower((string) $alertasPenales['nivel']) === 'alto' ? false : false,
+                'aplica' => false,
                 'estado' => 'No aplica directamente',
                 'motivo' => 'El Baremo Lois se vincula con daño moral y culpa grave en vía civil, no con deuda previsional o fiscalización ARCA.',
                 'impacto_en_montos' => 'No se adicionó agravamiento civil sobre los importes previsionales estimados.',
