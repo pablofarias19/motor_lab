@@ -10,3 +10,5 @@
 [2026-04-13 00:13:59] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.28,"uuid":"76f0c6c5-e280-44ef-b094-39864098b2f6"}
 [2026-04-13 00:14:42] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.02,"uuid":"62d1ed6b-73a4-487e-8e81-9bb31b2b40fb"}
 [2026-04-13 00:14:42] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.29,"uuid":"9e9eaa0b-f7db-42cb-8f31-62a09c8027e2"}
+[2026-04-13 20:41:06] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.21,"uuid":"5aa5438b-20da-445e-8055-f6fe5ba81a57"}
+[2026-04-13 20:41:06] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.31,"uuid":"6d01cd63-e851-4034-8c5c-e725db4dc296"}
