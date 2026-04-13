@@ -1,2 +1,18 @@
 [2026-04-11 20:17:40] [info] {"evento":"api.procesar_analisis","estado":"error","http_code":500,"metodo":"POST","duracion_ms":2.17,"request_id":"e0519f7a","tipo_usuario":"empleado","tipo_conflicto":"despido_sin_causa","error_class":"mysqli_sql_exception"}
 [2026-04-11 20:23:31] [info] {"evento":"api.generar_informe","estado":"fpdf_missing","http_code":500,"duracion_ms":0.19,"path":"/home/runner/work/motor_lab/document/fpdf.php"}
+[2026-04-12 23:52:45] [info] {"evento":"api.generar_informe","estado":"bd_error","http_code":500,"duracion_ms":2.47,"uuid":"31da5156-bbc0-4c78-ad12-5cca6d1edc1e","error":"No such file or directory"}
+[2026-04-12 23:53:27] [info] {"evento":"api.generar_informe","estado":"bd_error","http_code":500,"duracion_ms":1.79,"uuid":"4fcd8b99-afab-41bb-a466-b6021c84d6c8","error":"No such file or directory"}
+[2026-04-12 23:53:36] [info] {"evento":"api.generar_informe","estado":"bd_error","http_code":500,"duracion_ms":1.71,"uuid":"c4000042-3be6-46a3-a14c-a87a1b831b03","error":"No such file or directory"}
+[2026-04-12 23:53:43] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.79,"uuid":"063a3335-9914-445d-9aa8-22d1735b3865"}
+[2026-04-12 23:54:05] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.84,"uuid":"8d87b0b4-c1c8-496d-a258-109c97e14a8e"}
+[2026-04-12 23:54:05] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.36,"uuid":"00f385cd-1b0b-4ba6-8ae1-30787889e93b"}
+[2026-04-12 23:54:19] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.98,"uuid":"901d9cf6-ce5d-4e99-b65e-8451450d997b"}
+[2026-04-12 23:54:22] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.81,"uuid":"aa5f05f4-8ec7-4352-b9b8-9c1f3e21b2b5"}
+[2026-04-12 23:54:28] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":2.86,"uuid":"3d903be8-df17-44bd-9266-39ee4b768e10"}
+[2026-04-12 23:54:43] [info] {"evento":"api.generar_informe","estado":"bd_error","http_code":500,"duracion_ms":1.72,"uuid":"52dd1674-f9de-4842-8701-5e2e9c7c6409","error":"No such file or directory"}
+[2026-04-12 23:55:09] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.74,"uuid":"f93b1a35-a390-4bd9-9422-ea14ff7728e5"}
+[2026-04-12 23:55:22] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.74,"uuid":"6cef7af3-c5f8-4f69-8d48-e4f4185bf530"}
+[2026-04-12 23:55:35] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.73,"uuid":"7e4ab661-666d-4a67-a66b-7f8173c1d98f"}
+[2026-04-12 23:55:48] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.76,"uuid":"11c21551-e89f-4c21-a2d3-813183760db3"}
+[2026-04-12 23:56:06] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.7,"uuid":"b55b8869-a060-480f-b6e2-3aa2fd54d1d4"}
+[2026-04-12 23:56:06] [info] {"evento":"api.generar_informe","estado":"ok","http_code":200,"duracion_ms":1.28,"uuid":"b3f2fd43-17bd-4311-beb1-200019b64eaf"}
