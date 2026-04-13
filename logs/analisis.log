@@ -21,3 +21,8 @@
 [2026-04-12 20:51:48] [warning] [ArtCalculationEngine] Piso RIPTE BD no disponible: No such file or directory
 [2026-04-12 20:51:48] [warning] [ArtCalculationEngine] RIPTE BD no disponible: No such file or directory
 [2026-04-12 20:51:48] [warning] [ArtCalculationEngine] Piso RIPTE BD no disponible: No such file or directory
+[2026-04-12 21:05:47] [warning] [AnalysisService] Persistencia degradada, se usará respaldo temporal de sesión: db offline
+[2026-04-12 21:05:47] [warning] [ArtCalculationEngine] RIPTE BD no disponible: No such file or directory
+[2026-04-12 21:05:47] [warning] [ArtCalculationEngine] Piso RIPTE BD no disponible: No such file or directory
+[2026-04-12 21:05:47] [warning] [ArtCalculationEngine] RIPTE BD no disponible: No such file or directory
+[2026-04-12 21:05:47] [warning] [ArtCalculationEngine] Piso RIPTE BD no disponible: No such file or directory
