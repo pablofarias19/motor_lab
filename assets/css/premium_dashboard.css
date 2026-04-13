@@ -740,6 +740,18 @@
     background-color: #f8fafc;
 }
 
+.premium-pdf-notice {
+    flex-basis: 100%;
+    margin-top: 0.25rem;
+    padding: 0.9rem 1rem;
+    border-radius: 16px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e3a8a;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
 /* Utility to hide legacy segments if needed */
 .legacy-hidden {
     display: none !important;
