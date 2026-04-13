@@ -46,8 +46,8 @@ if (!function_exists('ml_admin_runtime_defaults')) {
                 'escenario_preventivo' => [
                     'accent_color' => '#0f766e',
                     'badge_label' => 'Escenario preventivo',
-                    'clarification' => 'Escenario exclusivo para empleadores y para contextos con margen real de regularización. El beneficio debe leerse como ahorro potencial o contingencia evitada, no como ingreso directo.',
-                    'economic_reading_empleador' => 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado.',
+                    'clarification' => 'Escenario exclusivo para empleadores y para contextos con margen real de regularización. El beneficio debe leerse como ahorro potencial o contingencia evitada, no como ingreso directo. Además, una estrategia con SEGUROS COMPLEMENTARIOS puede ampliar el ahorro preventivo y la cobertura. Para más información, consulte con nuestro Estudio Farias Ortiz.',
+                    'economic_reading_empleador' => 'En este escenario preventivo, el beneficio debe leerse como ahorro potencial para la parte empleadora: contingencias, sanciones y litigios evitados mediante regularización. No representa una ganancia inmediata, sino costo futuro evitado. Ese ahorro puede ser mayor si se evalúan SEGUROS COMPLEMENTARIOS. Para más información, consulte con nuestro Estudio Farias Ortiz.',
                     'economic_reading_general' => 'En este escenario preventivo, el beneficio no representa una ganancia directa para la parte reclamante. El modelo lo muestra como referencia de ahorro o contingencia evitada para quien regulariza, por eso requiere una lectura especialmente cautelosa.',
                 ],
             ],

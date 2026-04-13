@@ -984,7 +984,7 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                 <?php foreach ($escenarios as $letra => $esc):
                     $scoreVal = round(floatval($esc['indice_estrategico'] ?? 0), 1);
                     $scoreClass = $scoreVal >= 70 ? 'score-high' : ($scoreVal >= 45 ? 'score-medium' : 'score-low');
-                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis);
+                    $lecturaEconomica = $explicarLecturaEconomicaEscenario($letra, $esc, $tipoUsuarioAnalisis, $esAccidenteLaboral);
                     $esEscenarioPreventivo = !empty($esc['es_preventivo']);
                     $beneficioLabel = (string) ($esc['beneficio_label'] ?? (($esEscenarioPreventivo && $tipoUsuarioAnalisis === 'empleador')
                         ? 'Beneficio (ahorro pot.)'

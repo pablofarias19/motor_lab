@@ -516,14 +516,14 @@ class EscenariosEngine
                 ? 'Ahorro neto estimado'
                 : 'Balance neto referencial',
             'lectura_beneficio' => $tipoUsuarioNormalizado === 'empleador'
-                ? 'ahorro potencial o contingencia evitada'
+                ? 'ahorro potencial o contingencia evitada, con posibilidad de mayor ahorro si se evalúan SEGUROS COMPLEMENTARIOS; para más información, consulte con nuestro Estudio Farias Ortiz'
                 : 'referencia de ahorro potencial para la parte que regulariza',
             'aplicabilidad' => $tipoUsuarioNormalizado === 'empleador' ? 'media' : 'referencial',
             'aplicabilidad_detalle' => $tipoUsuarioNormalizado === 'empleador'
                 ? 'Conviene cuando todavía existe margen real para corregir registros, procesos o coberturas antes de un cierre litigioso.'
                 : 'Se muestra solo para explicar qué ahorro podría capturar la parte empleadora si regulariza.',
-            'descripcion' => 'Escenario exclusivo para empleadores y para contextos con margen real de regularización. El beneficio debe leerse como ahorro potencial o contingencia evitada, no como ingreso directo.',
-            'nota' => 'Este escenario es exclusivamente preventivo. Si ya hay conflicto activo con telegramas intercambiados, su aplicabilidad es limitada.',
+            'descripcion' => 'Escenario exclusivo para empleadores y para contextos con margen real de regularización. El beneficio debe leerse como ahorro potencial o contingencia evitada, no como ingreso directo. Una estrategia con SEGUROS COMPLEMENTARIOS puede ampliar el ahorro preventivo y la cobertura. Para más información, consulte con nuestro Estudio Farias Ortiz.',
+            'nota' => 'Este escenario es exclusivamente preventivo. Si ya hay conflicto activo con telegramas intercambiados, su aplicabilidad es limitada. La evaluación de SEGUROS COMPLEMENTARIOS puede mejorar la cobertura y el ahorro preventivo.',
             'criterios_contexto' => [],
         ];
 
@@ -650,6 +650,13 @@ class EscenariosEngine
                     ? 'Hay ART vigente: la lectura es de mejora de cumplimiento y prevención futura.'
                     : 'No hay ART: el motor limita el ahorro a contingencia futura, no al daño ya causado.';
                 break;
+        }
+
+        if ($tipoUsuarioNormalizado === 'empleador') {
+            $mensajeSeguros = ' Una estrategia con SEGUROS COMPLEMENTARIOS puede ampliar el ahorro preventivo y la cobertura. Para más información, consulte con nuestro Estudio Farias Ortiz.';
+            if (stripos((string) $perfil['descripcion'], 'seguros complementarios') === false) {
+                $perfil['descripcion'] .= $mensajeSeguros;
+            }
         }
 
         return $perfil;
