@@ -18,6 +18,7 @@ final class EscenariosEngineArtDecisionTest extends TestCase
                         'monto_seguro' => 5800000,
                     ],
                     'via_civil' => [
+                        'monto_integral_referencial' => 12400000,
                         'escenarios' => [
                             'conservador' => 7200000,
                             'probable' => 9800000,
@@ -51,6 +52,8 @@ final class EscenariosEngineArtDecisionTest extends TestCase
         $this->assertSame('D', $resultado['recomendado'] ?? null, 'La comparativa explícita debe poder forzar la recomendación civil.');
         $this->assertSame('civil', $escenarioD['via_juridica'] ?? null);
         $this->assertTrue(isset($escenarioD['exposicion_economica']['agresivo']), 'La acción civil debe exponerse por rango y no por un único monto.');
+        $this->assertSame(12400000.0, floatval($escenarioD['beneficio_estimado'] ?? 0), 'La acción civil debe priorizar el reclamo Méndez referencial cuando está disponible.');
+        $this->assertSame(12400000.0, floatval($escenarioD['exposicion_economica']['reclamo_mendez'] ?? 0), 'Debe conservar visible la referencia Méndez principal.');
         $this->assertTrue(($escenarioD['costo_estimado'] ?? 0) > 0, 'La acción civil debe incorporar costas probables.');
     }
 }

@@ -712,8 +712,15 @@ class EscenariosEngine
 
         $montoTarifaART = floatval($viaArt['monto_seguro'] ?? ($conceptos['prestacion_art_tarifa']['monto'] ?? ($exposicion['total_base'] ?? 0)));
         $civilEscenarios = is_array($viaCivil['escenarios'] ?? null) ? $viaCivil['escenarios'] : [];
+        $montoCivilMendez = floatval(
+            $viaCivil['monto_reclamo_mendez']
+            ?? $viaCivil['monto_integral_referencial']
+            ?? ($conceptos['estimacion_civil_mendez']['monto'] ?? 0)
+        );
         $montoCivilConservador = floatval($civilEscenarios['conservador'] ?? ($montoTarifaART * 1.1));
-        $montoCivilProbable = floatval($civilEscenarios['probable'] ?? ($conceptos['estimacion_civil_mendez']['monto'] ?? ($montoTarifaART * 2.5)));
+        $montoCivilProbable = $montoCivilMendez > 0
+            ? $montoCivilMendez
+            : floatval($civilEscenarios['probable'] ?? ($montoTarifaART * 2.5));
         $montoCivilAgresivo = floatval($civilEscenarios['agresivo'] ?? max($montoCivilProbable, $montoTarifaART * 2.8));
         $honorariosBase = $montoTarifaART * ($params['escenarios']['global']['honorarios_judiciales_tasa'] ?? 0.22);
 
@@ -874,6 +881,7 @@ class EscenariosEngine
                 'conservador' => round($montoCivilConservador, 2),
                 'probable' => round($montoCivilProbable, 2),
                 'agresivo' => round($montoCivilAgresivo, 2),
+                'reclamo_mendez' => round($montoCivilProbable, 2),
             ],
             'duracion_min_meses' => $cfgD['duracion_min'],
             'duracion_max_meses' => $cfgD['duracion_max'],

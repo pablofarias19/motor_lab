@@ -83,6 +83,11 @@ final class ExposicionEngineAccidenteTest extends TestCase
             round(floatval($conArt['total_base'] ?? 0), 2),
             'El total base legacy debe reflejar la exposición ART segura y no sumar vías.'
         );
+        $this->assertSame(
+            round(floatval($conArt['conceptos']['estimacion_civil_mendez']['monto'] ?? 0), 2),
+            round(floatval($conArt['resultados_clave']['exposicion_civil_mendez'] ?? 0), 2),
+            'La salida clave debe exponer el reclamo Méndez como referencia civil principal.'
+        );
         $this->assertTrue(
             ($conArt['resultados_clave']['exposicion_civil_agresiva'] ?? 0) >= ($conArt['resultados_clave']['exposicion_civil_probable'] ?? 0),
             'Los escenarios civiles deben escalar en tres niveles.'
