@@ -100,6 +100,7 @@ final class InspectionPdfRenderingTest extends TestCase
 
     private function renderPdf(array $payload): string
     {
+        $projectRoot = $this->projectRoot();
         $service = new App\Services\AnalysisService(
             new class extends App\Database\DatabaseManager {
                 public function __construct()
@@ -122,14 +123,14 @@ final class InspectionPdfRenderingTest extends TestCase
         file_put_contents($recordPath, json_encode($record, JSON_UNESCAPED_UNICODE));
         $wrapper = <<<PHP
 <?php
-require '/home/runner/work/motor_lab/motor_lab/tests/bootstrap.php';
+require '{$projectRoot}/tests/bootstrap.php';
 \$record = json_decode((string) file_get_contents(\$argv[1]), true);
 App\Support\AnalysisSessionStore::remember(is_array(\$record) ? \$record : []);
 \$_GET['uuid'] = \$argv[2];
 \$_SERVER['REQUEST_METHOD'] = 'GET';
 \$_SERVER['SCRIPT_NAME'] = '/api/generar_informe.php';
-\$_SERVER['SCRIPT_FILENAME'] = '/home/runner/work/motor_lab/motor_lab/api/generar_informe.php';
-require '/home/runner/work/motor_lab/motor_lab/api/generar_informe.php';
+\$_SERVER['SCRIPT_FILENAME'] = '{$projectRoot}/api/generar_informe.php';
+require '{$projectRoot}/api/generar_informe.php';
 PHP;
         file_put_contents($wrapperPath, $wrapper);
 
@@ -235,6 +236,11 @@ class FPDF
 PHP;
 
         file_put_contents(ML_FPDF_PATH, $fakeFpdf);
+    }
+
+    private function projectRoot(): string
+    {
+        return realpath(dirname(__DIR__)) ?: dirname(__DIR__);
     }
 
     private function normalizeText(string $text): string
