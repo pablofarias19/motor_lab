@@ -36,6 +36,9 @@ final class LaborInspectionAnalysisBuilder
         $puntajeMaximo = max($puntajes ?: [0]);
         $promedio = round(array_sum($puntajes) / max(1, count($puntajes)), 1);
         $infraccion = self::resolveInfraccion($datos, $situacion, $puntajeMaximo);
+        $estadoCaso = self::resolveCaseState($documentacion, $situacion, $puntajeMaximo, $promedio, $infraccion);
+        $hayConflicto = self::hasFormalConflict($documentacion, $situacion);
+        $hayInspeccion = self::hasInspectionSignals($situacion);
         $probabilidad = self::resolveProbability($puntajeMaximo, $promedio, $situacion);
         $gradoExposicion = self::resolveLevel(max($promedio, floatval($iril['score'] ?? 0)));
 
@@ -99,9 +102,12 @@ final class LaborInspectionAnalysisBuilder
             $faseProcedimental,
             $contingencia,
             $variablesCriticas['variables_juridicas'],
+            $documentacion,
             $situacion
         );
         $escenarioOptimo = self::selectOptimalScenario($escenarios);
+        $escenariosHabilitados = self::collectScenarioSlugs($escenarios, true);
+        $escenariosBloqueados = self::collectScenarioSlugs($escenarios, false);
         $recomendacion = self::recommendationFromScenario($escenarioOptimo['key'] ?? null, $infraccion, $situacion);
         $documentacionProbatoria = self::buildDocumentationModule(
             $datos,
@@ -114,6 +120,7 @@ final class LaborInspectionAnalysisBuilder
         );
 
         return [
+            'estado_caso' => $estadoCaso,
             'estado_inspeccion' => $estadoInspeccion,
             'evento_fiscal' => $eventoFiscal,
             'fase_procedimental' => $faseProcedimental,
@@ -130,6 +137,11 @@ final class LaborInspectionAnalysisBuilder
             'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
             'observaciones_clave' => implode(' | ', $observacionesClave),
             'laboral' => [
+                'estado_caso' => $estadoCaso,
+                'conflicto' => $hayConflicto,
+                'inspeccion' => $hayInspeccion,
+                'escenario_habilitado' => $escenariosHabilitados,
+                'escenario_bloqueado' => $escenariosBloqueados,
                 'identificacion' => [
                     'convenio_colectivo_aplicable' => self::orDefault($datos['cct'] ?? ''),
                     'categoria_relevada' => self::orDefault($datos['categoria'] ?? ''),
@@ -197,6 +209,9 @@ final class LaborInspectionAnalysisBuilder
                     $recomendacion
                 ),
                 'conclusion_estrategica' => [
+                    'estado_caso' => $estadoCaso,
+                    'conflicto' => $hayConflicto,
+                    'inspeccion' => $hayInspeccion,
                     'estado_inspeccion' => self::formatInspectionState($estadoInspeccion),
                     'evento_fiscal' => self::formatFiscalEvent($eventoFiscal),
                     'nivel_riesgo_general' => self::resolveLevel($promedio),
@@ -212,6 +227,11 @@ final class LaborInspectionAnalysisBuilder
                 ],
             ],
             'modelo_sistema' => [
+                'estado_caso' => $estadoCaso,
+                'conflicto' => $hayConflicto,
+                'inspeccion' => $hayInspeccion,
+                'escenario_habilitado' => $escenariosHabilitados,
+                'escenario_bloqueado' => $escenariosBloqueados,
                 'estado_inspeccion' => $estadoInspeccion,
                 'evento_fiscal' => $eventoFiscal,
                 'fase' => $faseProcedimental,
@@ -452,11 +472,15 @@ final class LaborInspectionAnalysisBuilder
         array $faseProcedimental,
         array $contingencia,
         array $variablesJuridicas,
+        array $documentacion,
         array $situacion
     ): array
     {
         $hayFacturacionParalela = self::hasParallelBillingSignals([], $situacion);
         $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
+        $hayConflicto = self::hasFormalConflict($documentacion, $situacion);
+        $hayConflictoAvanzado = self::hasAdvancedConflict($documentacion, $situacion);
+        $hayTelegramaOIntimacion = self::hasTelegramOrIntimation($documentacion, $situacion);
         $contingenciaTotal = array_sum(array_map('floatval', $contingencia));
         $economiaEscalada = $contingenciaTotal >= 10000000 ? 'alta' : ($contingenciaTotal >= 3000000 ? 'media' : 'acotada');
 
@@ -1340,6 +1364,54 @@ final class LaborInspectionAnalysisBuilder
         return false;
     }
 
+    private static function hasFormalConflict(array $documentacion, array $situacion): bool
+    {
+        return self::hasAdvancedConflict($documentacion, $situacion)
+            || self::hasTelegramOrIntimation($documentacion, $situacion);
+    }
+
+    private static function hasAdvancedConflict(array $documentacion, array $situacion): bool
+    {
+        return self::isFlagEnabled($situacion['fue_intimado'] ?? 'no')
+            || self::isFlagEnabled($situacion['ya_despedido'] ?? 'no');
+    }
+
+    private static function hasTelegramOrIntimation(array $documentacion, array $situacion): bool
+    {
+        return self::isFlagEnabled($documentacion['tiene_telegramas'] ?? 'no')
+            || self::isFlagEnabled($situacion['hay_intercambio'] ?? 'no')
+            || self::isFlagEnabled($situacion['fue_intimado'] ?? 'no')
+            || trim((string) ($situacion['fecha_ultimo_telegrama'] ?? '')) !== '';
+    }
+
+    private static function hasInspectionSignals(array $situacion): bool
+    {
+        $estado = trim((string) ($situacion['estado_inspeccion'] ?? ''));
+
+        return in_array($estado, ['iniciada', 'acta_labrada'], true)
+            || self::isFlagEnabled($situacion['inspeccion_previa'] ?? 'no');
+    }
+
+    private static function hasDetectedRisk(
+        array $documentacion,
+        array $situacion,
+        float $puntajeMaximo,
+        float $promedio,
+        string $infraccion
+    ): bool {
+        return $puntajeMaximo >= 3.0
+            || $promedio >= 2.0
+            || $infraccion !== 'leve'
+            || max(0, intval($situacion['meses_no_registrados'] ?? 0)) > 0
+            || ($situacion['chk_libro_art52'] ?? 'si') !== 'si'
+            || ($situacion['chk_recibos_cct'] ?? 'si') !== 'si'
+            || ($situacion['chk_art_vigente'] ?? 'si') !== 'si'
+            || ($documentacion['tiene_recibos'] ?? 'si') !== 'si'
+            || ($documentacion['tiene_contrato'] ?? 'si') !== 'si'
+            || ($documentacion['registrado_afip'] ?? 'si') !== 'si'
+            || self::hasOpaqueStructureSignals($situacion);
+    }
+
     private static function isFlagEnabled($value): bool
     {
         if (is_bool($value)) {
@@ -1352,6 +1424,23 @@ final class LaborInspectionAnalysisBuilder
     private static function buildConditionalActions(array $actions): array
     {
         return array_values(array_filter($actions));
+    }
+
+    private static function collectScenarioSlugs(array $escenarios, bool $aplica): array
+    {
+        $slugs = [];
+
+        foreach ($escenarios as $scenario) {
+            if (!is_array($scenario) || empty($scenario['slug'])) {
+                continue;
+            }
+
+            if ((bool) ($scenario['aplica'] ?? false) === $aplica) {
+                $slugs[] = (string) $scenario['slug'];
+            }
+        }
+
+        return $slugs;
     }
 
     private static function makeBlock(float $puntaje, array $checks, array $observaciones): array
