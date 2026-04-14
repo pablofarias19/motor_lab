@@ -198,6 +198,7 @@ class AnalysisService
             ]);
 
             $analisisEmpresa['solidaridad'] = $resultado;
+            $trabajadoresReclamantes = intval($resultado['trabajadores_reclamantes_estimados'] ?? 1);
             $notaSolidaridad = sprintf(
                 'Monto por trabajador %s · universo %d · litigiosidad esperada %s.',
                 ml_formato_moneda(floatval($resultado['monto_estimado_por_trabajador'] ?? 0)),
@@ -216,8 +217,8 @@ class AnalysisService
                 'base_legal' => 'Art. 30 LCT',
                 'nota' => sprintf(
                     '%d trabajador%s reclamarían bajo el escenario base.',
-                    intval($resultado['trabajadores_reclamantes_estimados'] ?? 1),
-                    intval($resultado['trabajadores_reclamantes_estimados'] ?? 1) === 1 ? '' : 'es'
+                    $trabajadoresReclamantes,
+                    $trabajadoresReclamantes === 1 ? '' : 'es'
                 ),
             ];
             $exposicion['conceptos']['exposicion_solidaria_esperada'] = [
