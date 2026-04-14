@@ -474,8 +474,14 @@ try {
                     $pdf->Cell(0, 5, pdf_latin1('Variables críticas del sistema (MILI)'), 0, 1);
                     $pdf->SetFont('Arial', '', 8);
 
+                    if (!empty($variablesCriticas['evento_fiscal'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('Evento fiscal: ' . pdf_safe_text(pdf_present_label((string) $variablesCriticas['evento_fiscal']))), 0, 'L');
+                    }
                     if (!empty($variablesCriticas['estado_inspeccion'])) {
                         $pdf->MultiCell(0, 4, pdf_latin1('Estado de inspección: ' . pdf_safe_text(pdf_present_label((string) $variablesCriticas['estado_inspeccion']))), 0, 'L');
+                    }
+                    if (!empty($variablesCriticas['fase']) && is_array($variablesCriticas['fase'])) {
+                        $pdf->MultiCell(0, 4, pdf_latin1('Fase procedimental: ' . pdf_safe_text(pdf_format_key_value_list($variablesCriticas['fase']))), 0, 'L');
                     }
                     foreach ($variablesJuridicas as $nombre => $valor) {
                         if (is_array($valor)) {
@@ -806,6 +812,15 @@ try {
         foreach (($arcaReport['diagnostico_juridico'] ?? []) as $clave => $valor) {
             $pdf->MultiCell(0, 4, pdf_latin1(ucfirst(str_replace('_', ' ', (string) $clave)) . ': ' . pdf_safe_text((string) $valor)), 0, 'L');
         }
+        if (!empty($arcaReport['evento_fiscal']) && is_array($arcaReport['evento_fiscal'])) {
+            $pdf->MultiCell(0, 4, pdf_latin1('Evento fiscal: ' . pdf_safe_text((string) ($arcaReport['evento_fiscal']['titulo'] ?? ''))), 0, 'L');
+            if (!empty($arcaReport['evento_fiscal']['fase']) && is_array($arcaReport['evento_fiscal']['fase'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('Fase procedimental: ' . pdf_safe_text(pdf_format_key_value_list($arcaReport['evento_fiscal']['fase']))), 0, 'L');
+            }
+            if (!empty($arcaReport['evento_fiscal']['accion_inmediata'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('Acción inmediata: ' . pdf_safe_text((string) $arcaReport['evento_fiscal']['accion_inmediata'])), 0, 'L');
+            }
+        }
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
@@ -826,15 +841,31 @@ try {
         }
         $pdf->Ln(1);
 
+        if (!empty($arcaReport['modelo_operativo']) && is_array($arcaReport['modelo_operativo'])) {
+            $pdf->SetFont('Arial', 'B', 9);
+            $pdf->Cell(0, 6, pdf_latin1('7. Modelo operativo'), 0, 1);
+            $pdf->SetFont('Arial', '', 8);
+            foreach (($arcaReport['modelo_operativo']['input'] ?? []) as $clave => $valor) {
+                $pdf->MultiCell(0, 4, pdf_latin1('Input ' . pdf_present_label((string) $clave) . ': ' . pdf_safe_text(is_bool($valor) ? ($valor ? 'Sí' : 'No') : (string) $valor)), 0, 'L');
+            }
+            foreach (($arcaReport['modelo_operativo']['proceso'] ?? []) as $paso) {
+                $pdf->MultiCell(0, 4, pdf_latin1('Proceso: ' . pdf_safe_text((string) $paso)), 0, 'L');
+            }
+            if (!empty($arcaReport['modelo_operativo']['output']) && is_array($arcaReport['modelo_operativo']['output'])) {
+                $pdf->MultiCell(0, 4, pdf_latin1('Output: ' . pdf_safe_text(pdf_format_key_value_list($arcaReport['modelo_operativo']['output']))), 0, 'L');
+            }
+            $pdf->Ln(1);
+        }
+
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('7. Checklist operativo de recursos humanos'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('8. Checklist operativo de recursos humanos'), 0, 1);
         $pdf->SetFont('Arial', '', 8);
         foreach (($arcaReport['checklist_inspeccion'] ?? []) as $item) {
             $pdf->MultiCell(0, 4, pdf_latin1((!empty($item['estado']) ? '[x] ' : '[ ] ') . pdf_safe_text((string) ($item['label'] ?? ''))), 0, 'L');
         }
         $pdf->Ln(1);
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('8. Conclusión estratégica'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('9. Conclusión estratégica'), 0, 1);
         $pdf->SetFont('Arial', '', 8);
         foreach (($arcaReport['conclusion_estrategica'] ?? []) as $clave => $valor) {
             $texto = is_numeric($valor) ? ml_formato_moneda(floatval($valor)) : (string) $valor;
@@ -843,7 +874,7 @@ try {
         $pdf->Ln(1);
 
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(0, 6, pdf_latin1('9. Modelo de salida (para sistema)'), 0, 1);
+        $pdf->Cell(0, 6, pdf_latin1('10. Modelo de salida (para sistema)'), 0, 1);
         $pdf->SetFont('Courier', '', 7);
         $pdf->MultiCell(
             0,

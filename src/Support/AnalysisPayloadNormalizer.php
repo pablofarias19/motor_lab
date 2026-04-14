@@ -18,6 +18,7 @@ final class AnalysisPayloadNormalizer
     private const URGENCIAS = ['alta', 'media', 'baja'];
     private const JURISDICCIONES = ['CABA', 'PBA', 'CORDOBA', 'SANTA_FE', 'default'];
     private const ESTADOS_INSPECCION = ['previa', 'iniciada', 'acta_labrada'];
+    private const EVENTOS_FISCALES = ['ninguno', 'inspeccion', 'acta', 'determinacion'];
 
     public static function normalize(array $input): array
     {
@@ -134,6 +135,7 @@ final class AnalysisPayloadNormalizer
             'aplica_blanco_laboral' => self::flag($situacionInput['aplica_blanco_laboral'] ?? 'no'),
             'probabilidad_condena' => self::float($situacionInput['probabilidad_condena'] ?? 0.5, 0.5),
             'estado_inspeccion' => self::string($situacionInput['estado_inspeccion'] ?? ''),
+            'evento_fiscal' => self::string($situacionInput['evento_fiscal'] ?? ''),
             'inspeccion_previa' => self::flag($situacionInput['inspeccion_previa'] ?? 'no'),
             'chk_alta_sipa' => self::flag($situacionInput['chk_alta_sipa'] ?? 'no'),
             'chk_libro_art52' => self::flag($situacionInput['chk_libro_art52'] ?? 'no'),
@@ -211,6 +213,10 @@ final class AnalysisPayloadNormalizer
 
         if ($situacion['estado_inspeccion'] !== '' && !in_array($situacion['estado_inspeccion'], self::ESTADOS_INSPECCION, true)) {
             $errors['situacion.estado_inspeccion'] = 'El estado de inspección debe ser previa, iniciada o acta_labrada.';
+        }
+
+        if ($situacion['evento_fiscal'] !== '' && !in_array($situacion['evento_fiscal'], self::EVENTOS_FISCALES, true)) {
+            $errors['situacion.evento_fiscal'] = 'El evento fiscal debe ser ninguno, inspeccion, acta o determinacion.';
         }
 
         if ($situacion['meses_litigio'] < 1 || $situacion['meses_litigio'] > 240) {
@@ -417,6 +423,7 @@ final class AnalysisPayloadNormalizer
             $situacion['meses_en_mora'] = 0;
             $situacion['aplica_blanco_laboral'] = 'no';
             $situacion['estado_inspeccion'] = 'previa';
+            $situacion['evento_fiscal'] = 'ninguno';
             $situacion['chk_alta_sipa'] = 'no';
             $situacion['chk_libro_art52'] = 'no';
             $situacion['chk_recibos_cct'] = 'no';
@@ -424,6 +431,7 @@ final class AnalysisPayloadNormalizer
             $situacion['chk_examenes'] = 'no';
             $situacion['chk_epp_rgrl'] = 'no';
         } else {
+            $situacion['evento_fiscal'] = self::normalizeFiscalEvent($situacion);
             $situacion['estado_inspeccion'] = self::normalizeInspectionState($situacion);
         }
 
@@ -450,14 +458,37 @@ final class AnalysisPayloadNormalizer
             return $estado;
         }
 
+        return match (self::normalizeFiscalEvent($situacion)) {
+            'determinacion', 'acta' => 'acta_labrada',
+            'inspeccion' => 'iniciada',
+            default => 'previa',
+        };
+    }
+
+    private static function normalizeFiscalEvent(array $situacion): string
+    {
+        $evento = self::string($situacion['evento_fiscal'] ?? '');
+        if (in_array($evento, self::EVENTOS_FISCALES, true)) {
+            return $evento;
+        }
+
+        if (self::flag($situacion['sentencia_firme'] ?? 'no') === 'si') {
+            return 'determinacion';
+        }
+
         if (($situacion['fue_intimado'] ?? 'no') === 'si') {
-            return 'acta_labrada';
+            return 'acta';
         }
 
         if (($situacion['inspeccion_previa'] ?? 'no') === 'si' || ($situacion['hay_intercambio'] ?? 'no') === 'si') {
-            return 'iniciada';
+            return 'inspeccion';
         }
 
-        return 'previa';
+        $estado = self::string($situacion['estado_inspeccion'] ?? '');
+        return match ($estado) {
+            'acta_labrada' => 'acta',
+            'iniciada' => 'inspeccion',
+            default => 'ninguno',
+        };
     }
 }

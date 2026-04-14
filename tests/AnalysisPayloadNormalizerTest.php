@@ -119,6 +119,7 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         $this->assertSame(0, $payloadPreventivo['datos_laborales']['antiguedad_meses']);
         $this->assertSame(25, $payloadPreventivo['datos_laborales']['cantidad_empleados']);
         $this->assertSame('previa', $payloadPreventivo['situacion']['estado_inspeccion']);
+        $this->assertSame('ninguno', $payloadPreventivo['situacion']['evento_fiscal']);
 
         $payloadInspeccionEstado = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleador',
@@ -137,6 +138,7 @@ final class AnalysisPayloadNormalizerTest extends TestCase
         ]);
 
         $this->assertSame('acta_labrada', $payloadInspeccionEstado['situacion']['estado_inspeccion']);
+        $this->assertSame('acta', $payloadInspeccionEstado['situacion']['evento_fiscal']);
 
         $payloadRegistroNoCorrespondiente = AnalysisPayloadNormalizer::normalize([
             'tipo_usuario' => 'empleado',

@@ -48,8 +48,9 @@ final class LaborInspectionAnalysisBuilderThresholdsTest extends TestCase
 
         $this->assertSame(1.0, floatval($analysis['laboral']['matriz_riesgo']['estructural']['puntaje'] ?? 0));
         $this->assertSame(2.0, floatval($analysis['laboral']['matriz_riesgo']['remuneracion']['puntaje'] ?? 0));
-        $this->assertSame('regularizacion_y_reconfiguracion_preventiva', $analysis['modelo_sistema']['recomendacion']);
-        $this->assertSame('reconfiguracion_preventiva', $analysis['escenario_optimo']);
+        $this->assertSame('regularizacion_previa', $analysis['modelo_sistema']['recomendacion']);
+        $this->assertSame('ninguno', $analysis['evento_fiscal']);
+        $this->assertSame('riesgo_latente', $analysis['escenario_optimo']);
         $this->assertSame('previa', $analysis['estado_inspeccion']);
     }
 }
