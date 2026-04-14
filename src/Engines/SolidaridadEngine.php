@@ -11,19 +11,30 @@ namespace App\Engines;
  */
 class SolidaridadEngine {
 
+    private const LITIGIOSIDAD_BASE = 0.12;
+
     /**
      * Calcula la exposición económica frente a una demanda por solidaridad (Art. 30).
      * 
      * @param array $respuestas Array asociativo con respuestas booleanas:
      *      'actividad_esencial', 'control_documental', 'control_operativo',
      *      'integracion_estructura', 'contrato_formal', 'falta_f931_art'
-     * @param float $liquidacionTotal Monto total de la liquidación laboral calculada
+     * @param float $montoPorTrabajador Monto estimado de la contingencia por trabajador
+     * @param int $cantidadTrabajadores Universo estimado de trabajadores expuestos
+     * @param array $contexto Datos complementarios del caso
      * @return array Detalle del riesgo, score, probabilidad y exposición matemática
      */
-    public function calcularRiesgoSolidario(array $respuestas, float $liquidacionTotal): array {
+    public function calcularRiesgoSolidario(
+        array $respuestas,
+        float $montoPorTrabajador,
+        int $cantidadTrabajadores = 1,
+        array $contexto = []
+    ): array {
         
         $score = 0;
         $detalles = [];
+        $cantidadTrabajadores = max(1, $cantidadTrabajadores);
+        $montoPorTrabajador = max(0, $montoPorTrabajador);
 
         // 1. ANÁLISIS DE FACTORES POSITIVOS (Aumentan Probabilidad de Condena)
         if (!empty($respuestas['actividad_esencial'])) {
@@ -69,15 +80,32 @@ class SolidaridadEngine {
             $detalles[] = 'ALERTA CRÍTICA: Falta de control de F931 o ART. Riesgo de condena inminente por omisión de deberes de contralor legal.';
         }
 
-        // 5. CÁLCULO DE EXPOSICIÓN ESPERADA
-        // Se aplica el criterio del "Quantum total" por la "Probabilidad"
-        $exposicionEsperada = $liquidacionTotal * $probabilidadCondena;
+        // 5. LITIGIOSIDAD ESPERADA SOBRE EL UNIVERSO DE TRABAJADORES
+        $tasaLitigiosidad = $this->calcularTasaLitigiosidadEsperada($respuestas, $cantidadTrabajadores, $contexto);
+        $trabajadoresReclamantes = $this->calcularTrabajadoresReclamantes($cantidadTrabajadores, $tasaLitigiosidad);
+        $exposicionMaxima = $montoPorTrabajador * $cantidadTrabajadores;
+        $exposicionProbable = $montoPorTrabajador * $trabajadoresReclamantes;
+        $exposicionEsperada = $exposicionProbable * $probabilidadCondena;
+
+        $detalles[] = sprintf(
+            'Universo considerado: %d trabajador%s. Litigiosidad esperada: %s (%d reclamo%s probables).',
+            $cantidadTrabajadores,
+            $cantidadTrabajadores === 1 ? '' : 'es',
+            $this->formatPercentage($tasaLitigiosidad),
+            $trabajadoresReclamantes,
+            $trabajadoresReclamantes === 1 ? '' : 's'
+        );
 
         return [
             'riesgo_calificacion' => $riesgo,
             'score_judicial' => $score,
             'probabilidad_condena' => ($probabilidadCondena * 100) . '%',
-            'exposicion_maxima' => round($liquidacionTotal, 2),
+            'universo_trabajadores' => $cantidadTrabajadores,
+            'monto_estimado_por_trabajador' => round($montoPorTrabajador, 2),
+            'tasa_litigiosidad_esperada' => $this->formatPercentage($tasaLitigiosidad),
+            'trabajadores_reclamantes_estimados' => $trabajadoresReclamantes,
+            'exposicion_maxima' => round($exposicionMaxima, 2),
+            'exposicion_probable' => round($exposicionProbable, 2),
             'exposicion_esperada' => round($exposicionEsperada, 2),
             'factores_detectados' => $detalles,
             'recomendacion' => $this->generarRecomendacion($riesgo)
@@ -96,5 +124,67 @@ class SolidaridadEngine {
             default:
                 return '';
         }
+    }
+
+    private function calcularTasaLitigiosidadEsperada(array $respuestas, int $cantidadTrabajadores, array $contexto): float
+    {
+        $tasa = self::LITIGIOSIDAD_BASE;
+        $cantidadSubcontratistas = max(1, intval($contexto['cantidad_subcontratistas'] ?? 1));
+
+        if (!empty($respuestas['actividad_esencial'])) {
+            $tasa += 0.04;
+        }
+
+        if (!empty($respuestas['control_operativo'])) {
+            $tasa += 0.03;
+        }
+
+        if (!empty($respuestas['integracion_estructura'])) {
+            $tasa += 0.03;
+        }
+
+        if (!empty($respuestas['control_documental'])) {
+            $tasa -= 0.02;
+        } else {
+            $tasa += 0.03;
+        }
+
+        if (!empty($respuestas['contrato_formal'])) {
+            $tasa -= 0.01;
+        } else {
+            $tasa += 0.02;
+        }
+
+        if ($cantidadTrabajadores >= 10) {
+            $tasa += 0.02;
+        }
+
+        if ($cantidadTrabajadores >= 25) {
+            $tasa += 0.03;
+        }
+
+        if ($cantidadSubcontratistas >= 3) {
+            $tasa += 0.02;
+        }
+
+        if (!empty($respuestas['falta_f931_art'])) {
+            $tasa = max($tasa, 0.45);
+        }
+
+        return max(0.05, min(0.75, round($tasa, 4)));
+    }
+
+    private function calcularTrabajadoresReclamantes(int $cantidadTrabajadores, float $tasaLitigiosidad): int
+    {
+        if ($cantidadTrabajadores <= 1) {
+            return 1;
+        }
+
+        return max(1, (int) ceil($cantidadTrabajadores * $tasaLitigiosidad));
+    }
+
+    private function formatPercentage(float $value): string
+    {
+        return rtrim(rtrim(number_format($value * 100, 2, '.', ''), '0'), '.') . '%';
     }
 }

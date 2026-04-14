@@ -183,6 +183,8 @@ class AnalysisService
                 floatval($exposicion['total_con_multas'] ?? 0),
                 floatval($datos['salario'] ?? 0) * max(1, intval($datos['antiguedad_meses'] ?? 0) / 12)
             );
+            $cantidadTrabajadores = max(1, intval($datos['cantidad_empleados'] ?? ($situacion['cantidad_empleados'] ?? 1)));
+            $cantidadSubcontratistas = max(1, intval($situacion['cantidad_subcontratistas'] ?? 1));
 
             $resultado = $motor->calcularRiesgoSolidario([
                 'actividad_esencial' => ml_boolish($situacion['actividad_esencial'] ?? false),
@@ -191,14 +193,38 @@ class AnalysisService
                 'integracion_estructura' => ml_boolish($situacion['integracion_estructura'] ?? false),
                 'contrato_formal' => ml_boolish($situacion['contrato_formal'] ?? false),
                 'falta_f931_art' => ml_boolish($situacion['falta_f931_art'] ?? false),
-            ], $liquidacionBase);
+            ], $liquidacionBase, $cantidadTrabajadores, [
+                'cantidad_subcontratistas' => $cantidadSubcontratistas,
+            ]);
 
             $analisisEmpresa['solidaridad'] = $resultado;
+            $notaSolidaridad = sprintf(
+                'Monto por trabajador %s · universo %d · litigiosidad esperada %s.',
+                ml_formato_moneda(floatval($resultado['monto_estimado_por_trabajador'] ?? 0)),
+                intval($resultado['universo_trabajadores'] ?? 1),
+                (string) ($resultado['tasa_litigiosidad_esperada'] ?? '0%')
+            );
+            $exposicion['conceptos']['responsabilidad_terceros'] = [
+                'descripcion' => 'Exposición máxima solidaria si demanda todo el universo relevado',
+                'monto' => round($resultado['exposicion_maxima'] ?? 0, 2),
+                'base_legal' => 'Art. 30 LCT',
+                'nota' => $notaSolidaridad,
+            ];
+            $exposicion['conceptos']['exposicion_solidaria_probable'] = [
+                'descripcion' => 'Exposición solidaria probable por reclamos estimados',
+                'monto' => round($resultado['exposicion_probable'] ?? 0, 2),
+                'base_legal' => 'Art. 30 LCT',
+                'nota' => sprintf(
+                    '%d trabajador%s reclamarían bajo el escenario base.',
+                    intval($resultado['trabajadores_reclamantes_estimados'] ?? 1),
+                    intval($resultado['trabajadores_reclamantes_estimados'] ?? 1) === 1 ? '' : 'es'
+                ),
+            ];
             $exposicion['conceptos']['exposicion_solidaria_esperada'] = [
-                'descripcion' => 'Exposición esperada por responsabilidad solidaria',
+                'descripcion' => 'Exposición judicial esperada por responsabilidad solidaria',
                 'monto' => round($resultado['exposicion_esperada'] ?? 0, 2),
                 'base_legal' => 'Art. 30 LCT',
-                'nota' => $resultado['recomendacion'] ?? '',
+                'nota' => trim($notaSolidaridad . ' ' . ($resultado['recomendacion'] ?? '')),
             ];
             $exposicion['total_con_multas'] = max(
                 floatval($exposicion['total_con_multas'] ?? 0),
