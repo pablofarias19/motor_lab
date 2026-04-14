@@ -25,6 +25,7 @@ final class ArcaInspectionReportBuilder
         $regularizacion = is_array($inspeccion['regularizacion'] ?? null) ? $inspeccion['regularizacion'] : [];
         $alertasPenales = is_array($inspeccion['alertas_penales'] ?? null) ? $inspeccion['alertas_penales'] : [];
         $valuacionActivos = is_array($inspeccion['valuacion_activos'] ?? null) ? $inspeccion['valuacion_activos'] : [];
+        $laboral = is_array($inspeccion['laboral'] ?? null) ? $inspeccion['laboral'] : [];
 
         $matriz = [
             'registral' => self::buildRegistralRisk($datos, $documentacion, $situacion, $mesesNoRegistrados, $tipoRegistro),
@@ -39,6 +40,24 @@ final class ArcaInspectionReportBuilder
         $probabilidadInspeccion = self::probabilidadInspeccion($overall['label'], $inspeccionPrevia, $senalesFraude, $mesesNoRegistrados);
         $recomendacion = self::resolveRecommendation($overall['label'], $inspeccionPrevia, $senalesFraude, $mesesNoRegistrados);
         $detalleMontos = self::buildAmountDetail($inspeccion, $regularizacion, $salarioReal, $salarioDeclarado, $mesesNoRegistrados);
+        $eventoFiscal = (string) (
+            $inspeccion['evento_fiscal']
+            ?? ($laboral['evento_fiscal']['codigo'] ?? self::resolveFiscalEvent($situacion))
+        );
+        $faseProcedimental = is_array($inspeccion['fase_procedimental'] ?? null)
+            ? $inspeccion['fase_procedimental']
+            : (is_array($laboral['evento_fiscal']['fase'] ?? null)
+                ? $laboral['evento_fiscal']['fase']
+                : self::buildPhaseMatrix($eventoFiscal));
+        $escenarioOperativo = (string) (
+            $inspeccion['escenario_optimo']
+            ?? ($laboral['escenario_optimo']['slug'] ?? self::defaultScenarioFromEvent($eventoFiscal))
+        );
+        $probabilidadAjuste = round(floatval($inspeccion['probabilidad_ajuste'] ?? self::defaultAdjustmentProbability($eventoFiscal)), 2);
+        $probabilidadPenal = round(floatval($inspeccion['probabilidad_penal'] ?? self::defaultPenalProbability($eventoFiscal, $situacion)), 2);
+        $recomendacionOperativa = is_array($laboral['modelo_operativo']['output'] ?? null)
+            ? (string) (($laboral['modelo_operativo']['output']['recomendacion'] ?? '') ?: $recomendacion['code'])
+            : $recomendacion['code'];
         $consideracionesLegales = self::buildLegalConsiderations(
             $datos,
             $documentacion,
@@ -137,22 +156,62 @@ final class ArcaInspectionReportBuilder
                 'riesgo_conflicto_laboral' => $irilScore >= 3
                     ? 'El IRIL refuerza una potencial escalada del conflicto laboral.'
                     : 'La conflictividad laboral luce contenida, aunque requiere control documental.',
-                'conclusion' => self::buildLegalConclusion($overall['label'], $probabilidadInspeccion, $recomendacion['label']),
+                'conclusion' => self::buildLegalConclusion($overall['label'], $probabilidadInspeccion, self::buildImmediateActionLabel($eventoFiscal)),
             ],
-            'escenarios_estrategicos' => self::buildStrategicScenarios($inspeccionPrevia, $senalesFraude, $recomendacion['label'], $escenariosResult),
+            'evento_fiscal' => [
+                'codigo' => $eventoFiscal,
+                'titulo' => self::formatFiscalEvent($eventoFiscal),
+                'fase' => $faseProcedimental,
+                'accion_inmediata' => self::buildImmediateActionLabel($eventoFiscal),
+            ],
+            'consultas_operativas' => self::buildOperationalConsults(),
+            'escenarios_estrategicos' => self::buildStrategicScenarios($eventoFiscal, $laboral, $recomendacionOperativa),
             'checklist_inspeccion' => self::buildChecklist($documentacion, $situacion),
             'checklist_operativo_rrhh' => self::buildChecklist($documentacion, $situacion),
             'consideraciones_legales' => $consideracionesLegales,
+            'modelo_operativo' => [
+                'input' => [
+                    'empleados_registrados' => ($documentacion['registrado_afip'] ?? 'no') === 'si',
+                    'monotributistas' => self::boolish($situacion['tiene_facturacion'] ?? 'no'),
+                    'pagos_en_negro' => $salarioDeclarado > 0 && $salarioReal > $salarioDeclarado,
+                    'cumplimiento_f931' => !self::boolish($situacion['falta_f931_art'] ?? 'no'),
+                ],
+                'proceso' => [
+                    'detectar_inconsistencia',
+                    'evaluar_evento_fiscal',
+                    'estimar_contingencia',
+                    'definir_escenario',
+                    'recomendar_estrategia',
+                ],
+                'output' => [
+                    'escenario' => $escenarioOperativo,
+                    'riesgo' => strtolower($overall['label']),
+                    'probabilidad_ajuste' => $probabilidadAjuste,
+                    'probabilidad_penal' => $probabilidadPenal,
+                    'recomendacion' => $recomendacionOperativa,
+                    'evento_fiscal' => $eventoFiscal,
+                ],
+            ],
             'conclusion_estrategica' => [
+                'evento_fiscal' => self::formatFiscalEvent($eventoFiscal),
                 'nivel_riesgo_general' => $overall['label'],
                 'probabilidad_inspeccion' => $probabilidadInspeccion,
+                'probabilidad_ajuste' => $probabilidadAjuste,
+                'probabilidad_penal' => $probabilidadPenal,
                 'exposicion_economica' => 'Muy severa',
                 'impacto_economico_total_estimado' => round(floatval($inspeccion['deuda_total'] ?? 0), 2),
-                'recomendacion_principal' => $recomendacion['label'],
+                'recomendacion_principal' => self::buildImmediateActionLabel($eventoFiscal),
                 'riesgo_penal' => (string) ($alertasPenales['nivel'] ?? 'bajo'),
-                'sintesis' => 'El trabajo no registrado o deficientemente registrado puede detonar multas, clausura y ajuste presuntivo sobre IVA/Ganancias.',
+                'sintesis' => 'ARCA no actúa sobre riesgo abstracto: opera por evento, prueba, ajuste y sanción. La estrategia debe seguir esa secuencia.',
             ],
             'modelo_salida' => [
+                'escenario' => $escenarioOperativo,
+                'riesgo' => strtolower($overall['label']),
+                'probabilidad_ajuste' => $probabilidadAjuste,
+                'probabilidad_penal' => $probabilidadPenal,
+                'recomendacion' => $recomendacionOperativa,
+                'evento_fiscal' => $eventoFiscal,
+                'fase' => $faseProcedimental,
                 'riesgo_arca' => [
                     'registral' => $matriz['registral']['indice_json'],
                     'contributivo' => $matriz['contributivo']['indice_json'],
@@ -175,7 +234,6 @@ final class ArcaInspectionReportBuilder
                 ],
                 'iril' => $irilScore,
                 'nivel' => strtolower($overall['label']),
-                'recomendacion' => $recomendacion['code'],
             ],
             'detalle_motor' => [
                 'detalle' => (string) ($inspeccion['detalle'] ?? ''),
@@ -524,38 +582,59 @@ final class ArcaInspectionReportBuilder
         ];
     }
 
-    private static function buildStrategicScenarios(bool $inspeccionPrevia, bool $senalesFraude, string $recomendacion, array $escenariosResult): array
+    private static function buildStrategicScenarios(string $eventoFiscal, array $laboral, string $recomendacion): array
     {
+        $escenarios = is_array($laboral['escenarios'] ?? null) ? $laboral['escenarios'] : [];
+        if (!empty($escenarios)) {
+            $resultado = [];
+            foreach ($escenarios as $escenario) {
+                if (!is_array($escenario)) {
+                    continue;
+                }
+
+                $slug = (string) ($escenario['slug'] ?? '');
+                $resultado[] = [
+                    'codigo' => (string) ($escenario['codigo'] ?? '?'),
+                    'titulo' => (string) ($escenario['titulo'] ?? 'Escenario operativo'),
+                    'detalle' => (string) ($escenario['descripcion'] ?? ''),
+                    'acciones' => array_values($escenario['acciones'] ?? []),
+                    'prioridad' => $slug === self::defaultScenarioFromEvent($eventoFiscal)
+                        ? 'Muy alta'
+                        : ($slug === $recomendacion ? 'Alta' : 'Media'),
+                ];
+            }
+
+            return $resultado;
+        }
+
         return [
             [
                 'codigo' => 'A',
-                'titulo' => 'Solución Preventiva: Auditoría de Contratación y Subcontratación',
-                'detalle' => 'Revisar monotributistas exclusivos y desplazar estructuras jurídicas inadecuadas.',
-                'acciones' => [
-                    'Relevar contratos de locación o facturación paralela que puedan encubrir dependencia.',
-                    'Implementar control mensual de F.931, pagos bancarizados y ART para contratistas.',
-                ],
-                'prioridad' => ($senalesFraude || $inspeccionPrevia) ? 'Alta' : 'Media',
+                'titulo' => 'Escenario A — Situación invisible (riesgo latente)',
+                'detalle' => 'No hay inspección abierta, pero cualquier denuncia o cruce puede disparar reconstrucción fiscal completa.',
+                'acciones' => ['Regularizar antes del disparador.', 'Ordenar nómina, F.931, pagos y legajos.'],
+                'prioridad' => $eventoFiscal === 'ninguno' ? 'Muy alta' : 'Media',
             ],
             [
                 'codigo' => 'B',
-                'titulo' => 'Solución Correctiva: Regularización Espontánea',
-                'detalle' => 'Registrar al personal detectado antes de la inspección para reducir sanciones y mejorar defensa.',
-                'acciones' => [
-                    'Regularizar íntegramente las relaciones laborales detectadas internamente.',
-                    'Preparar documentación para audiencia de descargo y atenuación de multas.',
-                ],
-                'prioridad' => $recomendacion === 'Compliance Laboral-Tributario Inmediato' ? 'Muy alta' : 'Alta',
+                'titulo' => 'Escenario B — Inspección en curso',
+                'detalle' => 'La encuesta y el requerimiento ya son prueba directa para el ajuste.',
+                'acciones' => ['Recolectar prueba inmediata.', 'Evitar contradicciones del personal y preparar descargo técnico.'],
+                'prioridad' => $eventoFiscal === 'inspeccion' ? 'Muy alta' : 'Alta',
             ],
             [
                 'codigo' => 'C',
-                'titulo' => 'Solución Operativa ante Fiscalización in situ',
-                'detalle' => 'Protocolo de recepción de inspectores, identificación de firmantes y producción inmediata de prueba propia.',
-                'acciones' => [
-                    'Centralizar respuestas ante requerimientos y encuestas de personal.',
-                    'Recolectar asistencia, recibos, biometría y soportes internos para desvirtuar manifestaciones inexactas.',
-                ],
-                'prioridad' => ($inspeccionPrevia || $senalesFraude) ? 'Muy alta' : 'Alta',
+                'titulo' => 'Escenario C — Acta labrada',
+                'detalle' => 'La discusión ya pasa por hechos, base imponible y reducción de sanción.',
+                'acciones' => ['Defensa administrativa.', 'Discutir hechos y base de ajuste.'],
+                'prioridad' => $eventoFiscal === 'acta' ? 'Muy alta' : 'Alta',
+            ],
+            [
+                'codigo' => 'D',
+                'titulo' => 'Escenario D — Contingencia completa',
+                'detalle' => 'La deuda ya está determinada o muy próxima a consolidarse.',
+                'acciones' => ['Negociar y regularizar.', 'Coordinar estrategia ejecutiva y penal.'],
+                'prioridad' => $eventoFiscal === 'determinacion' ? 'Muy alta' : 'Media',
             ],
         ];
     }
@@ -676,6 +755,121 @@ final class ArcaInspectionReportBuilder
             strtolower($probabilidadInspeccion),
             $recomendacion
         );
+    }
+
+    private static function resolveFiscalEvent(array $situacion): string
+    {
+        $evento = trim((string) ($situacion['evento_fiscal'] ?? ''));
+        if (in_array($evento, ['ninguno', 'inspeccion', 'acta', 'determinacion'], true)) {
+            return $evento;
+        }
+
+        if (self::boolish($situacion['sentencia_firme'] ?? 'no')) {
+            return 'determinacion';
+        }
+
+        if (($situacion['estado_inspeccion'] ?? '') === 'acta_labrada' || self::boolish($situacion['fue_intimado'] ?? 'no')) {
+            return 'acta';
+        }
+
+        if (($situacion['estado_inspeccion'] ?? '') === 'iniciada'
+            || self::boolish($situacion['inspeccion_previa'] ?? 'no')
+            || self::boolish($situacion['hay_intercambio'] ?? 'no')) {
+            return 'inspeccion';
+        }
+
+        return 'ninguno';
+    }
+
+    private static function buildPhaseMatrix(string $eventoFiscal): array
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => ['deteccion' => true, 'prueba' => true, 'ajuste' => false, 'sancion' => false],
+            'acta' => ['deteccion' => true, 'prueba' => true, 'ajuste' => true, 'sancion' => false],
+            'determinacion' => ['deteccion' => true, 'prueba' => true, 'ajuste' => true, 'sancion' => true],
+            default => ['deteccion' => false, 'prueba' => false, 'ajuste' => false, 'sancion' => false],
+        };
+    }
+
+    private static function defaultScenarioFromEvent(string $eventoFiscal): string
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => 'inspeccion_en_curso',
+            'acta' => 'acta_labrada',
+            'determinacion' => 'contingencia_completa',
+            default => 'riesgo_latente',
+        };
+    }
+
+    private static function defaultAdjustmentProbability(string $eventoFiscal): float
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => 0.78,
+            'acta' => 0.9,
+            'determinacion' => 0.98,
+            default => 0.35,
+        };
+    }
+
+    private static function defaultPenalProbability(string $eventoFiscal, array $situacion): float
+    {
+        $base = match ($eventoFiscal) {
+            'inspeccion' => 0.15,
+            'acta' => 0.28,
+            'determinacion' => 0.4,
+            default => 0.05,
+        };
+
+        if (self::boolish($situacion['falta_f931_art'] ?? 'no') || self::boolish($situacion['hay_apropiacion_indebida'] ?? 'no')) {
+            $base += 0.2;
+        }
+        if (self::boolish($situacion['fraude_evasion_sistematica'] ?? 'no')) {
+            $base += 0.12;
+        }
+
+        return round(min(0.95, max(0.01, $base)), 2);
+    }
+
+    private static function formatFiscalEvent(string $eventoFiscal): string
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => 'Inspección',
+            'acta' => 'Acta',
+            'determinacion' => 'Determinación',
+            default => 'Ninguno',
+        };
+    }
+
+    private static function buildImmediateActionLabel(string $eventoFiscal): string
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => 'Control de daño y prueba inmediata',
+            'acta' => 'Defensa administrativa',
+            'determinacion' => 'Negociación y regularización',
+            default => 'Regularización previa',
+        };
+    }
+
+    private static function buildOperationalConsults(): array
+    {
+        return [
+            [
+                'pregunta' => 'Tengo monotributistas trabajando fijo, ¿qué pasa?',
+                'respuesta' => 'ARCA no mira el contrato sino la realidad. Si detecta dependencia encubierta, recalifica y proyecta deuda previsional, IVA y Ganancias.',
+            ],
+            [
+                'pregunta' => 'Retuve aportes pero no los deposité.',
+                'respuesta' => 'No es solo una multa: puede activar riesgo penal tributario por apropiación indebida si supera el mínimo legal.',
+            ],
+            [
+                'pregunta' => 'Tengo empleados en negro pero nunca me inspeccionaron.',
+                'respuesta' => 'El riesgo es latente y depende del disparador: denuncia, cruce sistémico o fiscalización sectorial.',
+            ],
+            [
+                'pregunta' => 'Tengo tercerizados, ¿me cubre el contrato?',
+                'respuesta' => 'No necesariamente. La tercerización puede activar responsabilidad solidaria y contagio documental si falla el control real.',
+            ],
+        ];
     }
 
     private static function hasFraudSignals(array $situacion): bool

@@ -56,10 +56,13 @@ final class LaborInspectionAnalysisBuilderOutputTest extends TestCase
         );
 
         $this->assertSame('iniciada', $analysis['estado_inspeccion']);
-        $this->assertSame('estrategia_mixta', $analysis['escenario_optimo']);
-        $this->assertSame('Control de daño y conciliación', $analysis['recomendacion_final']);
+        $this->assertSame('inspeccion', $analysis['evento_fiscal']);
+        $this->assertSame('inspeccion_en_curso', $analysis['escenario_optimo']);
+        $this->assertSame('Control de daño y prueba inmediata', $analysis['recomendacion_final']);
         $this->assertSame(7500000.0, floatval($analysis['laboral']['contingencia']['administrativa'] ?? 0));
-        $this->assertSame('medio', $analysis['laboral']['variables_criticas']['variables_juridicas']['impacto_prueba'] ?? null);
+        $this->assertSame('alto', $analysis['laboral']['variables_criticas']['variables_juridicas']['impacto_prueba'] ?? null);
+        $this->assertSame(false, $analysis['fase_procedimental']['ajuste'] ?? true);
+        $this->assertTrue(floatval($analysis['probabilidad_ajuste'] ?? 0) >= 0.8);
         $this->assertTrue(isset($analysis['laboral']['documentacion_probatoria']['matriz_impacto_probatorio']));
     }
 }

@@ -17,6 +17,8 @@ final class LaborInspectionAnalysisBuilder
         $documental = self::buildDocumentacion($documentacion, $situacion);
         $estructural = self::buildEstructural($datos, $situacion);
         $estadoInspeccion = self::resolveInspectionState($situacion);
+        $eventoFiscal = self::resolveFiscalEvent($situacion, $estadoInspeccion);
+        $faseProcedimental = self::buildPhaseMatrix($eventoFiscal);
 
         $matriz = [
             'registracion' => $registracion,
@@ -81,16 +83,23 @@ final class LaborInspectionAnalysisBuilder
             $condiciones
         );
         $contingencia = self::buildContingencyBreakdown($datos, $situacion, $exposicion, $sancionAdministrativa, $deudaArca);
+        $probabilidadAjuste = self::resolveAdjustmentProbability($eventoFiscal, $matriz, $contingencia, $situacion);
+        $probabilidadPenal = self::resolvePenalProbability($eventoFiscal, $situacion, $contingencia);
         $variablesCriticas = self::buildCriticalVariables(
+            $eventoFiscal,
             $estadoInspeccion,
+            $faseProcedimental,
             $matriz,
             $contingencia,
             $riesgoProbatorio,
-            $probabilidadCondena
+            $probabilidadCondena,
+            $probabilidadAjuste,
+            $probabilidadPenal
         );
         $escenarios = self::buildEscenarios(
-            $estadoCaso,
+            $eventoFiscal,
             $estadoInspeccion,
+            $faseProcedimental,
             $contingencia,
             $variablesCriticas['variables_juridicas'],
             $documentacion,
@@ -113,15 +122,18 @@ final class LaborInspectionAnalysisBuilder
         return [
             'estado_caso' => $estadoCaso,
             'estado_inspeccion' => $estadoInspeccion,
+            'evento_fiscal' => $eventoFiscal,
+            'fase_procedimental' => $faseProcedimental,
             'infraccion_laboral' => $infraccion,
             'iril_laboral' => round(floatval($iril['score'] ?? 0), 1),
             'nivel_laboral' => self::extractIrilLabel($iril),
             'probabilidad_inspeccion' => $probabilidad,
             'probabilidad_condena' => $probabilidadCondena,
+            'probabilidad_ajuste' => $probabilidadAjuste,
+            'probabilidad_penal' => $probabilidadPenal,
             'grado_exposicion' => $gradoExposicion,
             'recomendacion_final' => $recomendacion['label'],
-            'escenario_real' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
-            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
+            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'riesgo_latente',
             'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
             'observaciones_clave' => implode(' | ', $observacionesClave),
             'laboral' => [
@@ -148,6 +160,11 @@ final class LaborInspectionAnalysisBuilder
                 'documentacion_probatoria' => $documentacionProbatoria,
                 'variables_criticas' => $variablesCriticas,
                 'contexto_inspectivo' => $contextoInspectivo,
+                'evento_fiscal' => [
+                    'codigo' => $eventoFiscal,
+                    'titulo' => self::formatFiscalEvent($eventoFiscal),
+                    'fase' => $faseProcedimental,
+                ],
                 'matriz_riesgo' => $matriz,
                 'tipificacion' => [
                     'infraccion' => $infraccion,
@@ -173,21 +190,35 @@ final class LaborInspectionAnalysisBuilder
                 'escenarios' => $escenarios,
                 'escenario_optimo' => [
                     'codigo' => $escenarioOptimo['codigo'] ?? 'D',
-                    'slug' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
-                    'titulo' => $escenarioOptimo['titulo'] ?? 'Reconfiguración preventiva',
+                    'slug' => $escenarioOptimo['slug'] ?? 'riesgo_latente',
+                    'titulo' => $escenarioOptimo['titulo'] ?? 'Escenario A — Situación invisible (riesgo latente)',
                     'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
                     'evaluacion' => $escenarioOptimo['evaluacion'] ?? 'Óptimo',
                 ],
                 'checklist' => self::buildChecklist($datos, $documentacion, $situacion),
                 'consideraciones_legales' => $consideracionesLegales,
+                'modelo_operativo' => self::buildOperationalModel(
+                    $datos,
+                    $situacion,
+                    $eventoFiscal,
+                    $faseProcedimental,
+                    $escenarioOptimo,
+                    $gradoExposicion,
+                    $probabilidadAjuste,
+                    $probabilidadPenal,
+                    $recomendacion
+                ),
                 'conclusion_estrategica' => [
                     'estado_caso' => $estadoCaso,
                     'conflicto' => $hayConflicto,
                     'inspeccion' => $hayInspeccion,
                     'estado_inspeccion' => self::formatInspectionState($estadoInspeccion),
+                    'evento_fiscal' => self::formatFiscalEvent($eventoFiscal),
                     'nivel_riesgo_general' => self::resolveLevel($promedio),
                     'probabilidad_inspeccion' => $probabilidad,
                     'probabilidad_condena' => round($probabilidadCondena, 2),
+                    'probabilidad_ajuste' => round($probabilidadAjuste, 2),
+                    'probabilidad_penal' => round($probabilidadPenal, 2),
                     'grado_exposicion' => $gradoExposicion,
                     'escenario_optimo' => $escenarioOptimo['titulo'] ?? 'Reconfiguración preventiva',
                     'score_escenario' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
@@ -202,6 +233,8 @@ final class LaborInspectionAnalysisBuilder
                 'escenario_habilitado' => $escenariosHabilitados,
                 'escenario_bloqueado' => $escenariosBloqueados,
                 'estado_inspeccion' => $estadoInspeccion,
+                'evento_fiscal' => $eventoFiscal,
+                'fase' => $faseProcedimental,
                 'riesgo_laboral' => [
                     'registracion' => $registracion['puntaje'],
                     'condiciones' => $condiciones['puntaje'],
@@ -214,8 +247,10 @@ final class LaborInspectionAnalysisBuilder
                 'infraccion' => $infraccion,
                 'iril' => round(floatval($iril['score'] ?? 0), 1),
                 'nivel' => self::extractIrilKey($iril),
-                'escenario_optimo' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
+                'escenario_optimo' => $escenarioOptimo['slug'] ?? 'riesgo_latente',
                 'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
+                'probabilidad_ajuste' => round($probabilidadAjuste, 2),
+                'probabilidad_penal' => round($probabilidadPenal, 2),
                 'recomendacion' => $recomendacion['key'],
             ],
         ];
@@ -432,8 +467,9 @@ final class LaborInspectionAnalysisBuilder
     }
 
     private static function buildEscenarios(
-        string $estadoCaso,
+        string $eventoFiscal,
         string $estadoInspeccion,
+        array $faseProcedimental,
         array $contingencia,
         array $variablesJuridicas,
         array $documentacion,
@@ -449,130 +485,116 @@ final class LaborInspectionAnalysisBuilder
         $economiaEscalada = $contingenciaTotal >= 10000000 ? 'alta' : ($contingenciaTotal >= 3000000 ? 'media' : 'acotada');
 
         $catalog = [
-            'cumplimiento_controlado' => [
-                'codigo' => '0',
-                'slug' => 'cumplimiento_controlado',
-                'aplica' => $estadoCaso === 'preventivo_puro',
-                'titulo' => 'Escenario 0 — Cumplimiento controlado',
-                'descripcion' => 'Empresa sin conflicto ni inspección, con cumplimiento formal adecuado y foco en sostener el estándar de compliance.',
-                'gatillo' => 'Aplica únicamente cuando no hay conflicto individual ni inspección activa y el caso se clasifica como preventivo puro.',
-                'impacto_prueba' => 'bajo',
-                'probabilidad_sancion' => 'baja',
-                'riesgo_multiplicador' => 'bajo',
-                'riesgo_judicial' => 'bajo',
-                'factor_economico' => 96.0,
-                'tiempo' => 95.0,
-                'lectura_estrategica' => 'No corresponde forzar escenarios litigiosos: el valor del análisis está en monitorear, ordenar prueba y preparar respuesta frente a una eventual inspección.',
-                'acciones' => self::buildConditionalActions([
-                    'Realizar auditoría liviana de cumplimiento con foco documental.',
-                    'Mantener control periódico de legajos, recibos, libro laboral y trazabilidad registral.',
-                    'Dejar preparada una respuesta estándar ante eventuales requerimientos inspectivos.',
-                ]),
-            ],
-            'negociacion_temprana' => [
+            'riesgo_latente' => [
                 'codigo' => 'A',
-                'slug' => 'negociacion_temprana',
-                'aplica' => $hayConflicto,
-                'titulo' => 'Escenario A — Negociación temprana',
-                'descripcion' => 'Acuerdo directo con trabajador previo o paralelo al conflicto formal para contener la escalada individual.',
-                'gatillo' => 'Aplica solo cuando existe conflicto individual activo.',
-                'impacto_prueba' => 'medio',
+                'slug' => 'riesgo_latente',
+                'aplica' => true,
+                'titulo' => 'Escenario A — Situación invisible (riesgo latente)',
+                'descripcion' => 'Todavía no existe inspección formal, pero las inconsistencias ya permiten una reconstrucción integral si aparece un disparador.',
+                'gatillo' => 'Opera cuando el evento fiscal todavía es inexistente y la prioridad es ganar control antes de denuncia, cruce sistémico o fiscalización sectorial.',
+                'impacto_prueba' => 'bajo',
                 'probabilidad_sancion' => 'media',
-                'riesgo_multiplicador' => 'medio',
-                'riesgo_judicial' => $estadoInspeccion === 'previa' ? 'bajo' : 'medio',
-                'factor_economico' => match ($estadoInspeccion) {
-                    'previa' => 84.0,
-                    'iniciada' => 68.0,
-                    default => 35.0,
+                'riesgo_multiplicador' => $variablesJuridicas['riesgo_multiplicador'] ?? 'medio',
+                'riesgo_judicial' => 'bajo',
+                'factor_economico' => match ($eventoFiscal) {
+                    'ninguno' => 96.0,
+                    'inspeccion' => 44.0,
+                    'acta' => 22.0,
+                    default => 12.0,
                 },
-                'tiempo' => 88.0,
-                'lectura_estrategica' => 'Contención temprana del conflicto, útil para evitar escalamiento, pero sin neutralizar la potestad sancionatoria estatal.',
+                'tiempo' => $eventoFiscal === 'ninguno' ? 95.0 : 30.0,
+                'lectura_estrategica' => 'Es el único escenario con control total del timing: si se regulariza antes del disparador, se reduce el margen de reconstrucción y mejora la defensa futura.',
                 'acciones' => self::buildConditionalActions([
-                    'Ordenar carpeta documental y definir una posición única frente al trabajador y a la inspección.',
-                    $hayFacturacionParalela ? 'Cerrar cualquier ambigüedad entre salario y facturación ajena antes de negociar.' : null,
-                    $economiaEscalada !== 'acotada' ? 'Usar la cuantificación separada para fijar un techo de cierre y evitar contagio a otros reclamos.' : null,
+                    'Regularizar alta, salario, F.931, libro Art. 52 y trazabilidad bancaria antes de cualquier constatación.',
+                    $hayFacturacionParalela ? 'Revisar de inmediato monotributistas o facturación interna porque ARCA mirará la realidad y no el contrato.' : null,
+                    $economiaEscalada !== 'acotada' ? 'Priorizar la nómina con mayor derrame económico para cortar efecto multiplicador.' : null,
                 ]),
             ],
-            'litigio_completo' => [
+            'inspeccion_en_curso' => [
                 'codigo' => 'B',
-                'slug' => 'litigio_completo',
-                'aplica' => $hayConflictoAvanzado,
-                'titulo' => 'Escenario B — Litigio completo',
-                'descripcion' => 'Judicialización plena del conflicto laboral con máxima exposición probatoria, sancionatoria y económica.',
-                'gatillo' => 'Aplica solo cuando el conflicto ya está avanzado y exige defensa litigiosa plena.',
+                'slug' => 'inspeccion_en_curso',
+                'aplica' => true,
+                'titulo' => 'Escenario B — Inspección en curso',
+                'descripcion' => 'La fiscalización ya empezó: las encuestas, relevamientos y requerimientos forman la base del ajuste y no admiten improvisación.',
+                'gatillo' => 'Corresponde cuando existe inspección, encuesta o requerimiento activo, aun sin acta labrada.',
+                'impacto_prueba' => $faseProcedimental['prueba'] ? 'alto' : 'medio',
+                'probabilidad_sancion' => 'alta',
+                'riesgo_multiplicador' => $variablesJuridicas['riesgo_multiplicador'] ?? 'medio',
+                'riesgo_judicial' => 'medio',
+                'factor_economico' => match ($eventoFiscal) {
+                    'ninguno' => 48.0,
+                    'inspeccion' => 95.0,
+                    'acta' => 58.0,
+                    default => 18.0,
+                },
+                'tiempo' => match ($eventoFiscal) {
+                    'inspeccion' => 92.0,
+                    'acta' => 55.0,
+                    default => 22.0,
+                },
+                'lectura_estrategica' => 'El punto central ya no es describir el riesgo sino controlar daño: recolectar prueba inmediata, evitar contradicciones y ordenar el descargo técnico.',
+                'acciones' => self::buildConditionalActions([
+                    'Centralizar la respuesta al inspector y congelar una narrativa única para personal, RRHH y estudio.',
+                    'Recolectar recibos, biometría, legajos, F.931, planillas y soportes de jornada antes de que aparezcan contradicciones.',
+                    $hayRiesgoEstructuraOpaca ? 'Separar documentalmente toda estructura opaca o tercerización porque la encuesta puede activar contagio fiscal inmediato.' : null,
+                ]),
+            ],
+            'acta_labrada' => [
+                'codigo' => 'C',
+                'slug' => 'acta_labrada',
+                'aplica' => true,
+                'titulo' => 'Escenario C — Acta labrada',
+                'descripcion' => 'La infracción ya fue formalizada y la defensa debe concentrarse en hechos, base imponible y reducción sancionatoria.',
+                'gatillo' => 'Se activa cuando existe acta formal o cuando el evento fiscal ya superó la etapa puramente inspectiva.',
                 'impacto_prueba' => 'alto',
                 'probabilidad_sancion' => 'alta',
                 'riesgo_multiplicador' => 'alto',
                 'riesgo_judicial' => 'alto',
-                'factor_economico' => match ($estadoInspeccion) {
-                    'iniciada' => 36.0,
-                    'acta_labrada' => 42.0,
-                    default => 25.0,
+                'factor_economico' => match ($eventoFiscal) {
+                    'ninguno' => 18.0,
+                    'inspeccion' => 72.0,
+                    'acta' => 96.0,
+                    default => 52.0,
                 },
-                'tiempo' => 22.0,
-                'lectura_estrategica' => 'Escenario de máxima exposición; solo es razonable cuando la defensa técnica es sólida y la prueba del empleador resiste judicialización plena.',
+                'tiempo' => match ($eventoFiscal) {
+                    'acta' => 88.0,
+                    'determinacion' => 52.0,
+                    default => 30.0,
+                },
+                'lectura_estrategica' => 'La multa ya dejó de ser una hipótesis abstracta: el frente útil es discutir hechos relevados, base imponible y graduación de sanción.',
                 'acciones' => self::buildConditionalActions([
-                    'Preservar prueba documental, registral y técnica con cadena de custodia mínima.',
-                    'Preparar defensa coordinada laboral, fiscal y contable antes de cualquier escrito de fondo.',
-                    $hayRiesgoEstructuraOpaca ? 'Neutralizar la lectura de interposición o estructura opaca con documentación societaria y operativa.' : null,
+                    'Preparar descargo administrativo con foco en hechos, remuneración base y pluralidad de trabajadores afectados.',
+                    'Separar lo laboral, lo previsional y lo fiscal para no convalidar una base de ajuste sobredimensionada.',
+                    $variablesJuridicas['riesgo_multiplicador'] !== 'bajo' ? 'Dimensionar el efecto cascada sobre otros dependientes antes de contestar el acta.' : null,
                 ]),
             ],
-            'estrategia_mixta' => [
-                'codigo' => 'C',
-                'slug' => 'estrategia_mixta',
-                'aplica' => $hayTelegramaOIntimacion,
-                'titulo' => 'Escenario C — Estrategia mixta',
-                'descripcion' => 'Intimación, conciliación y eventual judicialización escalonada para controlar daño sin resignar margen de negociación.',
-                'gatillo' => 'Aplica solo cuando ya hubo telegrama, intercambio formal o intimación.',
-                'impacto_prueba' => 'medio-alto',
-                'probabilidad_sancion' => 'media',
-                'riesgo_multiplicador' => 'medio',
-                'riesgo_judicial' => 'medio',
-                'factor_economico' => match ($estadoInspeccion) {
-                    'previa' => 72.0,
-                    'iniciada' => 84.0,
-                    'acta_labrada' => 78.0,
-                    default => 72.0,
-                },
-                'tiempo' => 62.0,
-                'lectura_estrategica' => 'Mejor equilibrio entre contención económica, generación ordenada de prueba y margen de negociación estructurada.',
-                'acciones' => self::buildConditionalActions([
-                    'Secuenciar intimaciones, descargo y conciliación bajo una misma narrativa probatoria.',
-                    'Cuantificar por separado contingencia administrativa, laboral e indirecta antes de negociar.',
-                    $variablesJuridicas['riesgo_multiplicador'] !== 'bajo' ? 'Monitorear el efecto cascada sobre otros trabajadores o sobre actuaciones paralelas.' : null,
-                ]),
-            ],
-            'reconfiguracion_preventiva' => [
+            'contingencia_completa' => [
                 'codigo' => 'D',
-                'slug' => 'reconfiguracion_preventiva',
-                'aplica' => in_array($estadoCaso, ['riesgo_latente', 'inspeccion_en_curso', 'conflicto_individual', 'litigio'], true),
-                'titulo' => 'Escenario D — Reconfiguración preventiva',
-                'descripcion' => $estadoCaso === 'riesgo_latente'
-                    ? 'Regularización preventiva focalizada para corregir desvíos detectados antes de que exista conflicto o inspección.'
-                    : 'Regularización reactiva para mejorar la posición defensiva aun cuando el riesgo ya se exteriorizó.',
-                'gatillo' => $estadoCaso === 'riesgo_latente'
-                    ? 'Aplica cuando no hay conflicto formal, pero sí desvíos materiales que justifican reconfiguración.'
-                    : 'Aplica cuando el caso ya muestra conflicto o actuación inspectiva y todavía es útil corregir desvíos.',
-                'impacto_prueba' => 'bajo',
-                'probabilidad_sancion' => 'media',
-                'riesgo_multiplicador' => 'bajo',
-                'riesgo_judicial' => 'bajo',
-                'factor_economico' => match ($estadoInspeccion) {
-                    'previa' => 94.0,
-                    'iniciada' => 58.0,
-                    'acta_labrada' => 44.0,
-                    default => 90.0,
+                'slug' => 'contingencia_completa',
+                'aplica' => true,
+                'titulo' => 'Escenario D — Contingencia completa',
+                'descripcion' => 'El ajuste ya está determinado o prácticamente consolidado; la salida pasa por negociar, regularizar y administrar el frente ejecutivo o penal.',
+                'gatillo' => 'Corresponde cuando ya existe determinación de deuda, ejecución inminente o activación penal relevante.',
+                'impacto_prueba' => 'alto',
+                'probabilidad_sancion' => 'alta',
+                'riesgo_multiplicador' => 'alto',
+                'riesgo_judicial' => 'alto',
+                'factor_economico' => match ($eventoFiscal) {
+                    'ninguno' => 12.0,
+                    'inspeccion' => 30.0,
+                    'acta' => 76.0,
+                    default => 97.0,
                 },
-                'tiempo' => match ($estadoInspeccion) {
-                    'previa' => 92.0,
-                    'iniciada' => 50.0,
-                    default => 35.0,
+                'tiempo' => match ($eventoFiscal) {
+                    'determinacion' => 94.0,
+                    'acta' => 58.0,
+                    default => 24.0,
                 },
-                'lectura_estrategica' => 'Único escenario que actúa sobre la causa del riesgo; en fase preventiva es el de mayor eficiencia, pero pierde potencia cuando ya existe acta.',
+                'lectura_estrategica' => 'A esta altura la prioridad es conservar caja, negociar plan o regularización y contener el frente penal/previsional sin negar el estadio alcanzado.',
                 'acciones' => self::buildConditionalActions([
-                    'Regularizar alta, salario, libro Art. 52 LCT, ART y trazabilidad bancaria.',
-                    $hayFacturacionParalela ? 'Separar documentalmente toda operatoria ajena a la relación laboral para reducir contagio fiscal.' : null,
-                    'Dejar protocolo interno de respuesta frente a inspecciones, oficios y pedidos de informes.',
+                    'Abrir mesa única laboral-contable-tributaria para negociación, facilidades de pago y estrategia penal.',
+                    'Regularizar deuda corriente y evitar nuevas omisiones mientras se discute la contingencia histórica.',
+                    $hayFacturacionParalela ? 'Blindar la documentación de pagos ajenos al salario para impedir nuevos ajustes sobre la misma base.' : null,
                 ]),
             ],
         ];
@@ -908,30 +930,32 @@ final class LaborInspectionAnalysisBuilder
         return 'previa';
     }
 
-    private static function resolveCaseState(
-        array $documentacion,
-        array $situacion,
-        float $puntajeMaximo,
-        float $promedio,
-        string $infraccion
-    ): string {
-        if (self::hasInspectionSignals($situacion)) {
-            return 'inspeccion_en_curso';
+    private static function resolveFiscalEvent(array $situacion, string $estadoInspeccion): string
+    {
+        $evento = trim((string) ($situacion['evento_fiscal'] ?? ''));
+        if (in_array($evento, ['ninguno', 'inspeccion', 'acta', 'determinacion'], true)) {
+            return $evento;
         }
 
-        if (self::hasAdvancedConflict($documentacion, $situacion)) {
-            return 'litigio';
+        if (self::isFlagEnabled($situacion['sentencia_firme'] ?? 'no')) {
+            return 'determinacion';
         }
 
-        if (self::hasFormalConflict($documentacion, $situacion)) {
-            return 'conflicto_individual';
-        }
+        return match ($estadoInspeccion) {
+            'acta_labrada' => 'acta',
+            'iniciada' => 'inspeccion',
+            default => 'ninguno',
+        };
+    }
 
-        if (self::hasDetectedRisk($documentacion, $situacion, $puntajeMaximo, $promedio, $infraccion)) {
-            return 'riesgo_latente';
-        }
-
-        return 'preventivo_puro';
+    private static function buildPhaseMatrix(string $eventoFiscal): array
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => ['deteccion' => true, 'prueba' => true, 'ajuste' => false, 'sancion' => false],
+            'acta' => ['deteccion' => true, 'prueba' => true, 'ajuste' => true, 'sancion' => false],
+            'determinacion' => ['deteccion' => true, 'prueba' => true, 'ajuste' => true, 'sancion' => true],
+            default => ['deteccion' => false, 'prueba' => false, 'ajuste' => false, 'sancion' => false],
+        };
     }
 
     private static function formatInspectionState(string $estadoInspeccion): string
@@ -940,6 +964,16 @@ final class LaborInspectionAnalysisBuilder
             'acta_labrada' => 'Acta labrada',
             'iniciada' => 'Iniciada',
             default => 'Previa',
+        };
+    }
+
+    private static function formatFiscalEvent(string $eventoFiscal): string
+    {
+        return match ($eventoFiscal) {
+            'inspeccion' => 'Inspección',
+            'acta' => 'Acta',
+            'determinacion' => 'Determinación',
+            default => 'Ninguno',
         };
     }
 
@@ -1046,6 +1080,46 @@ final class LaborInspectionAnalysisBuilder
         return round(min(0.95, max(0.05, $probabilidadCalculada)), 2);
     }
 
+    private static function resolveAdjustmentProbability(
+        string $eventoFiscal,
+        array $matriz,
+        array $contingencia,
+        array $situacion
+    ): float {
+        $base = match ($eventoFiscal) {
+            'inspeccion' => 0.72,
+            'acta' => 0.88,
+            'determinacion' => 0.97,
+            default => 0.35,
+        };
+
+        $base += (floatval($matriz['registracion']['puntaje'] ?? 0) / 5) * 0.14;
+        $base += (floatval($matriz['documentacion']['puntaje'] ?? 0) / 5) * 0.10;
+        $base += max(0, intval($situacion['meses_no_registrados'] ?? 0)) > 0 ? 0.08 : 0.0;
+        $base += self::hasOpaqueStructureSignals($situacion) ? 0.08 : 0.0;
+        $base += floatval($contingencia['administrativa'] ?? 0) > 0 ? 0.05 : 0.0;
+
+        return round(min(0.99, max(0.05, $base)), 2);
+    }
+
+    private static function resolvePenalProbability(string $eventoFiscal, array $situacion, array $contingencia): float
+    {
+        $base = match ($eventoFiscal) {
+            'inspeccion' => 0.15,
+            'acta' => 0.25,
+            'determinacion' => 0.38,
+            default => 0.05,
+        };
+
+        $base += self::isFlagEnabled($situacion['falta_f931_art'] ?? 'no') ? 0.20 : 0.0;
+        $base += self::isFlagEnabled($situacion['hay_apropiacion_indebida'] ?? 'no') ? 0.20 : 0.0;
+        $base += self::isFlagEnabled($situacion['fraude_evasion_sistematica'] ?? 'no') ? 0.15 : 0.0;
+        $base += max(0, intval($situacion['meses_en_mora'] ?? 0)) >= 6 ? 0.08 : 0.0;
+        $base += floatval($contingencia['administrativa'] ?? 0) >= 3000000 ? 0.05 : 0.0;
+
+        return round(min(0.95, max(0.01, $base)), 2);
+    }
+
     private static function buildContingencyBreakdown(
         array $datos,
         array $situacion,
@@ -1072,16 +1146,22 @@ final class LaborInspectionAnalysisBuilder
     }
 
     private static function buildCriticalVariables(
+        string $eventoFiscal,
         string $estadoInspeccion,
+        array $faseProcedimental,
         array $matriz,
         array $contingencia,
         array $riesgoProbatorio,
-        float $probabilidadCondena
+        float $probabilidadCondena,
+        float $probabilidadAjuste,
+        float $probabilidadPenal
     ): array {
         $riesgoMultiplicador = self::resolveMultiplierLevel($contingencia, $matriz);
 
         return [
+            'evento_fiscal' => $eventoFiscal,
             'estado_inspeccion' => $estadoInspeccion,
+            'fase' => $faseProcedimental,
             'riesgo_laboral' => [
                 'registracion' => floatval($matriz['registracion']['puntaje'] ?? 0),
                 'condiciones' => floatval($matriz['condiciones']['puntaje'] ?? 0),
@@ -1095,9 +1175,56 @@ final class LaborInspectionAnalysisBuilder
                     floatval($matriz['documentacion']['puntaje'] ?? 0),
                     floatval($contingencia['administrativa'] ?? 0) > 0 ? 3.0 : 1.0
                 )),
-                'impacto_prueba' => $riesgoProbatorio['nivel'],
+                'impacto_prueba' => self::maxRiskLevel(
+                    $riesgoProbatorio['nivel'],
+                    match ($eventoFiscal) {
+                        'inspeccion' => 'alto',
+                        'acta', 'determinacion' => 'crítico',
+                        default => 'medio',
+                    }
+                ),
                 'riesgo_multiplicador' => $riesgoMultiplicador,
                 'riesgo_judicial' => self::resolveLevel(max(($probabilidadCondena * 5), floatval($matriz['estructural']['puntaje'] ?? 0))),
+                'probabilidad_ajuste' => round($probabilidadAjuste, 2),
+                'probabilidad_penal' => round($probabilidadPenal, 2),
+            ],
+        ];
+    }
+
+    private static function buildOperationalModel(
+        array $datos,
+        array $situacion,
+        string $eventoFiscal,
+        array $faseProcedimental,
+        array $escenarioOptimo,
+        string $riesgo,
+        float $probabilidadAjuste,
+        float $probabilidadPenal,
+        array $recomendacion
+    ): array {
+        return [
+            'input' => [
+                'empleados_registrados' => ($datos['tipo_registro'] ?? 'registrado') === 'registrado',
+                'monotributistas' => self::isFlagEnabled($situacion['tiene_facturacion'] ?? 'no'),
+                'pagos_en_negro' => floatval($datos['salario_recibo'] ?? 0) > 0
+                    && floatval($datos['salario'] ?? 0) > floatval($datos['salario_recibo'] ?? 0),
+                'cumplimiento_f931' => !self::isFlagEnabled($situacion['falta_f931_art'] ?? 'no'),
+            ],
+            'proceso' => [
+                'detectar_inconsistencia',
+                'evaluar_evento_fiscal',
+                'estimar_contingencia',
+                'definir_escenario',
+                'recomendar_estrategia',
+            ],
+            'fase' => $faseProcedimental,
+            'output' => [
+                'escenario' => $escenarioOptimo['slug'] ?? 'riesgo_latente',
+                'riesgo' => $riesgo,
+                'probabilidad_ajuste' => round($probabilidadAjuste, 2),
+                'probabilidad_penal' => round($probabilidadPenal, 2),
+                'recomendacion' => $recomendacion['key'] ?? 'regularizacion_previa',
+                'evento_fiscal' => $eventoFiscal,
             ],
         ];
     }
@@ -1111,6 +1238,22 @@ final class LaborInspectionAnalysisBuilder
             $indirecta >= 10000000 || $estructural >= 4.0 => 'alto',
             $indirecta >= 3000000 || $estructural >= 2.5 => 'medio',
             default => 'bajo',
+        };
+    }
+
+    private static function maxRiskLevel(string $first, string $second): string
+    {
+        return self::riskLevelWeight($first) >= self::riskLevelWeight($second) ? $first : $second;
+    }
+
+    private static function riskLevelWeight(string $level): int
+    {
+        return match ($level) {
+            'bajo' => 1,
+            'medio' => 2,
+            'alto' => 3,
+            'crítico' => 4,
+            default => 2,
         };
     }
 
@@ -1169,12 +1312,12 @@ final class LaborInspectionAnalysisBuilder
 
         if ($selected === null) {
             return [
-                'key' => 'cumplimiento_controlado',
-                'codigo' => '0',
-                'slug' => 'cumplimiento_controlado',
-                'titulo' => 'Escenario 0 — Cumplimiento controlado',
-                'score' => 95.0,
-                'evaluacion' => 'Óptimo',
+                'key' => 'riesgo_latente',
+                'codigo' => 'A',
+                'slug' => 'riesgo_latente',
+                'titulo' => 'Escenario A — Situación invisible (riesgo latente)',
+                'score' => 0.0,
+                'evaluacion' => 'Crítico',
             ];
         }
 
@@ -1184,25 +1327,21 @@ final class LaborInspectionAnalysisBuilder
     private static function recommendationFromScenario(?string $scenarioKey, string $infraccion, array $situacion): array
     {
         return match ($scenarioKey) {
-            'cumplimiento_controlado' => [
-                'key' => 'monitoreo_y_preparacion',
-                'label' => 'Monitoreo y preparación',
+            'riesgo_latente' => [
+                'key' => 'regularizacion_previa',
+                'label' => 'Regularización previa',
             ],
-            'negociacion_temprana' => [
-                'key' => 'contencion_temprana_y_cierre_controlado',
-                'label' => 'Contención temprana y cierre controlado',
+            'inspeccion_en_curso' => [
+                'key' => 'control_daño_y_prueba_inmediata',
+                'label' => 'Control de daño y prueba inmediata',
             ],
-            'litigio_completo' => [
-                'key' => 'defensa_tecnica_en_litigio_pleno',
-                'label' => 'Defensa técnica en litigio pleno',
+            'acta_labrada' => [
+                'key' => 'defensa_administrativa_y_discusion_de_base',
+                'label' => 'Defensa administrativa y discusión de base',
             ],
-            'estrategia_mixta' => [
-                'key' => 'control_daño_y_conciliacion',
-                'label' => 'Control de daño y conciliación',
-            ],
-            'reconfiguracion_preventiva' => [
-                'key' => 'regularizacion_y_reconfiguracion_preventiva',
-                'label' => 'Regularización y reconfiguración preventiva',
+            'contingencia_completa' => [
+                'key' => 'negociacion_y_regularizacion',
+                'label' => 'Negociación y regularización',
             ],
             default => self::resolveRecommendation($infraccion, $situacion),
         };

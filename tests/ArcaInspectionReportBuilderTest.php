@@ -88,13 +88,15 @@ final class ArcaInspectionReportBuilderTest extends TestCase
         $this->assertSame('Riesgo Contributivo y Retenciones (Penal Tributario)', $report['matriz_riesgo']['contributivo']['titulo']);
         $this->assertSame('Alta probabilidad de ajustes y multas (Contingencia presunta)', $report['iril']['interpretacion']);
         $this->assertSame('Alta', $report['conclusion_estrategica']['probabilidad_inspeccion']);
-        $this->assertSame('Compliance Laboral-Tributario Inmediato', $report['conclusion_estrategica']['recomendacion_principal']);
+        $this->assertSame('Control de daño y prueba inmediata', $report['conclusion_estrategica']['recomendacion_principal']);
         $this->assertSame('compliance_laboral_y_regularizacion_espontanea', $report['modelo_salida']['recomendacion']);
         $this->assertSame(4, $report['modelo_salida']['riesgo_arca']['registral']);
         $this->assertSame(5, $report['modelo_salida']['riesgo_arca']['contributivo']);
         $this->assertSame(3, $report['modelo_salida']['riesgo_arca']['conductual']);
         $this->assertSame(3, $report['modelo_salida']['riesgo_arca']['documental']);
-        $this->assertSame(3, count($report['escenarios_estrategicos']), 'El informe ARCA / MTESS debe exponer los 3 escenarios estratégicos definidos.');
+        $this->assertSame('inspeccion', $report['modelo_salida']['evento_fiscal']);
+        $this->assertSame('inspeccion_en_curso', $report['modelo_salida']['escenario']);
+        $this->assertSame(4, count($report['escenarios_estrategicos']), 'El informe ARCA / MTESS debe exponer los 4 escenarios operativos definidos.');
         $this->assertSame(60, $report['moratoria_ley_27743']['condonacion_intereses_pct']);
         $this->assertSame('alto', strtolower((string) $report['alertas_penales']['nivel']));
         $this->assertSame(10000.0, floatval($report['valuacion_regularizacion']['impuesto_especial_usd']));
@@ -102,6 +104,8 @@ final class ArcaInspectionReportBuilderTest extends TestCase
         $this->assertSame('La regularización reduce intereses en 60%.', $report['cuantificacion_contingencia']['detalle_montos']['intereses']['impacto_regularizacion']);
         $this->assertSame(true, $report['consideraciones_legales'][0]['aplica']);
         $this->assertSame('Art. 30 LCT', $report['consideraciones_legales'][3]['titulo']);
+        $this->assertSame('Inspección', $report['evento_fiscal']['titulo']);
+        $this->assertTrue(($report['evento_fiscal']['fase']['prueba'] ?? false));
         $this->assertSame('Presunción Ganancias + IVA sobre salarios omitidos', $report['modelo_salida']['deuda']['capital']);
     }
 }
