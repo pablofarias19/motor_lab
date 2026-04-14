@@ -671,8 +671,21 @@ $factoresIrilBajos = array_slice(array_reverse($factoresIril), 0, 1);
                                 <h4 style="margin:0 0 .75rem; font-size:.95rem; color:#1d4ed8;"><span class="ui-emoji" aria-hidden="true">🤝</span>Responsabilidad solidaria</h4>
                                 <div><strong>Riesgo:</strong> <?= htmlspecialchars($solEmp['riesgo_calificacion'] ?? '-') ?></div>
                                 <div><strong>Probabilidad de condena:</strong> <?= htmlspecialchars($solEmp['probabilidad_condena'] ?? '-') ?></div>
+                                <div><strong>Monto estimado por trabajador:</strong> <?= ml_formato_moneda(floatval($solEmp['monto_estimado_por_trabajador'] ?? 0)) ?></div>
+                                <div><strong>Universo analizado:</strong> <?= intval($solEmp['universo_trabajadores'] ?? 1) ?> trabajador(es)</div>
+                                <div><strong>Litigiosidad esperada:</strong> <?= htmlspecialchars((string) ($solEmp['tasa_litigiosidad_esperada'] ?? '0%')) ?></div>
+                                <div><strong>Reclamos probables:</strong> <?= intval($solEmp['trabajadores_reclamantes_estimados'] ?? 1) ?> trabajador(es)</div>
+                                <div><strong>Exposición máxima:</strong> <?= ml_formato_moneda(floatval($solEmp['exposicion_maxima'] ?? 0)) ?></div>
+                                <div><strong>Exposición probable:</strong> <?= ml_formato_moneda(floatval($solEmp['exposicion_probable'] ?? 0)) ?></div>
                                 <div><strong>Exposición esperada:</strong> <?= ml_formato_moneda(floatval($solEmp['exposicion_esperada'] ?? 0)) ?></div>
                                 <p style="margin:.75rem 0 0; font-size:.85rem; color:#6b7280;"><?= htmlspecialchars($solEmp['recomendacion'] ?? '') ?></p>
+                                <?php if (!empty($solEmp['factores_detectados'])): ?>
+                                    <ul style="margin:.75rem 0 0 1rem; font-size:.85rem; color:#6b7280;">
+                                        <?php foreach ($solEmp['factores_detectados'] as $factor): ?>
+                                            <li><?= htmlspecialchars((string) $factor) ?></li>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                <?php endif; ?>
                             </div>
                         <?php endif; ?>
 
