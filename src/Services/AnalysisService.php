@@ -200,7 +200,7 @@ class AnalysisService
             $analisisEmpresa['solidaridad'] = $resultado;
             $trabajadoresReclamantes = intval($resultado['trabajadores_reclamantes_estimados'] ?? 1);
             $notaSolidaridad = sprintf(
-                'Monto por trabajador %s · universo %d · litigiosidad esperada %s.',
+                'Monto por trabajador %s, universo %d, litigiosidad esperada %s.',
                 ml_formato_moneda(floatval($resultado['monto_estimado_por_trabajador'] ?? 0)),
                 intval($resultado['universo_trabajadores'] ?? 1),
                 (string) ($resultado['tasa_litigiosidad_esperada'] ?? '0%')
