@@ -48,8 +48,23 @@ final class LaborInspectionAnalysisBuilderThresholdsTest extends TestCase
 
         $this->assertSame(1.0, floatval($analysis['laboral']['matriz_riesgo']['estructural']['puntaje'] ?? 0));
         $this->assertSame(2.0, floatval($analysis['laboral']['matriz_riesgo']['remuneracion']['puntaje'] ?? 0));
-        $this->assertSame('regularizacion_y_reconfiguracion_preventiva', $analysis['modelo_sistema']['recomendacion']);
-        $this->assertSame('reconfiguracion_preventiva', $analysis['escenario_optimo']);
+        $this->assertSame('preventivo_puro', $analysis['estado_caso']);
+        $this->assertSame('monitoreo_y_preparacion', $analysis['modelo_sistema']['recomendacion']);
+        $this->assertSame('cumplimiento_controlado', $analysis['escenario_real']);
+        $this->assertSame('cumplimiento_controlado', $analysis['escenario_optimo']);
         $this->assertSame('previa', $analysis['estado_inspeccion']);
+        $this->assertSame(['cumplimiento_controlado'], $analysis['modelo_sistema']['escenario_habilitado']);
+        $this->assertTrue(in_array('negociacion_temprana', $analysis['modelo_sistema']['escenario_bloqueado'], true));
+        $this->assertTrue(in_array('litigio_completo', $analysis['modelo_sistema']['escenario_bloqueado'], true));
+        $this->assertTrue(in_array('estrategia_mixta', $analysis['modelo_sistema']['escenario_bloqueado'], true));
+        $this->assertFalse($analysis['laboral']['conflicto']);
+        $this->assertFalse($analysis['laboral']['inspeccion']);
+        $this->assertSame('0', $analysis['laboral']['escenario_optimo']['codigo'] ?? null);
+        $this->assertSame('cumplimiento_controlado', $analysis['laboral']['escenario_optimo']['slug'] ?? null);
+        $this->assertSame('Escenario 0 — Cumplimiento controlado', $analysis['laboral']['escenario_optimo']['titulo'] ?? null);
+        $this->assertTrue(str_contains(
+            strtolower((string) ($analysis['laboral']['escenarios']['cumplimiento_controlado']['descripcion'] ?? '')),
+            'sin conflicto ni inspección'
+        ));
     }
 }

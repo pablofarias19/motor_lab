@@ -34,6 +34,9 @@ final class LaborInspectionAnalysisBuilder
         $puntajeMaximo = max($puntajes ?: [0]);
         $promedio = round(array_sum($puntajes) / max(1, count($puntajes)), 1);
         $infraccion = self::resolveInfraccion($datos, $situacion, $puntajeMaximo);
+        $estadoCaso = self::resolveCaseState($documentacion, $situacion, $puntajeMaximo, $promedio, $infraccion);
+        $hayConflicto = self::hasFormalConflict($documentacion, $situacion);
+        $hayInspeccion = self::hasInspectionSignals($situacion);
         $probabilidad = self::resolveProbability($puntajeMaximo, $promedio, $situacion);
         $gradoExposicion = self::resolveLevel(max($promedio, floatval($iril['score'] ?? 0)));
 
@@ -86,12 +89,16 @@ final class LaborInspectionAnalysisBuilder
             $probabilidadCondena
         );
         $escenarios = self::buildEscenarios(
+            $estadoCaso,
             $estadoInspeccion,
             $contingencia,
             $variablesCriticas['variables_juridicas'],
+            $documentacion,
             $situacion
         );
         $escenarioOptimo = self::selectOptimalScenario($escenarios);
+        $escenariosHabilitados = self::collectScenarioSlugs($escenarios, true);
+        $escenariosBloqueados = self::collectScenarioSlugs($escenarios, false);
         $recomendacion = self::recommendationFromScenario($escenarioOptimo['key'] ?? null, $infraccion, $situacion);
         $documentacionProbatoria = self::buildDocumentationModule(
             $datos,
@@ -104,6 +111,7 @@ final class LaborInspectionAnalysisBuilder
         );
 
         return [
+            'estado_caso' => $estadoCaso,
             'estado_inspeccion' => $estadoInspeccion,
             'infraccion_laboral' => $infraccion,
             'iril_laboral' => round(floatval($iril['score'] ?? 0), 1),
@@ -112,10 +120,16 @@ final class LaborInspectionAnalysisBuilder
             'probabilidad_condena' => $probabilidadCondena,
             'grado_exposicion' => $gradoExposicion,
             'recomendacion_final' => $recomendacion['label'],
-            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
+            'escenario_real' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
+            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
             'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
             'observaciones_clave' => implode(' | ', $observacionesClave),
             'laboral' => [
+                'estado_caso' => $estadoCaso,
+                'conflicto' => $hayConflicto,
+                'inspeccion' => $hayInspeccion,
+                'escenario_habilitado' => $escenariosHabilitados,
+                'escenario_bloqueado' => $escenariosBloqueados,
                 'identificacion' => [
                     'convenio_colectivo_aplicable' => self::orDefault($datos['cct'] ?? ''),
                     'categoria_relevada' => self::orDefault($datos['categoria'] ?? ''),
@@ -167,6 +181,9 @@ final class LaborInspectionAnalysisBuilder
                 'checklist' => self::buildChecklist($datos, $documentacion, $situacion),
                 'consideraciones_legales' => $consideracionesLegales,
                 'conclusion_estrategica' => [
+                    'estado_caso' => $estadoCaso,
+                    'conflicto' => $hayConflicto,
+                    'inspeccion' => $hayInspeccion,
                     'estado_inspeccion' => self::formatInspectionState($estadoInspeccion),
                     'nivel_riesgo_general' => self::resolveLevel($promedio),
                     'probabilidad_inspeccion' => $probabilidad,
@@ -179,6 +196,11 @@ final class LaborInspectionAnalysisBuilder
                 ],
             ],
             'modelo_sistema' => [
+                'estado_caso' => $estadoCaso,
+                'conflicto' => $hayConflicto,
+                'inspeccion' => $hayInspeccion,
+                'escenario_habilitado' => $escenariosHabilitados,
+                'escenario_bloqueado' => $escenariosBloqueados,
                 'estado_inspeccion' => $estadoInspeccion,
                 'riesgo_laboral' => [
                     'registracion' => $registracion['puntaje'],
@@ -192,7 +214,7 @@ final class LaborInspectionAnalysisBuilder
                 'infraccion' => $infraccion,
                 'iril' => round(floatval($iril['score'] ?? 0), 1),
                 'nivel' => self::extractIrilKey($iril),
-                'escenario_optimo' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
+                'escenario_optimo' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
                 'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
                 'recomendacion' => $recomendacion['key'],
             ],
@@ -410,25 +432,50 @@ final class LaborInspectionAnalysisBuilder
     }
 
     private static function buildEscenarios(
+        string $estadoCaso,
         string $estadoInspeccion,
         array $contingencia,
         array $variablesJuridicas,
+        array $documentacion,
         array $situacion
     ): array
     {
         $hayFacturacionParalela = self::hasParallelBillingSignals([], $situacion);
         $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
+        $hayConflicto = self::hasFormalConflict($documentacion, $situacion);
+        $hayConflictoAvanzado = self::hasAdvancedConflict($documentacion, $situacion);
+        $hayTelegramaOIntimacion = self::hasTelegramOrIntimation($documentacion, $situacion);
         $contingenciaTotal = array_sum(array_map('floatval', $contingencia));
         $economiaEscalada = $contingenciaTotal >= 10000000 ? 'alta' : ($contingenciaTotal >= 3000000 ? 'media' : 'acotada');
 
         $catalog = [
+            'cumplimiento_controlado' => [
+                'codigo' => '0',
+                'slug' => 'cumplimiento_controlado',
+                'aplica' => $estadoCaso === 'preventivo_puro',
+                'titulo' => 'Escenario 0 — Cumplimiento controlado',
+                'descripcion' => 'Empresa sin conflicto ni inspección, con cumplimiento formal adecuado y foco en sostener el estándar de compliance.',
+                'gatillo' => 'Aplica únicamente cuando no hay conflicto individual ni inspección activa y el caso se clasifica como preventivo puro.',
+                'impacto_prueba' => 'bajo',
+                'probabilidad_sancion' => 'baja',
+                'riesgo_multiplicador' => 'bajo',
+                'riesgo_judicial' => 'bajo',
+                'factor_economico' => 96.0,
+                'tiempo' => 95.0,
+                'lectura_estrategica' => 'No corresponde forzar escenarios litigiosos: el valor del análisis está en monitorear, ordenar prueba y preparar respuesta frente a una eventual inspección.',
+                'acciones' => self::buildConditionalActions([
+                    'Realizar auditoría liviana de cumplimiento con foco documental.',
+                    'Mantener control periódico de legajos, recibos, libro laboral y trazabilidad registral.',
+                    'Dejar preparada una respuesta estándar ante eventuales requerimientos inspectivos.',
+                ]),
+            ],
             'negociacion_temprana' => [
                 'codigo' => 'A',
                 'slug' => 'negociacion_temprana',
-                'aplica' => in_array($estadoInspeccion, ['previa', 'iniciada'], true),
+                'aplica' => $hayConflicto,
                 'titulo' => 'Escenario A — Negociación temprana',
                 'descripcion' => 'Acuerdo directo con trabajador previo o paralelo al conflicto formal para contener la escalada individual.',
-                'gatillo' => 'Aplica con estado de inspección previa o iniciada.',
+                'gatillo' => 'Aplica solo cuando existe conflicto individual activo.',
                 'impacto_prueba' => 'medio',
                 'probabilidad_sancion' => 'media',
                 'riesgo_multiplicador' => 'medio',
@@ -449,10 +496,10 @@ final class LaborInspectionAnalysisBuilder
             'litigio_completo' => [
                 'codigo' => 'B',
                 'slug' => 'litigio_completo',
-                'aplica' => in_array($estadoInspeccion, ['iniciada', 'acta_labrada'], true),
+                'aplica' => $hayConflictoAvanzado,
                 'titulo' => 'Escenario B — Litigio completo',
                 'descripcion' => 'Judicialización plena del conflicto laboral con máxima exposición probatoria, sancionatoria y económica.',
-                'gatillo' => 'Aplica cuando la inspección ya está iniciada o existe acta labrada.',
+                'gatillo' => 'Aplica solo cuando el conflicto ya está avanzado y exige defensa litigiosa plena.',
                 'impacto_prueba' => 'alto',
                 'probabilidad_sancion' => 'alta',
                 'riesgo_multiplicador' => 'alto',
@@ -473,10 +520,10 @@ final class LaborInspectionAnalysisBuilder
             'estrategia_mixta' => [
                 'codigo' => 'C',
                 'slug' => 'estrategia_mixta',
-                'aplica' => true,
+                'aplica' => $hayTelegramaOIntimacion,
                 'titulo' => 'Escenario C — Estrategia mixta',
                 'descripcion' => 'Intimación, conciliación y eventual judicialización escalonada para controlar daño sin resignar margen de negociación.',
-                'gatillo' => 'Aplica como solución intermedia cuando ya existe tensión formal pero aún subsiste espacio de recomposición.',
+                'gatillo' => 'Aplica solo cuando ya hubo telegrama, intercambio formal o intimación.',
                 'impacto_prueba' => 'medio-alto',
                 'probabilidad_sancion' => 'media',
                 'riesgo_multiplicador' => 'medio',
@@ -498,14 +545,14 @@ final class LaborInspectionAnalysisBuilder
             'reconfiguracion_preventiva' => [
                 'codigo' => 'D',
                 'slug' => 'reconfiguracion_preventiva',
-                'aplica' => true,
+                'aplica' => in_array($estadoCaso, ['riesgo_latente', 'inspeccion_en_curso', 'conflicto_individual', 'litigio'], true),
                 'titulo' => 'Escenario D — Reconfiguración preventiva',
-                'descripcion' => $estadoInspeccion === 'previa'
-                    ? 'Regularización preventiva pura para atacar la causa del riesgo antes de una constatación.'
-                    : 'Regularización reactiva para mejorar la posición defensiva aun cuando la infracción ya fue detectada.',
-                'gatillo' => $estadoInspeccion === 'previa'
-                    ? 'Aplica con máxima eficiencia cuando la inspección aún no comenzó.'
-                    : 'Aplica cuando ya existe actuación y todavía es útil mitigar sanción potencial y ordenar la defensa.',
+                'descripcion' => $estadoCaso === 'riesgo_latente'
+                    ? 'Regularización preventiva focalizada para corregir desvíos detectados antes de que exista conflicto o inspección.'
+                    : 'Regularización reactiva para mejorar la posición defensiva aun cuando el riesgo ya se exteriorizó.',
+                'gatillo' => $estadoCaso === 'riesgo_latente'
+                    ? 'Aplica cuando no hay conflicto formal, pero sí desvíos materiales que justifican reconfiguración.'
+                    : 'Aplica cuando el caso ya muestra conflicto o actuación inspectiva y todavía es útil corregir desvíos.',
                 'impacto_prueba' => 'bajo',
                 'probabilidad_sancion' => 'media',
                 'riesgo_multiplicador' => 'bajo',
@@ -861,6 +908,32 @@ final class LaborInspectionAnalysisBuilder
         return 'previa';
     }
 
+    private static function resolveCaseState(
+        array $documentacion,
+        array $situacion,
+        float $puntajeMaximo,
+        float $promedio,
+        string $infraccion
+    ): string {
+        if (self::hasInspectionSignals($situacion)) {
+            return 'inspeccion_en_curso';
+        }
+
+        if (self::hasAdvancedConflict($documentacion, $situacion)) {
+            return 'litigio';
+        }
+
+        if (self::hasFormalConflict($documentacion, $situacion)) {
+            return 'conflicto_individual';
+        }
+
+        if (self::hasDetectedRisk($documentacion, $situacion, $puntajeMaximo, $promedio, $infraccion)) {
+            return 'riesgo_latente';
+        }
+
+        return 'preventivo_puro';
+    }
+
     private static function formatInspectionState(string $estadoInspeccion): string
     {
         return match ($estadoInspeccion) {
@@ -1096,12 +1169,12 @@ final class LaborInspectionAnalysisBuilder
 
         if ($selected === null) {
             return [
-                'key' => 'reconfiguracion_preventiva',
-                'codigo' => 'D',
-                'slug' => 'reconfiguracion_preventiva',
-                'titulo' => 'Escenario D — Reconfiguración preventiva',
-                'score' => 0.0,
-                'evaluacion' => 'Crítico',
+                'key' => 'cumplimiento_controlado',
+                'codigo' => '0',
+                'slug' => 'cumplimiento_controlado',
+                'titulo' => 'Escenario 0 — Cumplimiento controlado',
+                'score' => 95.0,
+                'evaluacion' => 'Óptimo',
             ];
         }
 
@@ -1111,6 +1184,10 @@ final class LaborInspectionAnalysisBuilder
     private static function recommendationFromScenario(?string $scenarioKey, string $infraccion, array $situacion): array
     {
         return match ($scenarioKey) {
+            'cumplimiento_controlado' => [
+                'key' => 'monitoreo_y_preparacion',
+                'label' => 'Monitoreo y preparación',
+            ],
             'negociacion_temprana' => [
                 'key' => 'contencion_temprana_y_cierre_controlado',
                 'label' => 'Contención temprana y cierre controlado',
@@ -1148,6 +1225,54 @@ final class LaborInspectionAnalysisBuilder
         return false;
     }
 
+    private static function hasFormalConflict(array $documentacion, array $situacion): bool
+    {
+        return self::hasAdvancedConflict($documentacion, $situacion)
+            || self::hasTelegramOrIntimation($documentacion, $situacion);
+    }
+
+    private static function hasAdvancedConflict(array $documentacion, array $situacion): bool
+    {
+        return self::isFlagEnabled($situacion['fue_intimado'] ?? 'no')
+            || self::isFlagEnabled($situacion['ya_despedido'] ?? 'no');
+    }
+
+    private static function hasTelegramOrIntimation(array $documentacion, array $situacion): bool
+    {
+        return self::isFlagEnabled($documentacion['tiene_telegramas'] ?? 'no')
+            || self::isFlagEnabled($situacion['hay_intercambio'] ?? 'no')
+            || self::isFlagEnabled($situacion['fue_intimado'] ?? 'no')
+            || trim((string) ($situacion['fecha_ultimo_telegrama'] ?? '')) !== '';
+    }
+
+    private static function hasInspectionSignals(array $situacion): bool
+    {
+        $estado = trim((string) ($situacion['estado_inspeccion'] ?? ''));
+
+        return in_array($estado, ['iniciada', 'acta_labrada'], true)
+            || self::isFlagEnabled($situacion['inspeccion_previa'] ?? 'no');
+    }
+
+    private static function hasDetectedRisk(
+        array $documentacion,
+        array $situacion,
+        float $puntajeMaximo,
+        float $promedio,
+        string $infraccion
+    ): bool {
+        return $puntajeMaximo >= 3.0
+            || $promedio >= 2.0
+            || $infraccion !== 'leve'
+            || max(0, intval($situacion['meses_no_registrados'] ?? 0)) > 0
+            || ($situacion['chk_libro_art52'] ?? 'si') !== 'si'
+            || ($situacion['chk_recibos_cct'] ?? 'si') !== 'si'
+            || ($situacion['chk_art_vigente'] ?? 'si') !== 'si'
+            || ($documentacion['tiene_recibos'] ?? 'si') !== 'si'
+            || ($documentacion['tiene_contrato'] ?? 'si') !== 'si'
+            || ($documentacion['registrado_afip'] ?? 'si') !== 'si'
+            || self::hasOpaqueStructureSignals($situacion);
+    }
+
     private static function isFlagEnabled($value): bool
     {
         if (is_bool($value)) {
@@ -1160,6 +1285,23 @@ final class LaborInspectionAnalysisBuilder
     private static function buildConditionalActions(array $actions): array
     {
         return array_values(array_filter($actions));
+    }
+
+    private static function collectScenarioSlugs(array $escenarios, bool $aplica): array
+    {
+        $slugs = [];
+
+        foreach ($escenarios as $scenario) {
+            if (!is_array($scenario) || empty($scenario['slug'])) {
+                continue;
+            }
+
+            if ((bool) ($scenario['aplica'] ?? false) === $aplica) {
+                $slugs[] = (string) $scenario['slug'];
+            }
+        }
+
+        return $slugs;
     }
 
     private static function makeBlock(float $puntaje, array $checks, array $observaciones): array
