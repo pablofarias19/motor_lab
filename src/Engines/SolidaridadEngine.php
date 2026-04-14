@@ -12,6 +12,9 @@ namespace App\Engines;
 class SolidaridadEngine {
 
     private const LITIGIOSIDAD_BASE = 0.12;
+    private const LITIGIOSIDAD_MIN = 0.05;
+    private const LITIGIOSIDAD_MAX = 0.75;
+    private const PERCENTAGE_DECIMALS = 2;
 
     /**
      * Calcula la exposición económica frente a una demanda por solidaridad (Art. 30).
@@ -171,7 +174,7 @@ class SolidaridadEngine {
             $tasa = max($tasa, 0.45);
         }
 
-        return max(0.05, min(0.75, round($tasa, 4)));
+        return max(self::LITIGIOSIDAD_MIN, min(self::LITIGIOSIDAD_MAX, round($tasa, 4)));
     }
 
     private function calcularTrabajadoresReclamantes(int $cantidadTrabajadores, float $tasaLitigiosidad): int
@@ -185,7 +188,7 @@ class SolidaridadEngine {
 
     private function formatPercentage(float $value): string
     {
-        $formatted = number_format($value * 100, 2, '.', '');
+        $formatted = number_format($value * 100, self::PERCENTAGE_DECIMALS, '.', '');
         $formatted = preg_replace('/\.?0+$/', '', $formatted);
 
         return $formatted . '%';
