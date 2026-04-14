@@ -186,7 +186,7 @@ class SolidaridadEngine {
     private function formatPercentage(float $value): string
     {
         $formatted = number_format($value * 100, 2, '.', '');
-        $formatted = preg_replace('/\.?0+$/', '', $formatted) ?: '0';
+        $formatted = preg_replace('/\.?0+$/', '', $formatted) ?? '0';
 
         return $formatted . '%';
     }
