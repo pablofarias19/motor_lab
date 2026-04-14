@@ -121,7 +121,7 @@ final class LaborInspectionAnalysisBuilder
             'grado_exposicion' => $gradoExposicion,
             'recomendacion_final' => $recomendacion['label'],
             'escenario_real' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
-            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
+            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'cumplimiento_controlado',
             'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
             'observaciones_clave' => implode(' | ', $observacionesClave),
             'laboral' => [
@@ -1173,8 +1173,8 @@ final class LaborInspectionAnalysisBuilder
                 'codigo' => '0',
                 'slug' => 'cumplimiento_controlado',
                 'titulo' => 'Escenario 0 — Cumplimiento controlado',
-                'score' => 0.0,
-                'evaluacion' => 'Crítico',
+                'score' => 95.0,
+                'evaluacion' => 'Óptimo',
             ];
         }
 
