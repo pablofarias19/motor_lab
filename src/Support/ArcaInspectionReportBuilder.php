@@ -40,13 +40,21 @@ final class ArcaInspectionReportBuilder
         $probabilidadInspeccion = self::probabilidadInspeccion($overall['label'], $inspeccionPrevia, $senalesFraude, $mesesNoRegistrados);
         $recomendacion = self::resolveRecommendation($overall['label'], $inspeccionPrevia, $senalesFraude, $mesesNoRegistrados);
         $detalleMontos = self::buildAmountDetail($inspeccion, $regularizacion, $salarioReal, $salarioDeclarado, $mesesNoRegistrados);
-        $eventoFiscal = (string) ($laboral['evento_fiscal'] ?? self::resolveFiscalEvent($situacion));
-        $faseProcedimental = is_array($laboral['fase_procedimental'] ?? null)
-            ? $laboral['fase_procedimental']
-            : self::buildPhaseMatrix($eventoFiscal);
-        $escenarioOperativo = (string) ($laboral['escenario_optimo'] ?? self::defaultScenarioFromEvent($eventoFiscal));
-        $probabilidadAjuste = round(floatval($laboral['probabilidad_ajuste'] ?? self::defaultAdjustmentProbability($eventoFiscal)), 2);
-        $probabilidadPenal = round(floatval($laboral['probabilidad_penal'] ?? self::defaultPenalProbability($eventoFiscal, $situacion)), 2);
+        $eventoFiscal = (string) (
+            $inspeccion['evento_fiscal']
+            ?? ($laboral['evento_fiscal']['codigo'] ?? self::resolveFiscalEvent($situacion))
+        );
+        $faseProcedimental = is_array($inspeccion['fase_procedimental'] ?? null)
+            ? $inspeccion['fase_procedimental']
+            : (is_array($laboral['evento_fiscal']['fase'] ?? null)
+                ? $laboral['evento_fiscal']['fase']
+                : self::buildPhaseMatrix($eventoFiscal));
+        $escenarioOperativo = (string) (
+            $inspeccion['escenario_optimo']
+            ?? ($laboral['escenario_optimo']['slug'] ?? self::defaultScenarioFromEvent($eventoFiscal))
+        );
+        $probabilidadAjuste = round(floatval($inspeccion['probabilidad_ajuste'] ?? self::defaultAdjustmentProbability($eventoFiscal)), 2);
+        $probabilidadPenal = round(floatval($inspeccion['probabilidad_penal'] ?? self::defaultPenalProbability($eventoFiscal, $situacion)), 2);
         $recomendacionOperativa = is_array($laboral['modelo_operativo']['output'] ?? null)
             ? (string) (($laboral['modelo_operativo']['output']['recomendacion'] ?? '') ?: $recomendacion['code'])
             : $recomendacion['code'];

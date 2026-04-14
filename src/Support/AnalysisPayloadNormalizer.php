@@ -472,6 +472,15 @@ final class AnalysisPayloadNormalizer
             return $evento;
         }
 
+        $estado = self::string($situacion['estado_inspeccion'] ?? '');
+        if ($estado !== '') {
+            return match ($estado) {
+                'acta_labrada' => 'acta',
+                'iniciada' => 'inspeccion',
+                default => 'ninguno',
+            };
+        }
+
         if (self::flag($situacion['sentencia_firme'] ?? 'no') === 'si') {
             return 'determinacion';
         }
@@ -484,11 +493,6 @@ final class AnalysisPayloadNormalizer
             return 'inspeccion';
         }
 
-        $estado = self::string($situacion['estado_inspeccion'] ?? '');
-        return match ($estado) {
-            'acta_labrada' => 'acta',
-            'iniciada' => 'inspeccion',
-            default => 'ninguno',
-        };
+        return 'ninguno';
     }
 }

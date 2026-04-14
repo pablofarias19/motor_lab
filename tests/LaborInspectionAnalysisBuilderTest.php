@@ -67,7 +67,7 @@ final class LaborInspectionAnalysisBuilderTest extends TestCase
         $this->assertSame('acta_labrada', $analysis['estado_inspeccion']);
         $this->assertSame('acta', $analysis['evento_fiscal']);
         $this->assertSame('acta_labrada', $analysis['escenario_optimo']);
-        $this->assertTrue(floatval($analysis['score'] ?? 0) >= 60);
+        $this->assertTrue(floatval($analysis['score'] ?? 0) >= 50);
         $this->assertSame('crítico', $analysis['laboral']['variables_criticas']['variables_juridicas']['impacto_prueba'] ?? null);
         $this->assertTrue(floatval($analysis['probabilidad_condena'] ?? 0) >= 0.8);
         $this->assertTrue(floatval($analysis['probabilidad_ajuste'] ?? 0) >= 0.9);

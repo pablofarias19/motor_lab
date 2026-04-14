@@ -1151,7 +1151,14 @@ final class LaborInspectionAnalysisBuilder
                     floatval($matriz['documentacion']['puntaje'] ?? 0),
                     floatval($contingencia['administrativa'] ?? 0) > 0 ? 3.0 : 1.0
                 )),
-                'impacto_prueba' => $riesgoProbatorio['nivel'],
+                'impacto_prueba' => self::maxRiskLevel(
+                    $riesgoProbatorio['nivel'],
+                    match ($eventoFiscal) {
+                        'inspeccion' => 'alto',
+                        'acta', 'determinacion' => 'crítico',
+                        default => 'medio',
+                    }
+                ),
                 'riesgo_multiplicador' => $riesgoMultiplicador,
                 'riesgo_judicial' => self::resolveLevel(max(($probabilidadCondena * 5), floatval($matriz['estructural']['puntaje'] ?? 0))),
                 'probabilidad_ajuste' => round($probabilidadAjuste, 2),
@@ -1207,6 +1214,22 @@ final class LaborInspectionAnalysisBuilder
             $indirecta >= 10000000 || $estructural >= 4.0 => 'alto',
             $indirecta >= 3000000 || $estructural >= 2.5 => 'medio',
             default => 'bajo',
+        };
+    }
+
+    private static function maxRiskLevel(string $first, string $second): string
+    {
+        return self::riskLevelWeight($first) >= self::riskLevelWeight($second) ? $first : $second;
+    }
+
+    private static function riskLevelWeight(string $level): int
+    {
+        return match ($level) {
+            'bajo' => 1,
+            'medio' => 2,
+            'alto' => 3,
+            'crítico' => 4,
+            default => 2,
         };
     }
 
