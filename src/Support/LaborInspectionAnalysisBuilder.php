@@ -1227,8 +1227,8 @@ final class LaborInspectionAnalysisBuilder
 
     private static function hasFormalConflict(array $documentacion, array $situacion): bool
     {
-        return self::hasTelegramOrIntimation($documentacion, $situacion)
-            || self::isFlagEnabled($situacion['ya_despedido'] ?? 'no');
+        return self::hasAdvancedConflict($documentacion, $situacion)
+            || self::hasTelegramOrIntimation($documentacion, $situacion);
     }
 
     private static function hasAdvancedConflict(array $documentacion, array $situacion): bool
@@ -1296,7 +1296,7 @@ final class LaborInspectionAnalysisBuilder
                 continue;
             }
 
-            if (!empty($scenario['aplica']) === $aplica) {
+            if ((bool) ($scenario['aplica'] ?? false) === $aplica) {
                 $slugs[] = (string) $scenario['slug'];
             }
         }
