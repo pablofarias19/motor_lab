@@ -17,6 +17,7 @@ final class AnalysisPayloadNormalizer
     ];
     private const URGENCIAS = ['alta', 'media', 'baja'];
     private const JURISDICCIONES = ['CABA', 'PBA', 'CORDOBA', 'SANTA_FE', 'default'];
+    private const ESTADOS_INSPECCION = ['previa', 'iniciada', 'acta_labrada'];
 
     public static function normalize(array $input): array
     {
@@ -132,6 +133,7 @@ final class AnalysisPayloadNormalizer
             'meses_en_mora' => self::int($situacionInput['meses_en_mora'] ?? 0),
             'aplica_blanco_laboral' => self::flag($situacionInput['aplica_blanco_laboral'] ?? 'no'),
             'probabilidad_condena' => self::float($situacionInput['probabilidad_condena'] ?? 0.5, 0.5),
+            'estado_inspeccion' => self::string($situacionInput['estado_inspeccion'] ?? ''),
             'inspeccion_previa' => self::flag($situacionInput['inspeccion_previa'] ?? 'no'),
             'chk_alta_sipa' => self::flag($situacionInput['chk_alta_sipa'] ?? 'no'),
             'chk_libro_art52' => self::flag($situacionInput['chk_libro_art52'] ?? 'no'),
@@ -205,6 +207,10 @@ final class AnalysisPayloadNormalizer
 
         if ($situacion['probabilidad_condena'] < 0 || $situacion['probabilidad_condena'] > 1) {
             $errors['situacion.probabilidad_condena'] = 'La probabilidad de condena debe estar entre 0 y 1.';
+        }
+
+        if ($situacion['estado_inspeccion'] !== '' && !in_array($situacion['estado_inspeccion'], self::ESTADOS_INSPECCION, true)) {
+            $errors['situacion.estado_inspeccion'] = 'El estado de inspección debe ser previa, iniciada o acta_labrada.';
         }
 
         if ($situacion['meses_litigio'] < 1 || $situacion['meses_litigio'] > 240) {
@@ -410,12 +416,15 @@ final class AnalysisPayloadNormalizer
             $situacion['meses_no_registrados'] = 0;
             $situacion['meses_en_mora'] = 0;
             $situacion['aplica_blanco_laboral'] = 'no';
+            $situacion['estado_inspeccion'] = 'previa';
             $situacion['chk_alta_sipa'] = 'no';
             $situacion['chk_libro_art52'] = 'no';
             $situacion['chk_recibos_cct'] = 'no';
             $situacion['chk_art_vigente'] = 'no';
             $situacion['chk_examenes'] = 'no';
             $situacion['chk_epp_rgrl'] = 'no';
+        } else {
+            $situacion['estado_inspeccion'] = self::normalizeInspectionState($situacion);
         }
 
         if ($tipoConflicto !== 'auditoria_preventiva') {
@@ -432,5 +441,23 @@ final class AnalysisPayloadNormalizer
         }
 
         return $situacion;
+    }
+
+    private static function normalizeInspectionState(array $situacion): string
+    {
+        $estado = self::string($situacion['estado_inspeccion'] ?? '');
+        if (in_array($estado, self::ESTADOS_INSPECCION, true)) {
+            return $estado;
+        }
+
+        if (($situacion['fue_intimado'] ?? 'no') === 'si') {
+            return 'acta_labrada';
+        }
+
+        if (($situacion['inspeccion_previa'] ?? 'no') === 'si' || ($situacion['hay_intercambio'] ?? 'no') === 'si') {
+            return 'iniciada';
+        }
+
+        return 'previa';
     }
 }

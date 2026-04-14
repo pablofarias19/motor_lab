@@ -3,6 +3,12 @@ namespace App\Support;
 
 final class LaborInspectionAnalysisBuilder
 {
+    private const WEIGHT_ECONOMIC = 0.30;
+    private const WEIGHT_JURIDICAL = 0.25;
+    private const WEIGHT_SANCTION = 0.20;
+    private const WEIGHT_MULTIPLIER = 0.15;
+    private const WEIGHT_TIME = 0.10;
+
     public static function build(array $datos, array $documentacion, array $situacion, array $exposicion, array $iril): array
     {
         $registracion = self::buildRegistracion($datos, $documentacion, $situacion);
@@ -10,6 +16,7 @@ final class LaborInspectionAnalysisBuilder
         $remuneracion = self::buildRemuneracion($datos, $documentacion, $situacion);
         $documental = self::buildDocumentacion($documentacion, $situacion);
         $estructural = self::buildEstructural($datos, $situacion);
+        $estadoInspeccion = self::resolveInspectionState($situacion);
 
         $matriz = [
             'registracion' => $registracion,
@@ -29,7 +36,6 @@ final class LaborInspectionAnalysisBuilder
         $infraccion = self::resolveInfraccion($datos, $situacion, $puntajeMaximo);
         $probabilidad = self::resolveProbability($puntajeMaximo, $promedio, $situacion);
         $gradoExposicion = self::resolveLevel(max($promedio, floatval($iril['score'] ?? 0)));
-        $recomendacion = self::resolveRecommendation($infraccion, $situacion);
 
         $observacionesClave = [];
         foreach ($matriz as $bloque) {
@@ -62,14 +68,52 @@ final class LaborInspectionAnalysisBuilder
             $sancionAdministrativa
         );
         $contextoInspectivo = self::buildInspectionContext($datos, $documentacion, $situacion);
+        $matrizProbatoria = self::buildProbatoryMatrix($datos, $documentacion, $situacion, $matriz);
+        $riesgoProbatorio = self::resolveProbatoryRisk($matrizProbatoria);
+        $probabilidadCondena = self::resolveCondemnProbability(
+            $situacion,
+            $documental,
+            $registracion,
+            $estructural,
+            $condiciones
+        );
+        $contingencia = self::buildContingencyBreakdown($datos, $situacion, $exposicion, $sancionAdministrativa, $deudaArca);
+        $variablesCriticas = self::buildCriticalVariables(
+            $estadoInspeccion,
+            $matriz,
+            $contingencia,
+            $riesgoProbatorio,
+            $probabilidadCondena
+        );
+        $escenarios = self::buildEscenarios(
+            $estadoInspeccion,
+            $contingencia,
+            $variablesCriticas['variables_juridicas'],
+            $situacion
+        );
+        $escenarioOptimo = self::selectOptimalScenario($escenarios);
+        $recomendacion = self::recommendationFromScenario($escenarioOptimo['key'] ?? null, $infraccion, $situacion);
+        $documentacionProbatoria = self::buildDocumentationModule(
+            $datos,
+            $documentacion,
+            $situacion,
+            $matriz,
+            $matrizProbatoria,
+            $riesgoProbatorio,
+            $probabilidadCondena
+        );
 
         return [
+            'estado_inspeccion' => $estadoInspeccion,
             'infraccion_laboral' => $infraccion,
             'iril_laboral' => round(floatval($iril['score'] ?? 0), 1),
             'nivel_laboral' => self::extractIrilLabel($iril),
             'probabilidad_inspeccion' => $probabilidad,
+            'probabilidad_condena' => $probabilidadCondena,
             'grado_exposicion' => $gradoExposicion,
             'recomendacion_final' => $recomendacion['label'],
+            'escenario_optimo' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
+            'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
             'observaciones_clave' => implode(' | ', $observacionesClave),
             'laboral' => [
                 'identificacion' => [
@@ -87,12 +131,15 @@ final class LaborInspectionAnalysisBuilder
                     'estrategias_preventivas_y_correctivas' => true,
                 ],
                 'objeto_detallado' => self::buildObjectDetail($contextoInspectivo),
+                'documentacion_probatoria' => $documentacionProbatoria,
+                'variables_criticas' => $variablesCriticas,
                 'contexto_inspectivo' => $contextoInspectivo,
                 'matriz_riesgo' => $matriz,
                 'tipificacion' => [
                     'infraccion' => $infraccion,
                     'fundamento' => self::describeInfraccion($infraccion),
                 ],
+                'contingencia' => $contingencia,
                 'cuantificacion' => [
                     'multas_administrativas_estimadas' => round($sancionAdministrativa, 2),
                     'riesgo_economico_indirecto' => round($contingenciaIndirecta, 2),
@@ -109,18 +156,30 @@ final class LaborInspectionAnalysisBuilder
                     'riesgo_judicializacion' => self::resolveLevel(max($promedio, floatval($situacion['probabilidad_condena'] ?? 0) * 5)),
                     'conclusion_juridica' => self::buildConclusion($infraccion, $observacionesClave, $situacion),
                 ],
-                'escenarios' => self::buildEscenarios($recomendacion['key'], $situacion),
+                'escenarios' => $escenarios,
+                'escenario_optimo' => [
+                    'codigo' => $escenarioOptimo['codigo'] ?? 'D',
+                    'slug' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
+                    'titulo' => $escenarioOptimo['titulo'] ?? 'Reconfiguración preventiva',
+                    'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
+                    'evaluacion' => $escenarioOptimo['evaluacion'] ?? 'Óptimo',
+                ],
                 'checklist' => self::buildChecklist($datos, $documentacion, $situacion),
                 'consideraciones_legales' => $consideracionesLegales,
                 'conclusion_estrategica' => [
+                    'estado_inspeccion' => self::formatInspectionState($estadoInspeccion),
                     'nivel_riesgo_general' => self::resolveLevel($promedio),
                     'probabilidad_inspeccion' => $probabilidad,
+                    'probabilidad_condena' => round($probabilidadCondena, 2),
                     'grado_exposicion' => $gradoExposicion,
+                    'escenario_optimo' => $escenarioOptimo['titulo'] ?? 'Reconfiguración preventiva',
+                    'score_escenario' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
                     'recomendacion' => $recomendacion['label'],
                     'recomendacion_final' => $recomendacion['label'],
                 ],
             ],
             'modelo_sistema' => [
+                'estado_inspeccion' => $estadoInspeccion,
                 'riesgo_laboral' => [
                     'registracion' => $registracion['puntaje'],
                     'condiciones' => $condiciones['puntaje'],
@@ -128,9 +187,13 @@ final class LaborInspectionAnalysisBuilder
                     'documentacion' => $documental['puntaje'],
                     'estructural' => $estructural['puntaje'],
                 ],
+                'variables_juridicas' => $variablesCriticas['variables_juridicas'],
+                'contingencia' => $contingencia,
                 'infraccion' => $infraccion,
                 'iril' => round(floatval($iril['score'] ?? 0), 1),
                 'nivel' => self::extractIrilKey($iril),
+                'escenario_optimo' => $escenarioOptimo['slug'] ?? 'reconfiguracion_preventiva',
+                'score' => round(floatval($escenarioOptimo['score'] ?? 0), 1),
                 'recomendacion' => $recomendacion['key'],
             ],
         ];
@@ -346,71 +409,139 @@ final class LaborInspectionAnalysisBuilder
         ];
     }
 
-    private static function buildEscenarios(string $recommendation, array $situacion): array
+    private static function buildEscenarios(
+        string $estadoInspeccion,
+        array $contingencia,
+        array $variablesJuridicas,
+        array $situacion
+    ): array
     {
         $hayFacturacionParalela = self::hasParallelBillingSignals([], $situacion);
         $hayRiesgoEstructuraOpaca = self::hasOpaqueStructureSignals($situacion);
-        $hayRequerimientoActivo = ($situacion['hay_intercambio'] ?? 'no') === 'si'
-            || ($situacion['fue_intimado'] ?? 'no') === 'si';
-        $hayInspeccionPrevia = ($situacion['inspeccion_previa'] ?? 'no') === 'si';
+        $contingenciaTotal = array_sum(array_map('floatval', $contingencia));
+        $economiaEscalada = $contingenciaTotal >= 10000000 ? 'alta' : ($contingenciaTotal >= 3000000 ? 'media' : 'acotada');
 
-        return [
-            'regularizacion_inmediata' => [
-                'aplica' => $recommendation === 'regularizacion_inmediata',
-                'titulo' => 'Regularización y blindaje de trazabilidad',
-                'descripcion' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
-                    ? 'Corregir registración, salario y F.931, y separar documentalmente la operatoria comercial o bancaria ajena a la relación laboral para impedir que la inspección la trate como salario marginal.'
-                    : 'Corregir registración, adecuar salario y completar F.931/libro sueldo para bajar la contingencia administrativa antes de una constatación.',
-                'gatillo' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
-                    ? 'Aplica cuando hay facturación paralela, depósitos o señales de interposición que pueden contaminar el análisis laboral.'
-                    : 'Aplica cuando existen meses sin registrar, brecha salarial o inconsistencias formales relevantes.',
+        $catalog = [
+            'negociacion_temprana' => [
+                'codigo' => 'A',
+                'slug' => 'negociacion_temprana',
+                'aplica' => in_array($estadoInspeccion, ['previa', 'iniciada'], true),
+                'titulo' => 'Escenario A — Negociación temprana',
+                'descripcion' => 'Acuerdo directo con trabajador previo o paralelo al conflicto formal para contener la escalada individual.',
+                'gatillo' => 'Aplica con estado de inspección previa o iniciada.',
+                'impacto_prueba' => 'medio',
+                'probabilidad_sancion' => 'media',
+                'riesgo_multiplicador' => 'medio',
+                'riesgo_judicial' => $estadoInspeccion === 'previa' ? 'bajo' : 'medio',
+                'factor_economico' => match ($estadoInspeccion) {
+                    'previa' => 84.0,
+                    'iniciada' => 68.0,
+                    default => 35.0,
+                },
+                'tiempo' => 88.0,
+                'lectura_estrategica' => 'Contención temprana del conflicto, útil para evitar escalamiento, pero sin neutralizar la potestad sancionatoria estatal.',
                 'acciones' => self::buildConditionalActions([
-                    'Auditar alta temprana, libro Art. 52 LCT, recibos y trazabilidad bancaria.',
-                    $hayFacturacionParalela ? 'Documentar por escrito que la empresa no participa en la facturación ni en los cobros externos del dependiente.' : null,
-                    $hayRiesgoEstructuraOpaca ? 'Separar accesos, herramientas y circuitos internos para evitar que se infiera una maniobra simulada desde la empresa.' : null,
+                    'Ordenar carpeta documental y definir una posición única frente al trabajador y a la inspección.',
+                    $hayFacturacionParalela ? 'Cerrar cualquier ambigüedad entre salario y facturación ajena antes de negociar.' : null,
+                    $economiaEscalada !== 'acotada' ? 'Usar la cuantificación separada para fijar un techo de cierre y evitar contagio a otros reclamos.' : null,
                 ]),
             ],
-            'inspeccion_en_curso' => [
-                'aplica' => $hayInspeccionPrevia,
-                'titulo' => 'Inspección o reinspección con cruce fiscal',
-                'descripcion' => $hayFacturacionParalela
-                    ? 'La reinspección puede requerir no solo documentación laboral sino también explicación sobre depósitos, clientes o facturación externa del dependiente.'
-                    : 'Puede existir acta previa o reiteración inspectiva con foco en registración, jornada, ART y F.931.',
-                'gatillo' => 'Se activa frente a visitas previas, actas abiertas o reincidencia ante Ministerio de Trabajo/ARCA.',
+            'litigio_completo' => [
+                'codigo' => 'B',
+                'slug' => 'litigio_completo',
+                'aplica' => in_array($estadoInspeccion, ['iniciada', 'acta_labrada'], true),
+                'titulo' => 'Escenario B — Litigio completo',
+                'descripcion' => 'Judicialización plena del conflicto laboral con máxima exposición probatoria, sancionatoria y económica.',
+                'gatillo' => 'Aplica cuando la inspección ya está iniciada o existe acta labrada.',
+                'impacto_prueba' => 'alto',
+                'probabilidad_sancion' => 'alta',
+                'riesgo_multiplicador' => 'alto',
+                'riesgo_judicial' => 'alto',
+                'factor_economico' => match ($estadoInspeccion) {
+                    'iniciada' => 36.0,
+                    'acta_labrada' => 42.0,
+                    default => 25.0,
+                },
+                'tiempo' => 22.0,
+                'lectura_estrategica' => 'Escenario de máxima exposición; solo es razonable cuando la defensa técnica es sólida y la prueba del empleador resiste judicialización plena.',
                 'acciones' => self::buildConditionalActions([
-                    'Centralizar la respuesta en RR.HH./Legales y preservar legajo, recibos, libro sueldo y constancias de pago.',
-                    $hayFacturacionParalela ? 'Preparar carpeta de deslinde para demostrar que los ingresos extra salariales no provienen del empleador.' : null,
+                    'Preservar prueba documental, registral y técnica con cadena de custodia mínima.',
+                    'Preparar defensa coordinada laboral, fiscal y contable antes de cualquier escrito de fondo.',
+                    $hayRiesgoEstructuraOpaca ? 'Neutralizar la lectura de interposición o estructura opaca con documentación societaria y operativa.' : null,
                 ]),
             ],
-            'defensa_administrativa' => [
-                'aplica' => $hayRequerimientoActivo || $recommendation === 'defensa_estructurada',
-                'titulo' => 'Descargo técnico con enfoque laboral-fiscal',
-                'descripcion' => $hayFacturacionParalela || $hayRiesgoEstructuraOpaca
-                    ? 'El descargo debe desvincular la nómina del circuito comercial investigado, exhibiendo que la única contraprestación del empleador es la remuneración registrada.'
-                    : 'Conviene preparar un descargo con respaldo registral, documental y previsional para reducir sanciones.',
-                'gatillo' => $hayRequerimientoActivo
-                    ? 'Existe requerimiento, intercambio formal u orden de informar.'
-                    : 'Se recomienda cuando el riesgo estructural obliga a preparar defensa antes del acto administrativo.',
+            'estrategia_mixta' => [
+                'codigo' => 'C',
+                'slug' => 'estrategia_mixta',
+                'aplica' => true,
+                'titulo' => 'Escenario C — Estrategia mixta',
+                'descripcion' => 'Intimación, conciliación y eventual judicialización escalonada para controlar daño sin resignar margen de negociación.',
+                'gatillo' => 'Aplica como solución intermedia cuando ya existe tensión formal pero aún subsiste espacio de recomposición.',
+                'impacto_prueba' => 'medio-alto',
+                'probabilidad_sancion' => 'media',
+                'riesgo_multiplicador' => 'medio',
+                'riesgo_judicial' => 'medio',
+                'factor_economico' => match ($estadoInspeccion) {
+                    'previa' => 72.0,
+                    'iniciada' => 84.0,
+                    'acta_labrada' => 78.0,
+                    default => 72.0,
+                },
+                'tiempo' => 62.0,
+                'lectura_estrategica' => 'Mejor equilibrio entre contención económica, generación ordenada de prueba y margen de negociación estructurada.',
                 'acciones' => self::buildConditionalActions([
-                    'Acompañar F.931, transferencias, libro Art. 52 LCT, altas y recibos firmados.',
-                    $hayFacturacionParalela ? 'Pedir que cualquier análisis sobre facturación externa se circunscriba al dependiente o a terceros y no se traslade automáticamente al salario.' : null,
-                    $hayRiesgoEstructuraOpaca ? 'Responder de inmediato oficios, embargos o pedidos de información para evitar multas por obstrucción o incumplimiento.' : null,
+                    'Secuenciar intimaciones, descargo y conciliación bajo una misma narrativa probatoria.',
+                    'Cuantificar por separado contingencia administrativa, laboral e indirecta antes de negociar.',
+                    $variablesJuridicas['riesgo_multiplicador'] !== 'bajo' ? 'Monitorear el efecto cascada sobre otros trabajadores o sobre actuaciones paralelas.' : null,
                 ]),
             ],
-            'estrategia_preventiva' => [
-                'aplica' => $recommendation === 'auditoria_preventiva',
-                'titulo' => 'Auditoría preventiva con instrucción fiscal mínima',
-                'descripcion' => $hayFacturacionParalela
-                    ? 'La auditoría debe revisar legajo y pagos, pero también el riesgo de que una facturación externa del dependiente genere presunciones de salario no registrado o pedidos de informes.'
-                    : 'Auditoría interna y ordenamiento de compliance laboral antes de una visita de inspección.',
-                'gatillo' => 'Se sugiere cuando aún no existe acta, pero sí una exposición potencial que conviene ordenar.',
+            'reconfiguracion_preventiva' => [
+                'codigo' => 'D',
+                'slug' => 'reconfiguracion_preventiva',
+                'aplica' => true,
+                'titulo' => 'Escenario D — Reconfiguración preventiva',
+                'descripcion' => $estadoInspeccion === 'previa'
+                    ? 'Regularización preventiva pura para atacar la causa del riesgo antes de una constatación.'
+                    : 'Regularización reactiva para mejorar la posición defensiva aun cuando la infracción ya fue detectada.',
+                'gatillo' => $estadoInspeccion === 'previa'
+                    ? 'Aplica con máxima eficiencia cuando la inspección aún no comenzó.'
+                    : 'Aplica cuando ya existe actuación y todavía es útil mitigar sanción potencial y ordenar la defensa.',
+                'impacto_prueba' => 'bajo',
+                'probabilidad_sancion' => 'media',
+                'riesgo_multiplicador' => 'bajo',
+                'riesgo_judicial' => 'bajo',
+                'factor_economico' => match ($estadoInspeccion) {
+                    'previa' => 94.0,
+                    'iniciada' => 58.0,
+                    'acta_labrada' => 44.0,
+                    default => 90.0,
+                },
+                'tiempo' => match ($estadoInspeccion) {
+                    'previa' => 92.0,
+                    'iniciada' => 50.0,
+                    default => 35.0,
+                },
+                'lectura_estrategica' => 'Único escenario que actúa sobre la causa del riesgo; en fase preventiva es el de mayor eficiencia, pero pierde potencia cuando ya existe acta.',
                 'acciones' => self::buildConditionalActions([
-                    'Verificar consistencia entre recibos, transferencias, cargas sociales y legajo.',
-                    $hayFacturacionParalela ? 'Emitir política interna que prohíba usar medios o tiempo de trabajo para actividades facturadas ajenas al empleador.' : null,
-                    'Definir protocolo para contestar requerimientos del Ministerio de Trabajo, ARCA u oficios judiciales.',
+                    'Regularizar alta, salario, libro Art. 52 LCT, ART y trazabilidad bancaria.',
+                    $hayFacturacionParalela ? 'Separar documentalmente toda operatoria ajena a la relación laboral para reducir contagio fiscal.' : null,
+                    'Dejar protocolo interno de respuesta frente a inspecciones, oficios y pedidos de informes.',
                 ]),
             ],
         ];
+
+        foreach ($catalog as $key => $scenario) {
+            $catalog[$key]['score'] = self::scoreScenario($scenario);
+            $catalog[$key]['evaluacion'] = self::interpretScenarioScore($catalog[$key]['score']);
+            $catalog[$key]['variables'] = [
+                'impacto_prueba' => $scenario['impacto_prueba'],
+                'probabilidad_sancion' => $scenario['probabilidad_sancion'],
+                'riesgo_multiplicador' => $scenario['riesgo_multiplicador'],
+                'riesgo_judicial' => $scenario['riesgo_judicial'],
+            ];
+        }
+
+        return $catalog;
     }
 
     private static function buildEffectMultiplier(array $datos, array $situacion): string
@@ -710,6 +841,294 @@ final class LaborInspectionAnalysisBuilder
     {
         return self::isFlagEnabled($situacion['tiene_facturacion'] ?? ($documentacion['tiene_facturacion'] ?? 'no'))
             || self::isFlagEnabled($situacion['tiene_pago_bancario'] ?? ($documentacion['pago_bancario'] ?? 'no'));
+    }
+
+    private static function resolveInspectionState(array $situacion): string
+    {
+        $estado = trim((string) ($situacion['estado_inspeccion'] ?? ''));
+        if (in_array($estado, ['previa', 'iniciada', 'acta_labrada'], true)) {
+            return $estado;
+        }
+
+        if (($situacion['fue_intimado'] ?? 'no') === 'si') {
+            return 'acta_labrada';
+        }
+
+        if (($situacion['inspeccion_previa'] ?? 'no') === 'si' || ($situacion['hay_intercambio'] ?? 'no') === 'si') {
+            return 'iniciada';
+        }
+
+        return 'previa';
+    }
+
+    private static function formatInspectionState(string $estadoInspeccion): string
+    {
+        return match ($estadoInspeccion) {
+            'acta_labrada' => 'Acta labrada',
+            'iniciada' => 'Iniciada',
+            default => 'Previa',
+        };
+    }
+
+    private static function buildDocumentationModule(
+        array $datos,
+        array $documentacion,
+        array $situacion,
+        array $matriz,
+        array $matrizProbatoria,
+        array $riesgoProbatorio,
+        float $probabilidadCondena
+    ): array {
+        $mesesNoRegistrados = max(0, intval($situacion['meses_no_registrados'] ?? 0));
+
+        return [
+            'objetivo' => [
+                'Evaluar la capacidad probatoria real del empleador.',
+                'Medir el riesgo sancionatorio administrativo y judicial.',
+                'Alimentar el cálculo integrado de IRIL y riesgo real.',
+            ],
+            'bloques' => [
+                'prueba_laboral' => [
+                    'titulo' => 'Bloque I — Prueba laboral',
+                    'nivel' => $matriz['documentacion']['nivel'] ?? 'bajo',
+                    'hallazgos' => $matriz['documentacion']['observaciones'] ?? [],
+                ],
+                'cumplimiento_registral' => [
+                    'titulo' => 'Bloque II — Cumplimiento registral',
+                    'nivel' => $matriz['registracion']['nivel'] ?? 'bajo',
+                    'hallazgos' => $matriz['registracion']['observaciones'] ?? [],
+                ],
+                'higiene_seguridad' => [
+                    'titulo' => 'Bloque III — Higiene y seguridad',
+                    'nivel' => $matriz['condiciones']['nivel'] ?? 'bajo',
+                    'hallazgos' => $matriz['condiciones']['observaciones'] ?? [],
+                ],
+                'auditoria_conducta' => [
+                    'titulo' => 'Bloque IV — Auditoría y conducta empresarial',
+                    'nivel' => $matriz['estructural']['nivel'] ?? 'bajo',
+                    'hallazgos' => $matriz['estructural']['observaciones'] ?? [],
+                ],
+                'simulador_regularizacion' => [
+                    'titulo' => 'Bloque V — Simulador de regularización',
+                    'meses_sin_registrar' => $mesesNoRegistrados,
+                    'aplica_regimen' => self::isFlagEnabled($situacion['aplica_blanco_laboral'] ?? 'no'),
+                    'lectura' => $mesesNoRegistrados > 0
+                        ? 'La regularización puede bajar sanciones, intereses y deterioro probatorio, aunque no extingue por sí sola la infracción ya verificada.'
+                        : 'No se detectó un período pendiente de regularización con la información cargada.',
+                ],
+            ],
+            'riesgo_probatorio' => [
+                'nivel' => $riesgoProbatorio['nivel'],
+                'score' => $riesgoProbatorio['score'],
+            ],
+            'probabilidad_condena' => round($probabilidadCondena, 2),
+            'matriz_impacto_probatorio' => $matrizProbatoria,
+        ];
+    }
+
+    private static function buildProbatoryMatrix(array $datos, array $documentacion, array $situacion, array $matriz): array
+    {
+        $testifical = 3.0;
+        if (($situacion['hay_intercambio'] ?? 'no') === 'si' || ($situacion['fue_intimado'] ?? 'no') === 'si') {
+            $testifical -= 1.0;
+        }
+        if (($documentacion['tiene_testigos'] ?? 'no') === 'si' || max(1, intval($datos['cantidad_empleados'] ?? 1)) >= 10) {
+            $testifical += 1.0;
+        }
+
+        return [
+            'documental' => round(max(0.0, 5.0 - floatval($matriz['documentacion']['puntaje'] ?? 0)), 1),
+            'registral' => round(max(0.0, 5.0 - floatval($matriz['registracion']['puntaje'] ?? 0)), 1),
+            'testifical' => round(min(5.0, max(0.0, $testifical)), 1),
+            'tecnica' => round(max(0.0, 5.0 - floatval($matriz['condiciones']['puntaje'] ?? 0)), 1),
+        ];
+    }
+
+    private static function resolveProbatoryRisk(array $matrizProbatoria): array
+    {
+        $promedio = array_sum($matrizProbatoria) / max(1, count($matrizProbatoria));
+        $riesgo = 5.0 - $promedio;
+
+        return [
+            'score' => round($riesgo, 1),
+            'nivel' => self::resolveLevel($riesgo),
+        ];
+    }
+
+    private static function resolveCondemnProbability(
+        array $situacion,
+        array $documental,
+        array $registracion,
+        array $estructural,
+        array $condiciones
+    ): float {
+        $base = floatval($situacion['probabilidad_condena'] ?? 0.5) * 0.5;
+        $documentalImpacto = (floatval($documental['puntaje'] ?? 0) / 5) * 0.20;
+        $registralImpacto = (floatval($registracion['puntaje'] ?? 0) / 5) * 0.15;
+        $testificalImpacto = (floatval($estructural['puntaje'] ?? 0) / 5) * 0.10;
+        $artImpacto = (($situacion['chk_art_vigente'] ?? 'no') !== 'si' ? 0.05 : 0.0)
+            + (floatval($condiciones['puntaje'] ?? 0) / 5) * 0.02;
+        $probabilidadCalculada = $base + $documentalImpacto + $registralImpacto + $testificalImpacto + $artImpacto;
+
+        return round(min(0.95, max(0.05, $probabilidadCalculada)), 2);
+    }
+
+    private static function buildContingencyBreakdown(
+        array $datos,
+        array $situacion,
+        array $exposicion,
+        float $sancionAdministrativa,
+        float $deudaArca
+    ): array {
+        $multasArca = floatval($exposicion['conceptos']['multas_arca']['monto'] ?? 0);
+        $total = floatval($exposicion['total_con_multas'] ?? 0);
+        $multasLct = floatval($exposicion['conceptos']['multas_lct']['monto'] ?? 0);
+        $administrativa = round(max($sancionAdministrativa, $multasArca), 2);
+        $laboral = round(max(0.0, $total - $administrativa), 2);
+        $indirecta = round(max(
+            floatval($deudaArca),
+            floatval($datos['salario'] ?? 0) * max(1, intval($situacion['meses_no_registrados'] ?? 0))
+        ), 2);
+
+        return [
+            'administrativa' => $administrativa,
+            'laboral' => $laboral,
+            'multas_lct' => round($multasLct, 2),
+            'indirecta' => $indirecta,
+        ];
+    }
+
+    private static function buildCriticalVariables(
+        string $estadoInspeccion,
+        array $matriz,
+        array $contingencia,
+        array $riesgoProbatorio,
+        float $probabilidadCondena
+    ): array {
+        $riesgoMultiplicador = self::resolveMultiplierLevel($contingencia, $matriz);
+
+        return [
+            'estado_inspeccion' => $estadoInspeccion,
+            'riesgo_laboral' => [
+                'registracion' => floatval($matriz['registracion']['puntaje'] ?? 0),
+                'condiciones' => floatval($matriz['condiciones']['puntaje'] ?? 0),
+                'remuneracion' => floatval($matriz['remuneracion']['puntaje'] ?? 0),
+                'documentacion' => floatval($matriz['documentacion']['puntaje'] ?? 0),
+                'estructural' => floatval($matriz['estructural']['puntaje'] ?? 0),
+            ],
+            'variables_juridicas' => [
+                'probabilidad_sancion' => self::resolveLevel(max(
+                    floatval($matriz['registracion']['puntaje'] ?? 0),
+                    floatval($matriz['documentacion']['puntaje'] ?? 0),
+                    floatval($contingencia['administrativa'] ?? 0) > 0 ? 3.0 : 1.0
+                )),
+                'impacto_prueba' => $riesgoProbatorio['nivel'],
+                'riesgo_multiplicador' => $riesgoMultiplicador,
+                'riesgo_judicial' => self::resolveLevel(max(($probabilidadCondena * 5), floatval($matriz['estructural']['puntaje'] ?? 0))),
+            ],
+        ];
+    }
+
+    private static function resolveMultiplierLevel(array $contingencia, array $matriz): string
+    {
+        $indirecta = floatval($contingencia['indirecta'] ?? 0);
+        $estructural = floatval($matriz['estructural']['puntaje'] ?? 0);
+
+        return match (true) {
+            $indirecta >= 10000000 || $estructural >= 4.0 => 'alto',
+            $indirecta >= 3000000 || $estructural >= 2.5 => 'medio',
+            default => 'bajo',
+        };
+    }
+
+    private static function scoreScenario(array $scenario): float
+    {
+        $riesgoJuridico = self::levelToScenarioValue($scenario['riesgo_judicial'] ?? 'medio');
+        $probabilidadSancion = self::levelToScenarioValue($scenario['probabilidad_sancion'] ?? 'media');
+        $riesgoMultiplicador = self::levelToScenarioValue($scenario['riesgo_multiplicador'] ?? 'medio');
+        $factorEconomico = floatval($scenario['factor_economico'] ?? 0);
+        $tiempo = floatval($scenario['tiempo'] ?? 0);
+        $score =
+            ($factorEconomico * self::WEIGHT_ECONOMIC)
+            + ($riesgoJuridico * self::WEIGHT_JURIDICAL)
+            + ($probabilidadSancion * self::WEIGHT_SANCTION)
+            + ($riesgoMultiplicador * self::WEIGHT_MULTIPLIER)
+            + ($tiempo * self::WEIGHT_TIME);
+
+        return round($score, 1);
+    }
+
+    private static function levelToScenarioValue(string $level): float
+    {
+        return match (strtolower($level)) {
+            'bajo', 'baja' => 90.0,
+            'medio', 'media' => 70.0,
+            'medio-alto' => 55.0,
+            'alto', 'alta' => 30.0,
+            default => 60.0,
+        };
+    }
+
+    private static function interpretScenarioScore(float $score): string
+    {
+        return match (true) {
+            $score >= 80 => 'Óptimo',
+            $score >= 60 => 'Bueno',
+            $score >= 40 => 'Riesgoso',
+            default => 'Crítico',
+        };
+    }
+
+    private static function selectOptimalScenario(array $escenarios): array
+    {
+        $selected = null;
+
+        foreach ($escenarios as $key => $scenario) {
+            if (!is_array($scenario) || empty($scenario['aplica'])) {
+                continue;
+            }
+
+            if ($selected === null || floatval($scenario['score'] ?? 0) > floatval($selected['score'] ?? 0)) {
+                $scenario['key'] = $key;
+                $selected = $scenario;
+            }
+        }
+
+        if ($selected === null) {
+            return [
+                'key' => 'reconfiguracion_preventiva',
+                'codigo' => 'D',
+                'slug' => 'reconfiguracion_preventiva',
+                'titulo' => 'Escenario D — Reconfiguración preventiva',
+                'score' => 0.0,
+                'evaluacion' => 'Crítico',
+            ];
+        }
+
+        return $selected;
+    }
+
+    private static function recommendationFromScenario(?string $scenarioKey, string $infraccion, array $situacion): array
+    {
+        return match ($scenarioKey) {
+            'negociacion_temprana' => [
+                'key' => 'contencion_temprana_y_cierre_controlado',
+                'label' => 'Contención temprana y cierre controlado',
+            ],
+            'litigio_completo' => [
+                'key' => 'defensa_tecnica_en_litigio_pleno',
+                'label' => 'Defensa técnica en litigio pleno',
+            ],
+            'estrategia_mixta' => [
+                'key' => 'control_daño_y_conciliacion',
+                'label' => 'Control de daño y conciliación',
+            ],
+            'reconfiguracion_preventiva' => [
+                'key' => 'regularizacion_y_reconfiguracion_preventiva',
+                'label' => 'Regularización y reconfiguración preventiva',
+            ],
+            default => self::resolveRecommendation($infraccion, $situacion),
+        };
     }
 
     private static function hasOpaqueStructureSignals(array $situacion): bool
